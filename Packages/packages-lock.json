@@ -219,6 +219,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "studio.demute.autoimplementer": {
+      "version": "file:studio.demute.autoimplementer",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
