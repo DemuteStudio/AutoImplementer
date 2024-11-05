@@ -1,0 +1,39 @@
+{
+  "type": "SoundBank",
+  "eventName": "Character Movement",
+  "soundBankEvents": {
+    "Walking": {
+      "type": "SoundEvent",
+      "eventName": "Footsteps",
+      "rootSoundContainer": {
+        "type": "SwitchSound",
+        "parameterID": "FootstepMaterial",
+        "soundDictionary": {
+          "Dirt": {
+            "type": "RandomSound",
+            "soundArray": [
+              {
+                "type": "SimpleSound",
+                "soundPath": "SimpleDirt1"
+              },
+              {
+                "type": "SimpleSound",
+                "soundPath": "SimpleDirt2"
+              }
+            ],
+            "soundWeights": [
+              80.0,
+              20.0
+            ]
+          },
+          "Concrete": {
+            "type": "SimpleSound",
+            "soundPath": "SimpleConcrete1"
+          }
+        }
+      }
+    },
+    "Running": null,
+    "Jumping": null
+  }
+}

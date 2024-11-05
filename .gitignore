@@ -1,0 +1,9 @@
+﻿AiSoundUnity/.vs
+AiSoundUnity/Library
+AiSoundUnity/Logs
+AiSoundUnity/obj
+AiSoundUnity/.vsconfig
+*.sln
+*.csproj
+AiSoundUnreal/AiSoundUnreal/Intermediate
+AiSoundUnreal/AiSoundUnreal/Saved
