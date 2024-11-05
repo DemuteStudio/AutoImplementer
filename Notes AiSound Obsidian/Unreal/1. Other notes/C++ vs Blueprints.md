@@ -1,5 +1,5 @@
 C++
-- Better for handling logiv
+- Better for handling logic
 - Making complex decisions
 	- branching
 	- looping
