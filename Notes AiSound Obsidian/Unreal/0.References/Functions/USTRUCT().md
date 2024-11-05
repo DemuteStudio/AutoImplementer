@@ -1,0 +1,1 @@
+`USTRUCT` is used to define a struct that can be reflected by Unreal Engine's [[reflection system]]. This allows the struct to be used in [[Blueprints]], [[Serialization|serialized]], and edited in the Unreal Editor.

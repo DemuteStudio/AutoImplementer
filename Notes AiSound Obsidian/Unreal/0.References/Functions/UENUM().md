@@ -1,0 +1,1 @@
+`UENUM` is used to define enumerations that can be used within the [[reflection system]]. This allows enums to be accessible in [[Blueprints]], [[Serialization|serialized]], and edited through the Unreal Editor.
