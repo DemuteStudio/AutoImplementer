@@ -7,3 +7,9 @@ AiSoundUnity/.vsconfig
 *.csproj
 AiSoundUnreal/AiSoundUnreal/Intermediate
 AiSoundUnreal/AiSoundUnreal/Saved
+AiSoundUnreal/.vs
+AiSoundUnreal/Saved
+AiSoundUnreal/Intermediate
+AiSoundUnreal/Binaries
+AiSoundUnreal/.vsconfig
+AiSoundUnreal/UpgradeLog.htm
