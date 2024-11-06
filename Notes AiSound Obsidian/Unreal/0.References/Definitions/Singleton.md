@@ -1,0 +1,1 @@
+A Singleton is a class designed to only have a single instance, while providing a global access point to this instance.
