@@ -13,5 +13,5 @@
 - The Intro and Outro should be optional
 # BlendSound
 - Plays multiple containers, each containing a different time offset
-# SequenceSound
-- Plays a sequence of containers in order
+# SequenceSound ?
+- Every time it's called plays the next sound

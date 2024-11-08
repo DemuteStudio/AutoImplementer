@@ -4,11 +4,11 @@ using UnrealBuildTool;
 
 public class AiSoundUnreal : ModuleRules
 {
-	public AiSoundUnreal(ReadOnlyTargetRules Target) : base(Target)
+	public AiSoundUnreal(ReadOnlyTargetRules target) : base(target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MetasoundEngine" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

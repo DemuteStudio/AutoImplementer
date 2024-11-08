@@ -1,0 +1,7 @@
+- Make parameter dictionaries values not strings but integers
+	- use a tmap in unreal to fake a custom made enum
+		-  **!! NOPE**, we're still not compatible with FMOD then and base METASOUND, this only works if there is a layer before metasounds and before middleware
+	- 
+- Metasounds needs the basic nodes (randomget, etc) to not only take wave files but also metasounds - **IMPOSSIBLE**
+	- I probably will need to setup custom metasound nodes
+- I need a node for reading dictionaries for switch sounds

@@ -1,0 +1,12 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-AutoImplementingAudio.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\AutoImplementing\AiSoundUnreal\Intermediate\Build\Win64\x64\AiSoundUnrealEditor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\AutoImplementingAudio.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\Default.rc2.res"
+/OUT:"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\UnrealEditor-AutoImplementingAudio.lib"

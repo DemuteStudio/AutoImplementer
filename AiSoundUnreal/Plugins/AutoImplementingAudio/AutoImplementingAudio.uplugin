@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "AutoImplementingAudio",
+	"Description": "Allows the automatic implementation of predefined sound banks",
+	"Category": "Other",
+	"CreatedBy": "Robin Butel - Demute",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "AutoImplementingAudio",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}

@@ -1,0 +1,13 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\autoimplementing\\aisoundunreal\\plugins\\autoimplementingaudio\\intermediate\\build\\win64\\unrealeditor\\inc\\autoimplementingaudio\\uht\\autoimplementingaudio.init.gen.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\autoimplementing\\aisoundunreal\\intermediate\\build\\win64\\x64\\aisoundunrealeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\autoimplementing\\aisoundunreal\\plugins\\autoimplementingaudio\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\autoimplementingaudio\\definitions.autoimplementingaudio.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

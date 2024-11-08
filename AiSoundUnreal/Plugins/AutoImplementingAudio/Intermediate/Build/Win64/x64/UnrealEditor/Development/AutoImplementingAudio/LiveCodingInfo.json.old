@@ -1,0 +1,10 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.AutoImplementingAudio.cpp.obj": [
+			"AutoImplementingAudio.init.gen.cpp.obj",
+			"FSoundParameter.gen.cpp.obj",
+			"AutoImplementingAudio.cpp.obj"
+		]
+	}
+}
