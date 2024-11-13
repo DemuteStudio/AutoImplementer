@@ -1,5 +1,13 @@
 {
 	"RemapUnityFiles": 
 	{
+		"Module.AutoImplementingAudio.cpp.obj": [
+			"AutoImplementingAudio.cpp.obj",
+			"AutoImplementingAudio.init.gen.cpp.obj",
+			"MetasoundTest.gen.cpp.obj",
+			"MetasoundMetasoundSource.cpp.obj",
+			"MetasoundTest.cpp.obj",
+			"RandomTriggerNode.cpp.obj"
+		]
 	}
 }

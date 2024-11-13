@@ -7,6 +7,11 @@
 /IGNORE:4221
 /NODEFAULTLIB
 "D:\AutoImplementing\AiSoundUnreal\Intermediate\Build\Win64\x64\AiSoundUnrealEditor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
-"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\AutoImplementingAudio.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\Module.AutoImplementingAudio.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\MetasoundMetasoundSource.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\MetasoundTest.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\RandomTriggerNode.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\AutoImplementingAudio.init.gen.cpp.obj"
+"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\MetasoundTest.gen.cpp.obj"
 "D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\Default.rc2.res"
 /OUT:"D:\AutoImplementing\AiSoundUnreal\Plugins\AutoImplementingAudio\Intermediate\Build\Win64\x64\UnrealEditor\Development\AutoImplementingAudio\UnrealEditor-AutoImplementingAudio.lib"

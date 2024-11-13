@@ -34,6 +34,9 @@ public class AutoImplementingAudio : ModuleRules
 				"LevelEditor",
 				"ToolMenus",
 				"AudioExtensions",
+				"MetasoundEngine",
+				"MetasoundFrontend",
+				"MetasoundGraphCore"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
