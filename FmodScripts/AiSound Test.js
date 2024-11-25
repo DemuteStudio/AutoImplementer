@@ -1,5 +1,6 @@
 ﻿// AiSound Test.js
 // This script creates a test event and lists the declared function in the Scripts tab
+// Dev : Rob3
 
 studio.menu.addMenuItem({
     name: "AiSound Test",
@@ -20,7 +21,6 @@ function createEventWithnestedEvents() {
     }
     
     //instrument.relationships.dump();
-    
 }
 
 

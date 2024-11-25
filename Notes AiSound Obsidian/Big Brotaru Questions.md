@@ -1,0 +1,10 @@
+- What engine are you using to develop your game ?
+- What stage of development is your game currently in ?
+	- Did you have audio for your first prototypes ? Playtests ? Demos ?
+		- Past games ?
+	- What audio solution are you currently using ?
+- Do you have any development struggles when it comes to audio ?
+- What is your ideal audio solution ?
+- Explain the tool
+	- What are the most important quality of life features for this tool ?
+	- Is this tool something that you would be interested in ?

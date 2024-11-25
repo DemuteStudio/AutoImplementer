@@ -4,3 +4,6 @@ https://alessandrofama.com/tutorials/fmod/fmod-studio/scripting-api-basics
 	- To be able to launch it from the editor don't include the `()` to your function in `execute`
 	- If you do, it will launch it on `reload` and be greyed out
 - For some reason, Fmod hates `let` and requires instead `var`
+- Use `dump` and the console to try to understand wtf is going on
+	- When you define an object in the console you can go object. and all it's properties will show up
+
