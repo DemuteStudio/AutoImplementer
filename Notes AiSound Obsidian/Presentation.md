@@ -1,0 +1,79 @@
+##### Intro - Imaging exercise
+- Imagine you're all game developers who don't know the first thing about audio
+	- I'm sure you've all met or had to work with some of them so it shouldn't be too hard to put yourself in their shoes
+- Now, the awesome game you're all working on, Outcast 3, needs a working prototype with sound in 4 days for a pitch to investors
+	- The problem is, you don't know shit about audio
+		- You have two options
+			- Download a bunch of free sounds and figure out how to make them work
+				- This requires a bunch of your precious time
+				- Best way to have scuffed audio
+			- Or pay the best company in the world, Demute, to do it for you
+				- This requires a bunch of your precious money
+				- You don't know if you can justify that cost for a prototype
+- Whatever are you to do ?
+##### Infomercial - Product Pitch
+- Introducing the Super Cool Audio Player
+	- SCAP for short
+- *Pause* Actually, it's called the Auto-Implementation Tool
+	- AiSound for short
+- *Pause* Nevermind they changed their mind again, introducing the Game Implemented Sound Banks
+	- GISB for short
+
+- This revolutionary invention allows you to browse libraries of pre-implemented sound banks that you can directly add into your project with a couple of clicks
+- For example, this bank contains 
+	- footsteps, jumping, and crouching
+	- as well as a surface material parameter to vary the sounds depending on the surface.
+	- All that for less than 30 bucks (write 29.99 on screen), what a steal !
+- These banks are pre-implemented, all you need to do is download the plugin that corresponds to your engine to add it to your game
+	- With the plugin installed, you can automatically link the pre-implemented sound bank to a game object like your player character
+	- Then call the play functions are the right place and change the parameters accordingly for a seamless audio experience
+		- Make sure you call the play function (step 1) at the footstep, and make sure you indicate when the material surface changes (step 2), and the rest is done for you automatically (step 3)
+- It just works ! And it's never been so easy !
+- Buy your Game Implemented Sound Banks on Asoundeffect.com in the near futur !
+- Thank you !
+
+##### An actual serious presentation now
+- Pablo likened this project to creating the Rosetta Stone of Audio Implementation
+	- Our goal is a universal engine-agnostic framework for implementing audio
+		- This means that from the same set of instructions, all different engines and middleware can give the same output
+		- This goal would allow us to easily scale the project to different engines/middleware while making sure all of sound banks made for past versions would already be compatible
+			- as they would be "written" in this universal language
+		- It's not retro-compatibility but [pro-compatibility](https://english.stackexchange.com/questions/42752/what-is-the-antonym-of-the-prefix-retro) according to reddit, or you could just say futur-proof like a normal person
+- Let's recap
+	- The Sound Bank Designer does the sound design and audio editing, he then defines the implementation logic of a sound bank
+		- For example footsteps : 
+			- Identify the surface material
+				- Which is exactly what the parameter is for 
+			- Then play on of multiple footstep variations for that material
+	- The SBD then has a tool that translates his work into instructions written in our universal language
+	- From this universal language, each engine has a corresponding plugin that translates these instructions into an actual working interactive sound system
+		- Show examples of footstep systems in middleware / engines
+- Containerisation
+	- The universal language we decided to write was based off of Wwise's recursive containerisation system
+	- Each logical operation is defined as an audio container
+		- Random
+			- Chooses an audio clip to play at random
+		- Switch
+			- Chooses an audio clip to play depending on a parameter's value
+	- And they can each reference other containers until they get to a simple container that only contains a sound file
+		- Re-explain Footsteps
+			- This means you can have infinitely complex systems
+			- But you could also imagine a blend followed by a random to mix and match different toes and heels for example
+	- Containers make this system simple to build on
+	- Showcase the universal language in JSON
+- The SETBACK
+	- We thought that this system was abstract enough to be compatible with all of the engines and middlewares we were targeting
+	- but we were wrong
+		- For this system to work, we need the logical containers to be able to reference other logical containers recursively until the simple sound file
+		- The Engine for which we thought the integration would be easiest was Unreal as, contrary to Unity, already had a full fledge audio engine with metasounds
+			- However, Metasounds does not function with recursive containers, it functions directly with audio files
+			- It's possible for Metasounds to play other metasounds, but not in an abstract manor, I'm gonna spare you the gritty details and just tell you that Metasounds is the blacksheep of our universal language
+				- it doesn't work straight out of the box
+		- That doesn't make it much different from Unity however, since unity does not have an audio engine, we were going to create the "Metasound" part of unreal in Unity
+- The Crossroad
+	- This leaves us at a crossroad
+		- Dumb down our universal language to make it compatible straight out of the box with unreal 
+		- Or develop our own custom interfaces to bridge the gap between our universal language and metasounds 
+	- We've left this decision somewhat up in the air at the moment
+		- as we search for actual devs that could use this tool and asking them for their opinion
+		- instead of designing a tool for their problem we're imagining

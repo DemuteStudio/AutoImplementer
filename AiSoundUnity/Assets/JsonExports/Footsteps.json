@@ -1,0 +1,98 @@
+{
+  "type": "SoundEvent",
+  "eventName": "Footsteps",
+  "rootSoundContainer": {
+    "type": "SwitchSound",
+    "parameterID": "SurfaceMaterial",
+    "soundDictionary": {
+      "Grass": {
+        "type": "RandomSound",
+        "soundArray": [
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GrassFS_1"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GrassFS_2"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GrassFS_3"
+          }
+        ],
+        "soundWeights": [
+          33.0,
+          33.0,
+          33.0
+        ]
+      },
+      "Dirt": {
+        "type": "RandomSound",
+        "soundArray": [
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/DirtFS_1"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/DirtFS_2"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/DirtFS_3"
+          }
+        ],
+        "soundWeights": [
+          33.0,
+          33.0,
+          33.0
+        ]
+      },
+      "Ice": {
+        "type": "RandomSound",
+        "soundArray": [
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/IceFS_1"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/IceFS_2"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/IceFS_3"
+          }
+        ],
+        "soundWeights": [
+          33.0,
+          33.0,
+          33.0
+        ]
+      },
+      "Gravel": {
+        "type": "RandomSound",
+        "soundArray": [
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GravelFS_1"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GravelFS_2"
+          },
+          {
+            "type": "SimpleSound",
+            "soundPath": "/assets/audiofiles/GravelFS_3"
+          }
+        ],
+        "soundWeights": [
+          33.0,
+          33.0,
+          33.0
+        ]
+      }
+    }
+  }
+}
