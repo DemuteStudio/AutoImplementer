@@ -38,8 +38,18 @@ public class AiSoundSerializer
         {
             string json = JsonConvert.SerializeObject(soundEvent, Formatting.Indented);
 
-            string filePath = Path.Combine(AiSoundOptions.jsonSavePath, soundEvent.eventName + ".json");
+            string directory = AiSoundOptions.jsonSavePath + "/" + soundEvent.eventName + "/";
+            if(Directory.Exists(directory))
+            {
+                Directory.Delete(directory, true);
+            }
+            Directory.CreateDirectory(directory);
+
+            string filePath = Path.Combine(directory, soundEvent.eventName + ".json");
             File.WriteAllText(filePath, json);
+            
+            //Copy all the sound files to the json save path
+            soundEvent.CopySoundFiles(directory);
         }
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();

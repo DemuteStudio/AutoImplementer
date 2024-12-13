@@ -67,6 +67,28 @@ public class SoundBank : AiSoundEvent
         AssetDatabase.SaveAssets();
     }
 
+    public override void CopySoundFiles(string jsonSavePath)
+    {
+        foreach (KeyValuePair<string, SoundEvent> entry in soundBankEvents)
+        {
+            if (entry.Value != null)
+            {
+                entry.Value.CopySoundFiles(jsonSavePath);
+            }
+        }
+    }
+
+    public override void ImportSoundFiles(string importDirectory)
+    {
+        foreach (KeyValuePair<string, SoundEvent> entry in soundBankEvents)
+        {
+            if (entry.Value != null)
+            {
+                entry.Value.ImportSoundFiles(importDirectory);
+            }
+        }
+    }
+
     public bool GetSoundEvent(string eventNameString, out SoundEvent soundEvent)
     {
         return soundBankEvents.TryGetValue(eventNameString, out soundEvent);

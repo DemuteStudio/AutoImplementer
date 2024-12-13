@@ -1,0 +1,81 @@
+{
+  "type": "SoundBank",
+  "eventName": "Character Movement",
+  "soundBankEvents": {
+    "Walking": {
+      "type": "SoundEvent",
+      "eventName": "Footsteps",
+      "rootSoundContainer": {
+        "type": "SwitchSound",
+        "parameterID": "FootstepMaterial",
+        "soundDictionary": {
+          "Dirt": {
+            "type": "RandomSound",
+            "soundArray": [
+              {
+                "type": "SimpleSound",
+                "audioFilePath": "Audio Files/Ellen_Footsteps_Earth_Walk_01",
+                "soundFile": {
+                  "length": 0.359291673,
+                  "samples": 17246,
+                  "channels": 2,
+                  "frequency": 48000,
+                  "isReadyToPlay": false,
+                  "loadType": 0,
+                  "preloadAudioData": false,
+                  "ambisonic": false,
+                  "loadInBackground": false,
+                  "loadState": 0,
+                  "name": "Ellen_Footsteps_Earth_Walk_01",
+                  "hideFlags": 8
+                }
+              },
+              {
+                "type": "SimpleSound",
+                "audioFilePath": "Audio Files/Ellen_Footsteps_Earth_Walk_02",
+                "soundFile": {
+                  "length": 0.3535625,
+                  "samples": 16971,
+                  "channels": 2,
+                  "frequency": 48000,
+                  "isReadyToPlay": false,
+                  "loadType": 0,
+                  "preloadAudioData": false,
+                  "ambisonic": false,
+                  "loadInBackground": false,
+                  "loadState": 0,
+                  "name": "Ellen_Footsteps_Earth_Walk_02",
+                  "hideFlags": 8
+                }
+              }
+            ],
+            "soundWeights": [
+              80.0,
+              20.0
+            ]
+          },
+          "Concrete": {
+            "type": "SimpleSound",
+            "audioFilePath": "Audio Files/Ellen_Footsteps_Earth_Walk_03",
+            "soundFile": {
+              "length": 0.352520823,
+              "samples": 16921,
+              "channels": 2,
+              "frequency": 48000,
+              "isReadyToPlay": false,
+              "loadType": 0,
+              "preloadAudioData": false,
+              "ambisonic": false,
+              "loadInBackground": false,
+              "loadState": 0,
+              "name": "Ellen_Footsteps_Earth_Walk_03",
+              "hideFlags": 8
+            }
+          }
+        }
+      }
+    },
+    "Running": null,
+    "Jumping": null
+  }
+}

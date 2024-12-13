@@ -12,4 +12,7 @@ public abstract class AiSoundContainer : AiSound
         //TODO : Implement this method
         throw new System.NotImplementedException();
     }
+
+    public abstract void CopySoundFiles(string jsonSavePath);
+    public abstract void ImportSoundFiles(string importDirectory);
 }

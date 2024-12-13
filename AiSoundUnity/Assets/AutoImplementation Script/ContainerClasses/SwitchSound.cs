@@ -29,6 +29,29 @@ public class SwitchSound : AiSoundContainer
 
         else throw new FileNotFoundException("No sound file");
     }
+
+    public override void CopySoundFiles(string jsonSavePath)
+    {
+        foreach (KeyValuePair<string, AiSoundContainer> entry in soundDictionary)
+        {
+            if (entry.Value != null)
+            {
+                entry.Value.CopySoundFiles(jsonSavePath);
+            }
+        }
+    }
+
+    public override void ImportSoundFiles(string importDirectory)
+    {
+        foreach (KeyValuePair<string, AiSoundContainer> entry in soundDictionary)
+        {
+            if (entry.Value != null)
+            {
+                entry.Value.ImportSoundFiles(importDirectory);
+            }
+        }
+    }
+
     public override void DebugDisplay()
     {
         string appendedString = "AiAudio From Json Display : \n\nSwitchSound (" + parameterID + ")";

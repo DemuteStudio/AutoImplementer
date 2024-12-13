@@ -44,4 +44,20 @@ public class SoundEvent : AiSoundEvent
         AssetDatabase.CreateAsset(this, AssetDatabase.GenerateUniqueAssetPath(Path.Combine(path, "Event_" + eventName + ".asset")));
         AssetDatabase.SaveAssets();
     }
+
+    public override void CopySoundFiles(string jsonSavePath)
+    {
+        if (rootSoundContainer != null)
+        {
+            rootSoundContainer.CopySoundFiles(jsonSavePath);
+        }
+    }
+
+    public override void ImportSoundFiles(string importDirectory)
+    {
+        if (rootSoundContainer != null)
+        {
+            rootSoundContainer.ImportSoundFiles(importDirectory);
+        }
+    }
 }

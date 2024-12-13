@@ -11,4 +11,7 @@ public abstract class AiSoundEvent : AiSound
 {
     [SerializeField]
     public string eventName;
+
+    public abstract void CopySoundFiles(string jsonSavePath);
+    public abstract void ImportSoundFiles(string importDirectory);
 }

@@ -45,6 +45,29 @@ public class RandomSound : AiSoundContainer
         if (soundContainer != null) soundContainer.PlaySound(audioSource, parameterList);
         else throw new FileNotFoundException("No sound file");
     }
+
+    public override void CopySoundFiles(string jsonSavePath)
+    {
+        foreach (AiSoundContainer container in soundArray)
+        {
+            if (container != null)
+            {
+                container.CopySoundFiles(jsonSavePath);
+            }
+        }
+    }
+
+    public override void ImportSoundFiles(string importDirectory)
+    {
+        foreach (AiSoundContainer container in soundArray)
+        {
+            if (container != null)
+            {
+                container.ImportSoundFiles(importDirectory);
+            }
+        }
+    }
+
     public override void DebugDisplay()
     {
         string appendedString = "AiAudio From Json Display : \n\nRandomSound";

@@ -32,6 +32,22 @@ public class AiSoundJsonParser
         {
             string json = File.ReadAllText(AssetDatabase.GetAssetPath(obj));
             AiSoundEvent activeEvent = JsonConvert.DeserializeObject<AiSoundEvent>(json);
+            
+            //Import the sound files to the project
+            string[] audioFiles = Directory.GetFiles(Path.GetDirectoryName(AssetDatabase.GetAssetPath(obj))+"/Audio Files/");
+            string importDirectory = AiSoundOptions.parseSavePath +"/"+ activeEvent.eventName + "/Audio Files/";
+            if(!Directory.Exists(importDirectory))
+            {
+                Directory.CreateDirectory(importDirectory);
+            }
+            foreach (string audioFile in audioFiles)
+            {
+                string filename = Path.GetFileName(audioFile);
+                File.Copy(audioFile, Path.Combine(importDirectory, filename), true);
+            }
+            
+            activeEvent.ImportSoundFiles(importDirectory);
+            
             CreateAiSound(activeEvent);
             activeEvent.DebugDisplay();
         }

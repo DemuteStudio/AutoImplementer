@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: SimpleSound3
   m_EditorClassIdentifier: 
   soundPath: SimpleDirt2
+  soundFile: {fileID: 8300000, guid: 91a6e4af7df4ecf4598ce5a4ce30e939, type: 3}

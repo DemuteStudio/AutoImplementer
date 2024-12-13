@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEditor;
 
 public class AiSoundConverter : JsonConverter
 {
@@ -64,6 +65,12 @@ public class AiSoundConverter : JsonConverter
         {
             AiSoundEvent soundEvent = soundContainer as AiSoundEvent;
             soundObjectInfo.Add("eventName", soundEvent.eventName);
+        }
+        
+        if(typeof(SimpleSound).IsAssignableFrom(soundContainer.GetType()))
+        {
+            SimpleSound simpleSound = soundContainer as SimpleSound;
+            simpleSound.soundPath = "Audio Files/" + simpleSound.soundFile.name;
         }
 
         // Serialize the object's public fields and properties (excluding Unity internal fields)

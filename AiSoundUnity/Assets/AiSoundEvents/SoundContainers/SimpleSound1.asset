@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: SimpleSound1
   m_EditorClassIdentifier: 
   soundPath: SimpleConcrete1
+  soundFile: {fileID: 8300000, guid: 45a39c5cc260aab4fbfe170f5f709170, type: 3}
