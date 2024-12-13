@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 618aa7ba72eac03438ee8b5f5251cb2a, type: 3}
+  m_Name: Rdm_Dirt
+  m_EditorClassIdentifier: 
+  soundArray:
+  - {fileID: 11400000, guid: 4788115fc556d474ca2c81f84f0a2d18, type: 2}
+  - {fileID: 11400000, guid: 358642fda06354f419b3f133909dc2da, type: 2}
+  - {fileID: 11400000, guid: 28c0b960a32cc5d4a8f78a31d6d87a55, type: 2}
+  soundWeights:
+  - 33
+  - 33
+  - 33

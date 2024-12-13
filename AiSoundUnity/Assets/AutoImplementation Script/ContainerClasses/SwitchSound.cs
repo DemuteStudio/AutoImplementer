@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,7 +19,9 @@ public class SwitchSound : AiSoundContainer
         object parameter;
 
         if (!parameterList.TryGetValue(parameterID, out parameter))
-            parameter = "default";          //If the parameter has not been set, set the parameter to default
+        {
+            parameter = soundDictionary.Keys.First();
+        }
 
         AiSoundContainer soundContainer = soundDictionary[(string)parameter];
 

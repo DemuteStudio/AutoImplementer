@@ -11,11 +11,15 @@ public class SimpleSound : AiSoundContainer
     [SerializeField]
     public string soundPath;
     [JsonIgnore]
-    private AudioClip soundFile;
+    public AudioClip soundFile;
 
     public override void PlaySound(AudioSource audioSource, Dictionary<string, object> parameterList)
     {
-        if (soundFile != null) audioSource.PlayOneShot(soundFile);
+        if (soundFile != null)
+        {
+            audioSource.clip = soundFile;
+            audioSource.Play();
+        }
 
         else throw new FileNotFoundException("No sound file");
     }

@@ -66,4 +66,9 @@ public class SoundBank : AiSoundEvent
         AssetDatabase.CreateAsset(this, AssetDatabase.GenerateUniqueAssetPath(Path.Combine(path, "Bank_" + eventName + ".asset")));
         AssetDatabase.SaveAssets();
     }
+
+    public bool GetSoundEvent(string eventNameString, out SoundEvent soundEvent)
+    {
+        return soundBankEvents.TryGetValue(eventNameString, out soundEvent);
+    }
 }

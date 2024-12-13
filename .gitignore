@@ -13,3 +13,6 @@ AiSoundUnreal/Intermediate
 AiSoundUnreal/Binaries
 AiSoundUnreal/.vsconfig
 AiSoundUnreal/UpgradeLog.htm
+**/.idea
+**/Temp
+AiSoundUnity/UserSettings
