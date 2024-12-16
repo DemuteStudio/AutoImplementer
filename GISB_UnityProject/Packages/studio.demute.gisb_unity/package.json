@@ -1,0 +1,20 @@
+{
+    "name": "studio.demute.gisb-unity",
+    "version": "0.0.1",
+    "displayName": "GISB Unity Implementation",
+    "description": "Unity plugin to import, translate and playback Game Implemented SoundBanks",
+    "unity": "2022.3",
+    "unityRelease": "50f1",
+    "documentationUrl": "",
+    "changelogUrl": "",
+    "licensesUrl": "",
+    "dependencies": {
+   },
+   "keywords": [
+    ],
+    "author": {
+      "name": "Demute",
+      "email": "dev@demute.studio",
+      "url": "https://www.demute.studio"
+    }
+  }

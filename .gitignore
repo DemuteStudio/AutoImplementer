@@ -1,8 +1,8 @@
-﻿AiSoundUnity/.vs
-AiSoundUnity/Library
-AiSoundUnity/Logs
-AiSoundUnity/obj
-AiSoundUnity/.vsconfig
+﻿**/.vs
+**/Library
+**/Logs
+**/obj
+**/.vsconfig
 *.sln
 *.csproj
 AiSoundUnreal/AiSoundUnreal/Intermediate
@@ -15,4 +15,4 @@ AiSoundUnreal/.vsconfig
 AiSoundUnreal/UpgradeLog.htm
 **/.idea
 **/Temp
-AiSoundUnity/UserSettings
+**/UserSettings
