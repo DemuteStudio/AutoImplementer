@@ -9,6 +9,11 @@ namespace GISB.Runtime
     public class GISB_SingleSound : GISB_AudioObjectBase
     {
         public AudioClip soundClip;
+        
+        public override GISB_AudioObjectPlayer GetPlayer()
+        {
+            return new GISB_SingleSoundPlayer(this);
+        }
     }
 }
 

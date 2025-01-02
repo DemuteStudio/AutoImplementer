@@ -19,5 +19,10 @@ namespace GISB.Runtime
         public string ParameterName;
         public string DefaultValue;
         public SwitchCase[] SwitchCases;
+
+        public override GISB_AudioObjectPlayer GetPlayer()
+        {
+            return new GISB_SwitchSoundPlayer(this);
+        }
     }
 }

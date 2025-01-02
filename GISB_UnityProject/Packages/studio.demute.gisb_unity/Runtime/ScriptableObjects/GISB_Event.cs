@@ -10,6 +10,17 @@ namespace GISB.Runtime
     {
         [SerializeReference, SR]
         public GISB_AudioObjectBase rootAudioObject;
+        
+        public GISB_AudioObjectPlayer GetPlayer()
+        {
+            return rootAudioObject.GetPlayer();
+        }
+
+        [ExecuteInEditMode]
+        public void PlayInEditor()
+        {
+
+        }
     }
 }
 

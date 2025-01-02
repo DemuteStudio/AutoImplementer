@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,8 @@ namespace GISB.Editor
     [CustomEditor(typeof(GISB_Event))]
     public class GISB_EventEditor : UnityEditor.Editor
     {
+        private GISB_AudioComponent editorAudioComponent;
+        
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -49,6 +52,28 @@ namespace GISB.Editor
                     //Auto save asset
                     AssetDatabase.SaveAssetIfDirty(target);
                 }
+            }
+            
+            EditorGUILayout.Space();
+
+            if (GUILayout.Button("Play"))
+            {
+                GISB_Event gisbEvent = (GISB_Event)target;
+                if (editorAudioComponent == null)
+                {
+                    GameObject editorPreviewObject = new GameObject("Editor Preview");
+                    editorPreviewObject.hideFlags = HideFlags.HideAndDontSave;
+                    editorAudioComponent = editorPreviewObject.AddComponent<GISB_AudioComponent>();
+                }
+                editorAudioComponent.PlayEvent(gisbEvent);
+            }
+        }
+
+        public void OnDestroy()
+        {
+            if (editorAudioComponent != null)
+            {
+                DestroyImmediate(editorAudioComponent.gameObject);
             }
         }
     }
