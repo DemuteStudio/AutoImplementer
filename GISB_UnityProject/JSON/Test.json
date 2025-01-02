@@ -1,0 +1,35 @@
+{
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SwitchSound, Demute.GISB",
+    "ParameterName": "material",
+    "DefaultValue": "dirt",
+    "SwitchCases": [
+      {
+        "parameterValue": "dirt",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_01.wav"
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_02.wav"
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_03.wav"
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "concrete",
+        "audioObject": null
+      }
+    ]
+  },
+  "name": "Test",
+  "hideFlags": 0
+}

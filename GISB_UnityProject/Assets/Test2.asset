@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f0a94e5d57b989478e0ae46b35d0248, type: 3}
+  m_Name: Test2
+  m_EditorClassIdentifier: 
+  rootAudioObject:
+    rid: 8023312325678465044
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 8023312325678465044
+      type: {class: GISB_SwitchSound, ns: GISB.Runtime, asm: Demute.GISB}
+      data:
+        ParameterName: material
+        DefaultValue: dirt
+        SwitchCases:
+        - parameterValue: dirt
+          audioObject:
+            rid: 8023312325678465045
+        - parameterValue: concrete
+          audioObject:
+            rid: -2
+    - rid: 8023312325678465045
+      type: {class: GISB_RandomSound, ns: GISB.Runtime, asm: Demute.GISB}
+      data:
+        RandomPlaylist:
+        - rid: 8023312325678465046
+        - rid: 8023312325678465047
+        - rid: 8023312325678465048
+    - rid: 8023312325678465046
+      type: {class: GISB_SingleSound, ns: GISB.Runtime, asm: Demute.GISB}
+      data:
+        soundClip: {fileID: 8300000, guid: b9c245bf45bcc684f8318a377f7bd81b, type: 3}
+    - rid: 8023312325678465047
+      type: {class: GISB_SingleSound, ns: GISB.Runtime, asm: Demute.GISB}
+      data:
+        soundClip: {fileID: 8300000, guid: 3c67465af76422f4a88f64e3b8fd9beb, type: 3}
+    - rid: 8023312325678465048
+      type: {class: GISB_SingleSound, ns: GISB.Runtime, asm: Demute.GISB}
+      data:
+        soundClip: {fileID: 8300000, guid: 8043fd51f25ec934cb5b1c4a0489d1b2, type: 3}

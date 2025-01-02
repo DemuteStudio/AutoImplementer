@@ -1,9 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 
-namespace GISB_Unity.Runtime
+namespace GISB.Runtime
 {
     [Serializable]
     public abstract class GISB_AudioObjectBase
