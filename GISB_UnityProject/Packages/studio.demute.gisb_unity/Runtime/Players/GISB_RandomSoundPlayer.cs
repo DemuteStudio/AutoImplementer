@@ -41,7 +41,7 @@ namespace GISB.Runtime
             int index = indexes[Random.Range(0, indexes.Count)];
             indexes.Remove(index);
             excludedIndexes.Enqueue(index);
-            if(excludedIndexes.Count > audioObject.avoidLastPlayed)
+            while(excludedIndexes.Count > audioObject.avoidLastPlayed)
             {
                 indexes.Add(excludedIndexes.Dequeue());
             }
