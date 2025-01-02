@@ -24,5 +24,28 @@ namespace GISB.Runtime
         {
             return new GISB_SwitchSoundPlayer(this);
         }
+
+        public override Dictionary<string, List<string>> ExtractParameters()
+        {
+            Dictionary<string, List<string>> parameters = new Dictionary<string, List<string>>();
+            parameters.Add(ParameterName, new List<string>());
+            foreach (SwitchCase switchCase in SwitchCases)
+            {
+                parameters[ParameterName].Add(switchCase.parameterValue);
+                if (switchCase.audioObject != null)
+                {
+                    Dictionary<string, List<string>> extractedParameters = switchCase.audioObject.ExtractParameters();
+                    foreach (KeyValuePair<string, List<string>> extractedParameter in extractedParameters)
+                    {
+                        if (!parameters.ContainsKey(extractedParameter.Key))
+                        {
+                            parameters.Add(extractedParameter.Key, new List<string>());
+                        }
+                        parameters[extractedParameter.Key].AddRange(extractedParameter.Value);
+                    }
+                }
+            }
+            return parameters;
+        }
     }
 }

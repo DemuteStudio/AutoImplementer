@@ -13,18 +13,20 @@ namespace GISB.Editor
     public class GISB_EventEditor : UnityEditor.Editor
     {
         private GISB_AudioComponent editorAudioComponent;
+        private Vector2 scrollPosition;
         
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
         
+            GISB_Event gisbEvent = (GISB_Event)target;
+
             if(GUILayout.Button("Export to JSON"))
             {
                 string path = EditorUtility.SaveFilePanel("Save GISB Event", Application.dataPath, target.name, "json");
                 if (path.Length != 0)
                 {
                     string folderPath = Path.GetDirectoryName(path);
-                    GISB_Event gisbEvent = (GISB_Event)target;
                     JsonSerializerSettings settings = new JsonSerializerSettings
                     {
                         TypeNameHandling = TypeNameHandling.Auto,
@@ -56,18 +58,43 @@ namespace GISB.Editor
             
             EditorGUILayout.Space();
 
+            if (editorAudioComponent == null)
+            {
+                GameObject editorPreviewObject = new GameObject("Editor Preview");
+                editorPreviewObject.hideFlags = HideFlags.HideAndDontSave;
+                editorAudioComponent = editorPreviewObject.AddComponent<GISB_AudioComponent>();
+            }
+            
             if (GUILayout.Button("Play"))
             {
-                GISB_Event gisbEvent = (GISB_Event)target;
-                if (editorAudioComponent == null)
-                {
-                    GameObject editorPreviewObject = new GameObject("Editor Preview");
-                    editorPreviewObject.hideFlags = HideFlags.HideAndDontSave;
-                    editorAudioComponent = editorPreviewObject.AddComponent<GISB_AudioComponent>();
-                }
                 editorAudioComponent.PlayEvent(gisbEvent);
             }
+
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            Dictionary<string, List<string>> parameters = gisbEvent.rootAudioObject.ExtractParameters();
+            foreach (KeyValuePair<string, List<string>> parameter in parameters)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(parameter.Key);
+                //Make dropdown for each possible value
+                string[] values = parameter.Value.ToArray();
+                if(editorAudioComponent.activeParameters.ContainsKey(parameter.Key) == false)
+                {
+                    editorAudioComponent.activeParameters.Add(parameter.Key, values[0]);
+                }
+                int selectedIndex = Array.IndexOf(values, editorAudioComponent.activeParameters[parameter.Key]);
+                int newSelectedIndex = EditorGUILayout.Popup(selectedIndex, values);
+                if (newSelectedIndex != selectedIndex)
+                {
+                    editorAudioComponent.activeParameters[parameter.Key] = values[newSelectedIndex];
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUILayout.EndScrollView();
+
         }
+        
+        
 
         public void OnDestroy()
         {

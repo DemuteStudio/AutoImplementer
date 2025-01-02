@@ -30,6 +30,10 @@ namespace GISB.Runtime
                 {
                     if (switchCase.parameterValue == switchValue)
                     {
+                        if(switchCase.audioObject == null)
+                        {
+                            break;
+                        }
                         instantiatedPlayers[switchValue] = switchCase.audioObject.GetPlayer();
                         break;
                     }

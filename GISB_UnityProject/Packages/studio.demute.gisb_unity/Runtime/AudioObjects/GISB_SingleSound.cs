@@ -14,6 +14,11 @@ namespace GISB.Runtime
         {
             return new GISB_SingleSoundPlayer(this);
         }
+
+        public override Dictionary<string, List<string>> ExtractParameters()
+        {
+            return new Dictionary<string, List<string>>();
+        }
     }
 }
 
