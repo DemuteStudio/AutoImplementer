@@ -51,7 +51,7 @@ namespace GISB.Editor
             }
         }
 
-        private static void ImportFromJSON(string path, GISB_Bank bank, bool webUrl)
+        public static void ImportFromJSON(string path, GISB_Bank bank, bool webUrl)
         {
             string folderPath = Path.GetDirectoryName(path);
             JsonSerializerSettings settings = new JsonSerializerSettings
