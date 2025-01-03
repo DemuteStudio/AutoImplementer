@@ -32,15 +32,20 @@ namespace GISB.Editor
             {
                 if (GUILayout.Button(bankPath))
                 {
-                    GISB_Bank bankAsset = ScriptableObject.CreateInstance<GISB_Bank>();
-                    string bankURL = GISB_EditorSettings.LoadOrDefault().JSONImportAddress + bankPath + ".json";
-                    GISB_BankEditor.ImportFromJSON(bankURL, bankAsset, true);
                     string eventAssetsFolder = "Assets/GISB/Banks/";
                     if (!Directory.Exists(eventAssetsFolder))
                     {
                         Directory.CreateDirectory(eventAssetsFolder);
                     }
-                    AssetDatabase.CreateAsset(bankAsset, eventAssetsFolder + bankPath + ".asset");
+                    GISB_Bank bankAsset = AssetDatabase.LoadAssetAtPath<GISB_Bank>(eventAssetsFolder + bankPath + ".asset");
+                    if (bankAsset == null)
+                    {
+                        bankAsset = ScriptableObject.CreateInstance<GISB_Bank>();
+                        AssetDatabase.CreateAsset(bankAsset, eventAssetsFolder + bankPath + ".asset");
+                    }
+                    string bankURL = GISB_EditorSettings.LoadOrDefault().JSONImportAddress + bankPath + ".json";
+                    GISB_BankEditor.ImportFromJSON(bankURL, bankAsset, true);
+                    AssetDatabase.SaveAssetIfDirty(bankAsset);
                 }
             }
         }

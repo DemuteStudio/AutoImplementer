@@ -120,14 +120,19 @@ namespace GISB.Editor
                 {
                     string filename = (string)reader.Value;
                     string path = JsonDirectory + "/Events/" + filename + ".json";
-                    GISB_Event gisbEvent = ScriptableObject.CreateInstance<GISB_Event>();
-                    GISB_EventEditor.ImportFromJSON(path, gisbEvent, WebURL);
                     string eventAssetsFolder = "Assets/GISB/Events/";
                     if (!Directory.Exists(eventAssetsFolder))
                     {
                         Directory.CreateDirectory(eventAssetsFolder);
                     }
-                    AssetDatabase.CreateAsset(gisbEvent, eventAssetsFolder + filename + ".asset");
+                    GISB_Event gisbEvent = AssetDatabase.LoadAssetAtPath<GISB_Event>(eventAssetsFolder + filename + ".asset");
+                    if(gisbEvent == null)
+                    {
+                        gisbEvent = ScriptableObject.CreateInstance<GISB_Event>();
+                        AssetDatabase.CreateAsset(gisbEvent, eventAssetsFolder + filename + ".asset");
+                    }
+                    GISB_EventEditor.ImportFromJSON(path, gisbEvent, WebURL);
+                    AssetDatabase.SaveAssetIfDirty(gisbEvent);
                     events.Add(gisbEvent);
                 }
                 if(reader.TokenType == JsonToken.EndArray)
