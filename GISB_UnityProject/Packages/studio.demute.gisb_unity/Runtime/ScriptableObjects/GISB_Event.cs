@@ -7,7 +7,7 @@ using UnityEngine;
 namespace GISB.Runtime
 {
     [CreateAssetMenu(fileName = "New GISB Event", menuName = "GISB/Event")]
-    public class GISB_Event : ScriptableObject
+    public class GISB_Event : GISB_Playable
     {
         [SerializeReference, SR, JsonProperty(Order = 2)]
         public GISB_AudioObjectBase rootAudioObject;
@@ -17,10 +17,9 @@ namespace GISB.Runtime
             return rootAudioObject.GetPlayer();
         }
 
-        [ExecuteInEditMode]
-        public void PlayInEditor()
+        public override GISB_Event GetEvent(string eventName)
         {
-
+            return this;
         }
     }
 }

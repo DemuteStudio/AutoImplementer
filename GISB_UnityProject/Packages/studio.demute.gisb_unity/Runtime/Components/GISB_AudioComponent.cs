@@ -8,18 +8,20 @@ namespace GISB.Runtime
 {
     public class GISB_AudioComponent : MonoBehaviour
     {
-        public GISB_Event associatedEvent;
+        public GISB_Playable associatedPlayable;
         public Dictionary<string, string> activeParameters = new Dictionary<string, string>();
         
         public Dictionary<GISB_Event, GISB_EventInstance> activeEventInstances = new Dictionary<GISB_Event, GISB_EventInstance>();
 
-        public void PlayEvent()
+        public GISB_EventInstance PlayEvent()
         {
-            PlayEvent(associatedEvent);
+            return PlayEvent(associatedPlayable.GetEvent(""));
         }
         
         public GISB_EventInstance PlayEvent(GISB_Event eventToPlay)
         {
+            if(!eventToPlay) return null;
+
             if(!activeEventInstances.ContainsKey(eventToPlay) || activeEventInstances[eventToPlay] == null)
             {
                 GameObject newEventInstanceObject = new GameObject(eventToPlay.name);
@@ -31,6 +33,12 @@ namespace GISB.Runtime
 
             activeEventInstances[eventToPlay].Play(activeParameters);
             return activeEventInstances[eventToPlay];
+        }
+        
+        public GISB_EventInstance PlayEvent(string eventName)
+        {
+            GISB_Event eventToPlay = associatedPlayable.GetEvent(eventName);
+            return PlayEvent(eventToPlay);
         }
 
     }
