@@ -22,6 +22,10 @@ namespace GISB.Runtime
             Dictionary<string, List<string>> parameters = new Dictionary<string, List<string>>();
             foreach (GISB_AudioObjectBase audioObject in RandomPlaylist)
             {
+                if(audioObject == null)
+                {
+                    continue;
+                }
                 Dictionary<string, List<string>> extractedParameters = audioObject.ExtractParameters();
                 foreach (KeyValuePair<string, List<string>> extractedParameter in extractedParameters)
                 {

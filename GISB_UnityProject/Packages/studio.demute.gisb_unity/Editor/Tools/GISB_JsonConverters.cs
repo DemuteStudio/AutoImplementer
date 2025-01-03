@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using GISB.Runtime;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
@@ -51,6 +52,66 @@ namespace GISB.Editor
                 AssetDatabase.Refresh();
             }
             return AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+        }
+    }
+
+    public class GISB_EventRefJsonConverter : Newtonsoft.Json.JsonConverter<List<GISB_Event>>
+    {
+        public string JsonDirectory { get; set; }
+        
+        public GISB_EventRefJsonConverter(string jsonDirectory)
+        {
+            JsonDirectory = jsonDirectory;
+        }
+        public override void WriteJson(JsonWriter writer, List<GISB_Event> value, JsonSerializer serializer)
+        {
+            writer.WriteStartArray();
+            foreach (GISB_Event gisbEvent in value)
+            {
+                writer.WriteValue(gisbEvent.name);
+            }
+            writer.WriteEndArray();
+            
+            string folderPath = JsonDirectory + "/Events";
+            if(!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            foreach (GISB_Event gisbEvent in value)
+            {
+                GISB_EventEditor.ExportToJSON(folderPath + "/" + gisbEvent.name + ".json", gisbEvent);
+            }
+        }
+
+        public override List<GISB_Event> ReadJson(JsonReader reader, Type objectType, List<GISB_Event> existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            List<GISB_Event> events = new List<GISB_Event>();
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.String)
+                {
+                    string filename = (string)reader.Value;
+                    string path = JsonDirectory + "/Events/" + filename + ".json";
+                    if (File.Exists(path))
+                    {
+                        GISB_Event gisbEvent = ScriptableObject.CreateInstance<GISB_Event>();
+                        GISB_EventEditor.ImportFromJSON(path, gisbEvent);
+                        string eventAssetsFolder = "Assets/GISB/Events/";
+                        if (!Directory.Exists(eventAssetsFolder))
+                        {
+                            Directory.CreateDirectory(eventAssetsFolder);
+                        }
+                        AssetDatabase.CreateAsset(gisbEvent, eventAssetsFolder + filename + ".asset");
+                        events.Add(gisbEvent);
+                    }
+                }
+                if(reader.TokenType == JsonToken.EndArray)
+                {
+                    break;
+                }
+            }
+            return events;
         }
     }
 }

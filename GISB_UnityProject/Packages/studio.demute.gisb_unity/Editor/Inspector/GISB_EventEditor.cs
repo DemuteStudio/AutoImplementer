@@ -26,14 +26,7 @@ namespace GISB.Editor
                 string path = EditorUtility.SaveFilePanel("Save GISB Event", Application.dataPath, target.name, "json");
                 if (path.Length != 0)
                 {
-                    string folderPath = Path.GetDirectoryName(path);
-                    JsonSerializerSettings settings = new JsonSerializerSettings
-                    {
-                        TypeNameHandling = TypeNameHandling.Auto,
-                        Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
-                    };
-                    string json = JsonConvert.SerializeObject(gisbEvent, Formatting.Indented, settings);
-                    System.IO.File.WriteAllText(path, json);
+                    ExportToJSON(path, gisbEvent);
                 }
             }
 
@@ -42,17 +35,7 @@ namespace GISB.Editor
                 string path = EditorUtility.OpenFilePanel("Import GISB Event", Application.dataPath, "json");
                 if(path.Length != 0)
                 {
-                    string folderPath = Path.GetDirectoryName(path);
-                    JsonSerializerSettings settings = new JsonSerializerSettings
-                    {
-                        TypeNameHandling = TypeNameHandling.Auto,
-                        Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
-                    };
-                    string json = System.IO.File.ReadAllText(path);
-                    JsonConvert.PopulateObject(json, target, settings);
-                    EditorUtility.SetDirty(target);
-                    //Auto save asset
-                    AssetDatabase.SaveAssetIfDirty(target);
+                    ImportFromJSON(path, gisbEvent);
                 }
             }
             
@@ -70,31 +53,62 @@ namespace GISB.Editor
                 editorAudioComponent.PlayEvent(gisbEvent);
             }
 
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            Dictionary<string, List<string>> parameters = gisbEvent.rootAudioObject.ExtractParameters();
-            foreach (KeyValuePair<string, List<string>> parameter in parameters)
+            if(gisbEvent.rootAudioObject != null)
             {
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(parameter.Key);
-                //Make dropdown for each possible value
-                string[] values = parameter.Value.ToArray();
-                if(editorAudioComponent.activeParameters.ContainsKey(parameter.Key) == false)
+                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+                Dictionary<string, List<string>> parameters = gisbEvent.rootAudioObject.ExtractParameters();
+                foreach (KeyValuePair<string, List<string>> parameter in parameters)
                 {
-                    editorAudioComponent.activeParameters.Add(parameter.Key, values[0]);
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField(parameter.Key);
+                    //Make dropdown for each possible value
+                    string[] values = parameter.Value.ToArray();
+                    if (values.Length > 0)
+                    {
+                        if(editorAudioComponent.activeParameters.ContainsKey(parameter.Key) == false)
+                        {
+                            editorAudioComponent.activeParameters.Add(parameter.Key, values[0]);
+                        }
+                        int selectedIndex = Array.IndexOf(values, editorAudioComponent.activeParameters[parameter.Key]);
+                        int newSelectedIndex = EditorGUILayout.Popup(selectedIndex, values);
+                        if (newSelectedIndex != selectedIndex)
+                        {
+                            editorAudioComponent.activeParameters[parameter.Key] = values[newSelectedIndex];
+                        }
+                    }
+                    EditorGUILayout.EndHorizontal();
                 }
-                int selectedIndex = Array.IndexOf(values, editorAudioComponent.activeParameters[parameter.Key]);
-                int newSelectedIndex = EditorGUILayout.Popup(selectedIndex, values);
-                if (newSelectedIndex != selectedIndex)
-                {
-                    editorAudioComponent.activeParameters[parameter.Key] = values[newSelectedIndex];
-                }
-                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndScrollView();
             }
-            EditorGUILayout.EndScrollView();
-
         }
-        
-        
+
+        public static void ImportFromJSON(string path, GISB_Event gisbEvent)
+        {
+            string folderPath = Path.GetDirectoryName(path);
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
+            };
+            string json = System.IO.File.ReadAllText(path);
+            JsonConvert.PopulateObject(json, gisbEvent, settings);
+            EditorUtility.SetDirty(gisbEvent);
+            //Auto save asset
+            AssetDatabase.SaveAssetIfDirty(gisbEvent);
+        }
+
+        public static void ExportToJSON(string path, GISB_Event gisbEvent)
+        {
+            string folderPath = Path.GetDirectoryName(path);
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
+            };
+            string json = JsonConvert.SerializeObject(gisbEvent, Formatting.Indented, settings);
+            System.IO.File.WriteAllText(path, json);
+        }
+
 
         public void OnDestroy()
         {
