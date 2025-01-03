@@ -2,20 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 
 namespace GISB.Runtime
 {
     public class GISB_AudioComponent : MonoBehaviour
     {
-        public GISB_Playable associatedPlayable;
+        [FormerlySerializedAs("associatedPlayable")] public GISB_Asset associatedAsset;
         public Dictionary<string, string> activeParameters = new Dictionary<string, string>();
         
         public Dictionary<GISB_Event, GISB_EventInstance> activeEventInstances = new Dictionary<GISB_Event, GISB_EventInstance>();
 
         public GISB_EventInstance PlayEvent()
         {
-            return PlayEvent(associatedPlayable.GetEvent(""));
+            return PlayEvent(associatedAsset.GetEvent(""));
         }
         
         public GISB_EventInstance PlayEvent(GISB_Event eventToPlay)
@@ -37,7 +38,7 @@ namespace GISB.Runtime
         
         public GISB_EventInstance PlayEvent(string eventName)
         {
-            GISB_Event eventToPlay = associatedPlayable.GetEvent(eventName);
+            GISB_Event eventToPlay = associatedAsset.GetEvent(eventName);
             return PlayEvent(eventToPlay);
         }
 

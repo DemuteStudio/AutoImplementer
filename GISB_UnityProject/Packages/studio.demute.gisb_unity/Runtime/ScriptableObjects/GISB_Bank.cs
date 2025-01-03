@@ -6,7 +6,7 @@ using UnityEngine;
 namespace GISB.Runtime
 {
     [CreateAssetMenu(fileName = "New GISB Bank", menuName = "GISB/Bank")]
-    public class GISB_Bank : GISB_Playable
+    public class GISB_Bank : GISB_Asset
     {
         [JsonProperty(Order = 2)]
         public List<GISB_Event> events;

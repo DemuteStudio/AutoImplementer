@@ -6,6 +6,7 @@ using GISB.Runtime;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace GISB.Editor
 {
@@ -35,8 +36,14 @@ namespace GISB.Editor
                 string path = EditorUtility.OpenFilePanel("Import GISB Event", Application.dataPath, "json");
                 if(path.Length != 0)
                 {
-                    ImportFromJSON(path, gisbEvent);
+                    ImportFromJSON(path, gisbEvent, false);
                 }
+            }
+
+            if (GUILayout.Button("Download from Server"))
+            {
+                string eventPath = GISB_EditorSettings.LoadOrDefault().JSONImportAddress + "/Events/" + gisbEvent.name + ".json";
+                ImportFromJSON(eventPath, gisbEvent, true);
             }
             
             EditorGUILayout.Space();
@@ -82,15 +89,37 @@ namespace GISB.Editor
             }
         }
 
-        public static void ImportFromJSON(string path, GISB_Event gisbEvent)
+        public static void ImportFromJSON(string path, GISB_Event gisbEvent, bool webUrl)
         {
             string folderPath = Path.GetDirectoryName(path);
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
-                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
+                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath, webUrl) }
             };
-            string json = System.IO.File.ReadAllText(path);
+            string json = "";
+            if (webUrl)
+            {
+                using (UnityWebRequest webRequest = UnityWebRequest.Get(path))
+                {
+                    webRequest.SendWebRequest();
+                    while (!webRequest.isDone)
+                    {
+                        EditorUtility.DisplayProgressBar("Downloading", path, webRequest.downloadProgress);
+                    }
+                    EditorUtility.ClearProgressBar();
+                    if (webRequest.error != null)
+                    {
+                        Debug.LogError(webRequest.error);
+                        return;
+                    }
+                    json = webRequest.downloadHandler.text;
+                }
+            }
+            else
+            {
+                json = System.IO.File.ReadAllText(path);
+            }
             JsonConvert.PopulateObject(json, gisbEvent, settings);
             EditorUtility.SetDirty(gisbEvent);
             //Auto save asset
@@ -103,7 +132,7 @@ namespace GISB.Editor
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
-                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath) }
+                Converters = new List<JsonConverter> { new GISB_AudioClipJsonConverter(folderPath, false) }
             };
             string json = JsonConvert.SerializeObject(gisbEvent, Formatting.Indented, settings);
             System.IO.File.WriteAllText(path, json);

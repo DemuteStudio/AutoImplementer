@@ -7,7 +7,7 @@ using UnityEngine;
 namespace GISB.Runtime
 {
     [CreateAssetMenu(fileName = "New GISB Event", menuName = "GISB/Event")]
-    public class GISB_Event : GISB_Playable
+    public class GISB_Event : GISB_Asset
     {
         [SerializeReference, SR, JsonProperty(Order = 2)]
         public GISB_AudioObjectBase rootAudioObject;

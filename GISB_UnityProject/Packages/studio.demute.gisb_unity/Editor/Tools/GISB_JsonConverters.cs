@@ -6,6 +6,7 @@ using GISB.Runtime;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace GISB.Editor
 {
@@ -13,9 +14,12 @@ namespace GISB.Editor
     {
         public string JsonDirectory { get; set; }
         
-        public GISB_AudioClipJsonConverter(string jsonDirectory)
+        public bool WebURL { get; set; }
+        
+        public GISB_AudioClipJsonConverter(string jsonDirectory, bool webURL)
         {
             JsonDirectory = jsonDirectory;
+            WebURL = webURL;
         }
         
         public override void WriteJson(JsonWriter writer, AudioClip value, JsonSerializer serializer)
@@ -48,20 +52,43 @@ namespace GISB.Editor
             string assetPath = "Assets/GISB/Audio Files/" + filename;
             if (!File.Exists(assetPath))
             {
-                File.Copy(path, assetPath);
+                if (!WebURL)
+                {
+                    File.Copy(path, assetPath);
+                }
+                else
+                {
+                    using (UnityWebRequest www = UnityWebRequest.Get(path))
+                    {
+                        www.downloadHandler = new DownloadHandlerFile(assetPath);
+                        www.SendWebRequest();
+                        while (!www.isDone)
+                        {
+                            EditorUtility.DisplayProgressBar("Downloading", path, www.downloadProgress);
+                        }
+                        EditorUtility.ClearProgressBar();
+                        if (www.error != null)
+                        {
+                            Debug.LogError(www.error);
+                        }
+                    }
+                }
+                
                 AssetDatabase.Refresh();
             }
             return AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
         }
     }
 
-    public class GISB_EventRefJsonConverter : Newtonsoft.Json.JsonConverter<List<GISB_Event>>
+    public class GISB_EventRefJsonConverter : JsonConverter<List<GISB_Event>>
     {
         public string JsonDirectory { get; set; }
         
-        public GISB_EventRefJsonConverter(string jsonDirectory)
+        public bool WebURL { get; set; }
+        public GISB_EventRefJsonConverter(string jsonDirectory, bool webURL)
         {
             JsonDirectory = jsonDirectory;
+            WebURL = webURL;
         }
         public override void WriteJson(JsonWriter writer, List<GISB_Event> value, JsonSerializer serializer)
         {
@@ -93,18 +120,15 @@ namespace GISB.Editor
                 {
                     string filename = (string)reader.Value;
                     string path = JsonDirectory + "/Events/" + filename + ".json";
-                    if (File.Exists(path))
+                    GISB_Event gisbEvent = ScriptableObject.CreateInstance<GISB_Event>();
+                    GISB_EventEditor.ImportFromJSON(path, gisbEvent, WebURL);
+                    string eventAssetsFolder = "Assets/GISB/Events/";
+                    if (!Directory.Exists(eventAssetsFolder))
                     {
-                        GISB_Event gisbEvent = ScriptableObject.CreateInstance<GISB_Event>();
-                        GISB_EventEditor.ImportFromJSON(path, gisbEvent);
-                        string eventAssetsFolder = "Assets/GISB/Events/";
-                        if (!Directory.Exists(eventAssetsFolder))
-                        {
-                            Directory.CreateDirectory(eventAssetsFolder);
-                        }
-                        AssetDatabase.CreateAsset(gisbEvent, eventAssetsFolder + filename + ".asset");
-                        events.Add(gisbEvent);
+                        Directory.CreateDirectory(eventAssetsFolder);
                     }
+                    AssetDatabase.CreateAsset(gisbEvent, eventAssetsFolder + filename + ".asset");
+                    events.Add(gisbEvent);
                 }
                 if(reader.TokenType == JsonToken.EndArray)
                 {

@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using GISB.Runtime;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace GISB.Editor
 {
@@ -26,7 +28,7 @@ namespace GISB.Editor
                     JsonSerializerSettings settings = new JsonSerializerSettings
                     {
                         TypeNameHandling = TypeNameHandling.Auto,
-                        Converters = new List<JsonConverter> { new GISB_EventRefJsonConverter(folderPath) }
+                        Converters = new List<JsonConverter> { new GISB_EventRefJsonConverter(folderPath, false) }
                     };
                     string json = JsonConvert.SerializeObject(bank, Formatting.Indented, settings);
                     System.IO.File.WriteAllText(path, json);
@@ -38,19 +40,52 @@ namespace GISB.Editor
                 string path = EditorUtility.OpenFilePanel("Import GISB Bank", Application.dataPath, "json");
                 if (path.Length != 0)
                 {
-                    string folderPath = Path.GetDirectoryName(path);
-                    JsonSerializerSettings settings = new JsonSerializerSettings
-                    {
-                        TypeNameHandling = TypeNameHandling.Auto,
-                        Converters = new List<JsonConverter> { new GISB_EventRefJsonConverter(folderPath) }
-                    };
-                    string json = System.IO.File.ReadAllText(path);
-                    JsonConvert.PopulateObject(json, bank, settings);
-                    EditorUtility.SetDirty(bank);
-                    //Auto save asset
-                    AssetDatabase.SaveAssetIfDirty(bank);
+                    ImportFromJSON(path, bank, false);
                 }
             }
+
+            if (GUILayout.Button("Download from server"))
+            {
+                string eventPath = GISB_EditorSettings.LoadOrDefault().JSONImportAddress + bank.name + ".json";
+                ImportFromJSON(eventPath, bank, true);
+            }
+        }
+
+        private static void ImportFromJSON(string path, GISB_Bank bank, bool webUrl)
+        {
+            string folderPath = Path.GetDirectoryName(path);
+            JsonSerializerSettings settings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                Converters = new List<JsonConverter> { new GISB_EventRefJsonConverter(folderPath, webUrl) }
+            };
+            string json = "";
+            if (webUrl)
+            {
+                using (UnityWebRequest webRequest = UnityWebRequest.Get(path))
+                {
+                    webRequest.SendWebRequest();
+                    while (!webRequest.isDone)
+                    {
+                        EditorUtility.DisplayProgressBar("Downloading", path, webRequest.downloadProgress);
+                    }
+                    EditorUtility.ClearProgressBar();
+                    if (webRequest.error != null)
+                    {
+                        Debug.LogError(webRequest.error);
+                        return;
+                    }
+                    json = webRequest.downloadHandler.text;
+                }
+            }
+            else
+            {
+                json = System.IO.File.ReadAllText(path);
+            }
+            JsonConvert.PopulateObject(json, bank, settings);
+            EditorUtility.SetDirty(bank);
+            //Auto save asset
+            AssetDatabase.SaveAssetIfDirty(bank);
         }
     }
 }
