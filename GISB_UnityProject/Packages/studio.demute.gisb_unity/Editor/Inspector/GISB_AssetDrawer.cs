@@ -20,6 +20,8 @@ namespace GISB.Editor
             {
                 float baseHeight = GetBaseHeight();
 
+                GISB_Asset gisbAsset = property.objectReferenceValue as GISB_Asset;
+                
                 Rect headerRect = position;
                 headerRect.width = EditorGUIUtility.labelWidth;
                 headerRect.height = baseHeight;
@@ -47,7 +49,81 @@ namespace GISB.Editor
                     windowRect.width = Mathf.Max(windowRect.width, 300f);
                     eventBrowser.ShowAsDropDown(windowRect, new Vector2(windowRect.width, 400));
                 }
+                
+                if (property.isExpanded && gisbAsset)
+                {
+                    float labelY = headerRect.y + baseHeight;
+                    
+                    using (new EditorGUI.IndentLevelScope())
+                    {
+                        Rect labelRect = EditorGUI.IndentedRect(headerRect);
+                        labelRect.y = labelY;
+
+                        Rect valueRect = labelRect;
+                        valueRect.xMin = labelRect.xMax;
+                        valueRect.xMax = position.xMax;
+                        
+                        GUI.Label(labelRect, new GUIContent("Events"), EditorStyles.boldLabel);
+                        labelRect.y += baseHeight;
+                        valueRect.y += baseHeight;
+                        
+                        //Get all events in the bank
+                        List<GISB_Event> events = gisbAsset.GetAllEvents();
+                        foreach (GISB_Event gisbEvent in events)
+                        {
+                            GUI.Label(valueRect, new GUIContent(gisbEvent.name));
+                            labelRect.y += baseHeight;
+                            valueRect.y += baseHeight;
+                        }
+                        
+                        GUI.Label(labelRect, new GUIContent("Parameters"), EditorStyles.boldLabel);
+                        labelRect.y += baseHeight;
+                        valueRect.y += baseHeight;
+                        
+                        //Get all parameters in the bank
+                        Dictionary<string, List<string>> parameters = gisbAsset.ExtractParameters();
+                        foreach (KeyValuePair<string, List<string>> parameter in parameters)
+                        {
+                            GUI.Label(labelRect, new GUIContent(parameter.Key));
+
+                            foreach (string value in parameter.Value)
+                            {
+                                GUI.Label(valueRect, new GUIContent(value));
+                                labelRect.y += baseHeight;
+                                valueRect.y += baseHeight;
+                            }
+                        }
+                    }
+                }
             }
+        }
+        
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            float baseHeight = GetBaseHeight();
+
+            float height;
+
+            if (property.isExpanded)
+            {
+                height = baseHeight * 3;
+                GISB_Asset gisbAsset = property.objectReferenceValue as GISB_Asset;
+                if (gisbAsset)
+                {
+                    height += baseHeight * (gisbAsset.GetAllEvents().Count);
+                    Dictionary<string, List<string>> parameters = gisbAsset.ExtractParameters();
+                    foreach (KeyValuePair<string,List<string>> parameter in parameters)
+                    {
+                        height += baseHeight * (parameter.Value.Count);
+                    }
+                }
+            }
+            else
+            {
+                height = baseHeight;
+            }
+
+            return height;
         }
     }
 }

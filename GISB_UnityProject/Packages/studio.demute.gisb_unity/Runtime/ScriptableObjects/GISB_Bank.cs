@@ -22,6 +22,33 @@ namespace GISB.Runtime
             }
             return null;
         }
+
+        public override List<GISB_Event> GetAllEvents()
+        {
+            return events;
+        }
+
+        public override Dictionary<string, List<string>> ExtractParameters()
+        {
+            Dictionary<string, List<string>> parameters = new Dictionary<string, List<string>>();
+            foreach (GISB_Event gisbEvent in events)
+            {
+                if(gisbEvent == null)
+                {
+                    continue;
+                }
+                Dictionary<string, List<string>> extractedParameters = gisbEvent.ExtractParameters();
+                foreach (KeyValuePair<string, List<string>> extractedParameter in extractedParameters)
+                {
+                    if (!parameters.ContainsKey(extractedParameter.Key))
+                    {
+                        parameters.Add(extractedParameter.Key, new List<string>());
+                    }
+                    parameters[extractedParameter.Key].AddRange(extractedParameter.Value);
+                }
+            }
+            return parameters;
+        }
     }
 }
 

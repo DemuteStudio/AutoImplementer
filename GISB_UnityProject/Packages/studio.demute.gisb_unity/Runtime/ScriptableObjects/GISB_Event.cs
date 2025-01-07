@@ -21,6 +21,16 @@ namespace GISB.Runtime
         {
             return this;
         }
+
+        public override List<GISB_Event> GetAllEvents()
+        {
+            return new List<GISB_Event> {this};
+        }
+
+        public override Dictionary<string, List<string>> ExtractParameters()
+        {
+            return rootAudioObject.ExtractParameters();
+        }
     }
 }
 
