@@ -13,6 +13,8 @@ namespace GISB.Editor
     {
         public List<string> banks = new List<string>();
         
+        private SerializedProperty outputProperty;
+        
         [MenuItem("Window/GISB/Bank Browser")]
         public static void ShowWindow()
         {
@@ -20,6 +22,12 @@ namespace GISB.Editor
             window.titleContent = new GUIContent("GISB Bank Browser");
             window.Show();
         }
+        
+        public void ChooseEvent(SerializedProperty property)
+        {
+            outputProperty = property;
+        }
+        
 
         private void OnGUI()
         {
@@ -46,6 +54,12 @@ namespace GISB.Editor
                     string bankURL = GISB_EditorSettings.LoadOrDefault().JSONImportAddress + bankPath + ".json";
                     GISB_BankEditor.ImportFromJSON(bankURL, bankAsset, true);
                     AssetDatabase.SaveAssetIfDirty(bankAsset);
+                    if(outputProperty != null)
+                    {
+                        outputProperty.objectReferenceValue = bankAsset;
+                        outputProperty.serializedObject.ApplyModifiedProperties();
+                    }
+                    Close();
                 }
             }
         }
