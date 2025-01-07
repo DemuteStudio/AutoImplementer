@@ -42,6 +42,14 @@ namespace GISB.Runtime
             return PlayEvent(eventToPlay);
         }
 
+        public void SetParameter(string parameterName, string parameterValue)
+        {
+            activeParameters[parameterName] = parameterValue;
+            foreach (KeyValuePair<GISB_Event, GISB_EventInstance> activeEventInstance in activeEventInstances)
+            {
+                activeEventInstance.Value.UpdateParameters(activeParameters);
+            }
+        }
     }
 }
 

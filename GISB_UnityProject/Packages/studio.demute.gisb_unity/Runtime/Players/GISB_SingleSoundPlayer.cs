@@ -20,5 +20,10 @@ namespace GISB.Runtime
             audioSource.clip = audioObject.soundClip;
             audioSource.Play();
         }
+
+        public override void UpdateParameters(Dictionary<string, string> activeParameters)
+        {
+            //Do nothing
+        }
     }
 }

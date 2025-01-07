@@ -45,5 +45,13 @@ namespace GISB.Runtime
                 instantiatedPlayers[switchValue].Play(activeParameters, gisbEventInstance);
             }
         }
+
+        public override void UpdateParameters(Dictionary<string, string> activeParameters)
+        {
+            foreach (KeyValuePair<string, GISB_AudioObjectPlayer> instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.Value.UpdateParameters(activeParameters);
+            }
+        }
     }
 }

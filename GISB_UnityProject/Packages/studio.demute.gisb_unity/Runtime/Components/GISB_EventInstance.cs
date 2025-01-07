@@ -21,6 +21,14 @@ public class GISB_EventInstance : MonoBehaviour
             rootPlayerInstance.Play(activeParameters, this);
         }
     }
+    
+    public void UpdateParameters(Dictionary<string, string> activeParameters)
+    {
+        if(rootPlayerInstance != null)
+        {
+            rootPlayerInstance.UpdateParameters(activeParameters);
+        }
+    }
 
     public AudioSource GetAudioVoice()
     {

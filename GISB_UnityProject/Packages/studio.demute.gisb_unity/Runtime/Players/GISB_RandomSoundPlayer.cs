@@ -36,6 +36,14 @@ namespace GISB.Runtime
             }
         }
 
+        public override void UpdateParameters(Dictionary<string, string> activeParameters)
+        {
+            foreach (GISB_AudioObjectPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.UpdateParameters(activeParameters);
+            }
+        }
+
         private int GetRandomIndex()
         {
             int index = indexes[Random.Range(0, indexes.Count)];
