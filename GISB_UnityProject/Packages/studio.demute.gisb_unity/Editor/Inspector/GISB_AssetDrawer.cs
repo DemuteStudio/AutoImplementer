@@ -61,11 +61,16 @@ namespace GISB.Editor
 
                         Rect valueRect = labelRect;
                         valueRect.xMin = labelRect.xMax;
-                        valueRect.xMax = position.xMax;
+                        valueRect.width = labelRect.width;
+
+                        Rect subValueRect = valueRect;
+                        subValueRect.xMin = valueRect.xMax;
+                        subValueRect.xMax = position.xMax;
                         
                         GUI.Label(labelRect, new GUIContent("Events"), EditorStyles.boldLabel);
                         labelRect.y += baseHeight;
                         valueRect.y += baseHeight;
+                        subValueRect.y += baseHeight;
                         
                         //Get all events in the bank
                         List<GISB_Event> events = gisbAsset.GetAllEvents();
@@ -74,24 +79,31 @@ namespace GISB.Editor
                             GUI.Label(valueRect, new GUIContent(gisbEvent.name));
                             labelRect.y += baseHeight;
                             valueRect.y += baseHeight;
+                            subValueRect.y += baseHeight;
                         }
                         
                         GUI.Label(labelRect, new GUIContent("Parameters"), EditorStyles.boldLabel);
                         labelRect.y += baseHeight;
                         valueRect.y += baseHeight;
+                        subValueRect.y += baseHeight;
                         
                         //Get all parameters in the bank
                         Dictionary<string, List<string>> parameters = gisbAsset.ExtractParameters();
                         foreach (KeyValuePair<string, List<string>> parameter in parameters)
                         {
-                            GUI.Label(labelRect, new GUIContent(parameter.Key));
+                            GUI.Label(valueRect, new GUIContent(parameter.Key));
 
                             foreach (string value in parameter.Value)
                             {
-                                GUI.Label(valueRect, new GUIContent(value));
+                                GUI.Label(subValueRect, new GUIContent(value));
                                 labelRect.y += baseHeight;
                                 valueRect.y += baseHeight;
+                                subValueRect.y += baseHeight;
                             }
+                            
+                            labelRect.y += baseHeight;
+                            valueRect.y += baseHeight;
+                            subValueRect.y += baseHeight;
                         }
                     }
                 }
@@ -114,7 +126,7 @@ namespace GISB.Editor
                     Dictionary<string, List<string>> parameters = gisbAsset.ExtractParameters();
                     foreach (KeyValuePair<string,List<string>> parameter in parameters)
                     {
-                        height += baseHeight * (parameter.Value.Count);
+                        height += baseHeight * (parameter.Value.Count + 1);
                     }
                 }
             }
