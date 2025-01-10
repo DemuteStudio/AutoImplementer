@@ -18,6 +18,7 @@ namespace GISB.Runtime
             AudioSource audioSource = gisbEventInstance.GetAudioVoice();
             
             audioSource.clip = audioObject.soundClip;
+            audioSource.loop = audioObject.loop;
             audioSource.Play();
         }
 

@@ -49,6 +49,20 @@ namespace GISB.Runtime
                 activeEventInstance.Value.UpdateParameters(activeParameters);
             }
         }
+        
+        public void StopEvent(GISB_Event eventToStop)
+        {
+            if(activeEventInstances.ContainsKey(eventToStop) && activeEventInstances[eventToStop] != null)
+            {
+                activeEventInstances[eventToStop].Stop();
+            }
+        }
+        
+        public void StopEvent(string eventName)
+        {
+            GISB_Event eventToStop = associatedAsset.GetEvent(eventName);
+            StopEvent(eventToStop);
+        }
     }
 }
 

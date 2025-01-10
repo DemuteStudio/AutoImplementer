@@ -46,4 +46,12 @@ public class GISB_EventInstance : MonoBehaviour
         audioSources.Add(newAudioSource);
         return newAudioSource;
     }
+
+    public void Stop()
+    {
+        foreach (AudioSource audioSource in audioSources)
+        {
+            audioSource.Stop();
+        }
+    }
 }
