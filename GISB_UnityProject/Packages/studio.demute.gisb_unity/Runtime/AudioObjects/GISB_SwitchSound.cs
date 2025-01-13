@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
+    [SRName("Switch Sound")]
     public class GISB_SwitchSound : GISB_AudioObjectBase
     {
         [System.Serializable]

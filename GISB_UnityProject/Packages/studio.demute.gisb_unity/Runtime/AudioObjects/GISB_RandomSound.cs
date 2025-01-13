@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
+    [SRName("Random Sound")]
     public class GISB_RandomSound : GISB_AudioObjectBase
     {
         public int avoidLastPlayed = 0;

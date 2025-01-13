@@ -19,6 +19,20 @@ namespace GISB.Editor
             
             GISB_Bank bank = (GISB_Bank) target;
 
+            if (GUILayout.Button("Add new event"))
+            {
+                string bankPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(bank));
+                string path = EditorUtility.SaveFilePanelInProject("Save GISB Event", 
+                    "New Event", "asset", "Save new GISB Event", bankPath);
+                if (path.Length != 0)
+                {
+                    GISB_Event newEvent = ScriptableObject.CreateInstance<GISB_Event>();
+                    AssetDatabase.CreateAsset(newEvent, path);
+                    bank.events.Add(newEvent);
+                    EditorUtility.SetDirty(bank);
+                }
+            }
+            
             if (GUILayout.Button("Export to JSON"))
             {
                 string path = EditorUtility.SaveFilePanel("Save GISB Bank", Application.dataPath, target.name, "json");

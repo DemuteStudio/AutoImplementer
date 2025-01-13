@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using SerializeReferenceEditor;
 using UnityEngine;
 
 namespace GISB.Runtime
 {
+    [SRName("Single Sound")]
     public class GISB_SingleSound : GISB_AudioObjectBase
     {
         public AudioClip soundClip;
