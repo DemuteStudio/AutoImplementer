@@ -1,0 +1,25 @@
+{
+  "name": "Switches_Activate",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+    "avoidLastPlayed": 2,
+    "RandomPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Switch_Activated_01.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Switch_Activated_02.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Switch_Activated_03.ogg",
+        "loop": false
+      }
+    ]
+  }
+}

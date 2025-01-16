@@ -1,0 +1,20 @@
+{
+  "name": "MovingPlatforms_OneShot(Room 2)",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+    "avoidLastPlayed": 1,
+    "RandomPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Moving_Platforms_Room_2_One_Shot_01.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Moving_Platforms_Room_2_One_Shot_02.ogg",
+        "loop": false
+      }
+    ]
+  }
+}

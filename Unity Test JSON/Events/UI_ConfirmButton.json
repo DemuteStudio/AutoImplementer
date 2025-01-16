@@ -1,0 +1,9 @@
+{
+  "name": "UI_ConfirmButton",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Menu_Buttons_Confirm_01.ogg",
+    "loop": false
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Bank_WeaponAncientAlienStaff",
+  "hideFlags": 0,
+  "events": [
+    "WeaponAncientAlienStaff_Attack",
+    "WeaponAncientAlienStaff_Impact"
+  ]
+}

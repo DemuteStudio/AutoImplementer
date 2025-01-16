@@ -1,0 +1,12 @@
+{
+  "name": "Bank_CharacterGrunts",
+  "hideFlags": 0,
+  "events": [
+    "CharacterGrunts_Quips",
+    "CharacterGrunts_OnAttack",
+    "CharacterGrunts_OnDeath",
+    "CharacterGrunts_OnJump",
+    "CharacterGrunts_OnLand",
+    "CharacterGrunts_OnTakingDamage"
+  ]
+}

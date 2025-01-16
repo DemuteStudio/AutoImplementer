@@ -1,0 +1,377 @@
+{
+  "name": "CharacterMovement_Walk",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SwitchSound, Demute.GISB",
+    "ParameterName": "Material",
+    "DefaultValue": "Earth",
+    "SwitchCases": [
+      {
+        "parameterValue": "Earth",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 14,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_06.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_07.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_08.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_09.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_10.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_11.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_12.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_13.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_14.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Walk_15.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Grass",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 13,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_06.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_07.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_08.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_09.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_10.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_11.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_12.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_13.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Walk_14.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Puddle",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 19,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_06.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_07.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_08.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_09.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_10.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_11.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_12.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_13.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_14.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_15.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_16.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_17.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_18.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_19.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Walk_20.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Stone",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 16,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_06.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_07.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_08.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_09.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_10.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_11.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_12.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_13.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_14.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_15.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_16.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Walk_17.ogg",
+              "loop": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

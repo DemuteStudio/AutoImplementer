@@ -1,0 +1,8 @@
+{
+  "name": "Bank_Music",
+  "hideFlags": 0,
+  "events": [
+    "Music_Gameplay",
+    "Music_Combat"
+  ]
+}

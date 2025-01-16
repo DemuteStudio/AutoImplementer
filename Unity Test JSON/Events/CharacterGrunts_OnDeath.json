@@ -1,0 +1,60 @@
+{
+  "name": "CharacterGrunts_OnDeath",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+    "avoidLastPlayed": 9,
+    "RandomPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_01.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_02.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_03.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_04.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_05.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_06.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_07.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_08.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_09.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Death_10.ogg",
+        "loop": false
+      }
+    ]
+  }
+}

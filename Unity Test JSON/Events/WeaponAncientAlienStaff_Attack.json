@@ -1,0 +1,70 @@
+{
+  "name": "WeaponAncientAlienStaff_Attack",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+    "avoidLastPlayed": 11,
+    "RandomPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_01.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_02.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_03.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_04.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_05.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_06.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_07.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_08.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_09.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_10.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_11.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ancient_Alien_Staff_Swipe_Combo_1_12.ogg",
+        "loop": false
+      }
+    ]
+  }
+}

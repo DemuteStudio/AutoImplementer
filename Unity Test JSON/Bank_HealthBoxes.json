@@ -1,0 +1,8 @@
+{
+  "name": "Bank_HealthBoxes",
+  "hideFlags": 0,
+  "events": [
+    "HealthBoxes_Loop",
+    "HealthBoxes_Open"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Bank_Doors",
+  "hideFlags": 0,
+  "events": [
+    "Doors_Big",
+    "Doors_Small"
+  ]
+}

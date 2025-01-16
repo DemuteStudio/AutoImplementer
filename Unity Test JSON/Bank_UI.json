@@ -1,0 +1,11 @@
+{
+  "name": "Bank_UI",
+  "hideFlags": 0,
+  "events": [
+    "UI_MouseOver",
+    "UI_ConfirmButton",
+    "UI_BackButton",
+    "UI_StartGameButton",
+    "UI_ExitGameButton"
+  ]
+}

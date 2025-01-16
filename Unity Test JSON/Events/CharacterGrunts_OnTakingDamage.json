@@ -1,0 +1,105 @@
+{
+  "name": "CharacterGrunts_OnTakingDamage",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+    "avoidLastPlayed": 18,
+    "RandomPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_01.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_02.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_03.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_04.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_05.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_06.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_07.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_08.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_09.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_10.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_11.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_12.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_13.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_14.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_15.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_16.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_17.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_18.ogg",
+        "loop": false
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "Ellen_Emotes_Takes_Damage_19.ogg",
+        "loop": false
+      }
+    ]
+  }
+}

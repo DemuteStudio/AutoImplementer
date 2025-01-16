@@ -1,0 +1,9 @@
+{
+  "name": "KeyPickup_Pickup",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Key_Pickup_Weapon_Pickup_01.ogg",
+    "loop": false
+  }
+}

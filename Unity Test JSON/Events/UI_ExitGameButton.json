@@ -1,0 +1,9 @@
+{
+  "name": "UI_ExitGameButton",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Menu_Buttons_Exit_Game_01.ogg",
+    "loop": false
+  }
+}

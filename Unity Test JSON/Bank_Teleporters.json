@@ -1,0 +1,8 @@
+{
+  "name": "Bank_Teleporters",
+  "hideFlags": 0,
+  "events": [
+    "Teleporters_IdleLoop",
+    "Teleporters_Activate"
+  ]
+}

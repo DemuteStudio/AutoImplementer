@@ -1,0 +1,9 @@
+{
+  "name": "Bank_MovingPlatforms",
+  "hideFlags": 0,
+  "events": [
+    "MovingPlatforms_SingleLoop(Room 1)",
+    "MovingPlatforms_OneShot(Room 2)",
+    "MovingPlatforms_RandomLoop(Room 3)"
+  ]
+}

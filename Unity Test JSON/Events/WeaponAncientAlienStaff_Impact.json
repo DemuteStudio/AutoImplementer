@@ -1,0 +1,89 @@
+{
+  "name": "WeaponAncientAlienStaff_Impact",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SwitchSound, Demute.GISB",
+    "ParameterName": "BiomeType",
+    "DefaultValue": "Rubble",
+    "SwitchCases": [
+      {
+        "parameterValue": "Rubble",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 5,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Rubble_Impact_06.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Foliage",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 5,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_02.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_03.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_04.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_05.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ancient_Alien_Staff_Foliage_Impact_06.ogg",
+              "loop": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

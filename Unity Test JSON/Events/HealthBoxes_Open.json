@@ -1,0 +1,9 @@
+{
+  "name": "HealthBoxes_Open",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Key_Pickup_Health_Box_Open_01.ogg",
+    "loop": false
+  }
+}

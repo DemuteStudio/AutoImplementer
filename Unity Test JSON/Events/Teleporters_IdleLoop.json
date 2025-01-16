@@ -1,0 +1,9 @@
+{
+  "name": "Teleporters_IdleLoop",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Teleporter_Loop_Stereo_01.ogg",
+    "loop": true
+  }
+}

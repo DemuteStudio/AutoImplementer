@@ -1,0 +1,9 @@
+{
+  "name": "MovingPlatforms_SingleLoop(Room 1)",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Moving_Platforms_Room_1_Loop_01.ogg",
+    "loop": true
+  }
+}

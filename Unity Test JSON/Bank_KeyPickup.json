@@ -1,0 +1,8 @@
+{
+  "name": "Bank_KeyPickup",
+  "hideFlags": 0,
+  "events": [
+    "KeyPickup_IdleLoop",
+    "KeyPickup_Pickup"
+  ]
+}

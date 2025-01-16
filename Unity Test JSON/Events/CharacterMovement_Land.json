@@ -1,0 +1,127 @@
+{
+  "name": "CharacterMovement_Land",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SwitchSound, Demute.GISB",
+    "ParameterName": "Material",
+    "DefaultValue": "Earth",
+    "SwitchCases": [
+      {
+        "parameterValue": "Earth",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 3,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Land_Idle_Land_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Land_Run_Forward_Landing_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Land_Run_Forward_Landing_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Earth_Land_Walk_Forward_Landing_01.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Grass",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 3,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Land_Idle_Land_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Land_Run_Forward_Landing_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Land_Run_Forward_Landing_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Grass_Land_Walk_Forward_Landing_01.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Puddle",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 3,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Land_Idle_Land_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Land_Run_Forward_Landing_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Land_Run_Forward_Landing_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Puddle_Land_Walk_Forward_Landing_01.ogg",
+              "loop": false
+            }
+          ]
+        }
+      },
+      {
+        "parameterValue": "Stone",
+        "audioObject": {
+          "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+          "avoidLastPlayed": 3,
+          "RandomPlaylist": [
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Land_Idle_Land_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Land_Run_Forward_Landing_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Land_Run_Forward_Landing_Fast_01.ogg",
+              "loop": false
+            },
+            {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Ellen_Footsteps_Stone_Land_Walk_Forward_Landing_01.ogg",
+              "loop": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Music_Gameplay",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Gameplay.ogg",
+    "loop": true
+  }
+}

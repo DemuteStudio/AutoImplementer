@@ -1,0 +1,7 @@
+{
+  "name": "Bank_DestructibleBoxes",
+  "hideFlags": 0,
+  "events": [
+    "DestructibleBoxes_DestructibleBoxes"
+  ]
+}

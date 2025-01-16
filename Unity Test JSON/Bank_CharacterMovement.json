@@ -1,0 +1,9 @@
+{
+  "name": "Bank_CharacterMovement",
+  "hideFlags": 0,
+  "events": [
+    "CharacterMovement_Walk",
+    "CharacterMovement_Run",
+    "CharacterMovement_Land"
+  ]
+}

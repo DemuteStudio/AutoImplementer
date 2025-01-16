@@ -1,0 +1,9 @@
+{
+  "name": "Doors_Small",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+    "soundClip": "Door_Open_Small_01.ogg",
+    "loop": false
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Bank_Switches",
+  "hideFlags": 0,
+  "events": [
+    "Switches_Activate",
+    "Switches_BeforeActivationLoop",
+    "Switches_AfterActivationLoop"
+  ]
+}
