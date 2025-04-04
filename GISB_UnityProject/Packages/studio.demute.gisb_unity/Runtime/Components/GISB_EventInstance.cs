@@ -43,6 +43,8 @@ public class GISB_EventInstance : MonoBehaviour
         GameObject newAudioSourceObject = new GameObject("Audio Voice");
         newAudioSourceObject.transform.SetParent(transform, false);
         AudioSource newAudioSource = newAudioSourceObject.AddComponent<AudioSource>();
+        newAudioSourceObject.AddComponent<AudioLowPassFilter>();
+        //newAudioSourceObject.AddComponent<AudioHighPassFilter>();
         audioSources.Add(newAudioSource);
         return newAudioSource;
     }

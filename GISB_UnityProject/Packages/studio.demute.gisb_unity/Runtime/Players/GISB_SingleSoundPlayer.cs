@@ -69,8 +69,9 @@ namespace GISB.Runtime
                 curve.MoveKey(0, new Keyframe(0, attenuation.spreadAtMinDistance));
                 curve.MoveKey(1, new Keyframe(1, attenuation.spreadAtMaxDistance));
                 audioSource.SetCustomCurve(AudioSourceCurveType.Spread, curve);
-                //TODO : Lowpass
-                //TODO : Highpass
+                curve.MoveKey(0, new Keyframe(0, lowpassToFilterValue(attenuation.lowPassAtMinDistance)));
+                curve.MoveKey(1, new Keyframe(1, lowpassToFilterValue(attenuation.lowPassAtMaxDistance)));
+                audioSource.GetComponent<AudioLowPassFilter>().customCutoffCurve = curve;
             }
         }
         
@@ -82,6 +83,22 @@ namespace GISB.Runtime
         private float centsToLinear(float cents)
         {
             return Mathf.Pow(2f, cents / 1200f);
+        }
+        
+        private float lowpassToFilterValue(float lowpass)
+        {
+            //When the lowpass is 0, the filter value is 1
+            //When the lowpass is 1, the filter value is 0
+            //When the lowpass is 0.5, the filter value is 0.5
+            //When the lowpass is 2, the filter value is -1 (clamped to 0)
+            //When the lowpass is -1, the filter value is 2 (clamped to 1)
+            
+            //Clamp the lowpass value to 0 and 1
+            lowpass = Mathf.Clamp(lowpass, 0, 1);
+            //Invert the lowpass value
+            lowpass = 1 - lowpass;
+
+            return lowpass;
         }
     }
 }

@@ -27,8 +27,8 @@ namespace GISB.Runtime
         public float spreadAtMaxDistance = 0.0f;
         public float lowPassAtMinDistance = 0.0f;
         public float lowPassAtMaxDistance = 0.0f;
-        public float highPassAtMinDistance = 0.0f;
-        public float highPassAtMaxDistance = 0.0f;
+        //public float highPassAtMinDistance = 0.0f;
+        //public float highPassAtMaxDistance = 0.0f;
 
         public static AnimationCurve GetAttenuationCurveForPreset(AttenuationPreset preset)
         {
@@ -36,27 +36,25 @@ namespace GISB.Runtime
             {
                 case AttenuationPreset.Linear:
                     return AnimationCurve.Linear(0, 1, 1, 0);
-                    break;
+
                 case AttenuationPreset.Logarithmic:
                     AnimationCurve logcurve = new AnimationCurve();
                     logcurve.AddKey(new Keyframe(0, 1, 0, -2.302f));
                     logcurve.AddKey(new Keyframe(1, 0, -0.105f, 0));
                     return logcurve;
-                    break;
+
                 case AttenuationPreset.Inverse:
                     AnimationCurve invcurve = new AnimationCurve();
                     invcurve.AddKey(new Keyframe(0, 1, 0, -3f));
                     invcurve.AddKey(new Keyframe(1, 0, 0, 0));
                     return invcurve;
-                    break;
+
                 case AttenuationPreset.Custom:
                     return null;
-                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(preset), preset, null);
             }
-
-            return null;
         }
     }
     
