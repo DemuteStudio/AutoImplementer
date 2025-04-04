@@ -5,9 +5,9 @@ using UnityEngine;
 namespace GISB.Runtime
 {
     [System.Serializable]
-    public class GISB_VolumeParameter : GISB_RandomizableParameter<float>
+    public class GISB_PitchParameter : GISB_RandomizableParameter<float>
     {
-        public GISB_VolumeParameter()
+        public GISB_PitchParameter()
         {
             randomize = false;
             minModifier = 0.0f;
@@ -28,4 +28,3 @@ namespace GISB.Runtime
         }
     }
 }
-

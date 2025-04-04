@@ -15,11 +15,15 @@ namespace GISB.Runtime
             AudioSource audioSource = gisbEventInstance.GetAudioVoice();
             
             GISB_Attenuation attenuation = GetAttenuation();
+            float volume = GetVolume();
+            float pitch = GetPitch();
 
             SetAttenuation(audioSource, attenuation);
             
             audioSource.clip = audioObject.soundClip;
             audioSource.loop = audioObject.loop;
+            audioSource.volume = decibelsToLinear(volume);
+            audioSource.pitch = centsToLinear(pitch);
             audioSource.Play();
         }
 
@@ -68,6 +72,16 @@ namespace GISB.Runtime
                 //TODO : Lowpass
                 //TODO : Highpass
             }
+        }
+        
+        private float decibelsToLinear(float db)
+        {
+            return Mathf.Pow(10f, db / 20f);
+        }
+        
+        private float centsToLinear(float cents)
+        {
+            return Mathf.Pow(2f, cents / 1200f);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace GISB.Runtime
         
         public abstract GISB_Attenuation GetAttenuation();
         public abstract float GetVolume();
+        public abstract float GetPitch();
     }
     
     public abstract class GISB_AudioPlayerTemplate<T> : GISB_BaseAudioPlayer where T : GISB_AudioObjectBase
@@ -42,11 +43,23 @@ namespace GISB.Runtime
         {
             if(parent == null)
             {
-                return audioObject.volume.GetRandomValue();
+                return audioObject.volumeDB.GetRandomValue();
             }
             else
             {
-                return parent.GetVolume() * audioObject.volume.GetRandomValue();
+                return parent.GetVolume() + audioObject.volumeDB.GetRandomValue();
+            }
+        }
+
+        public override float GetPitch()
+        {
+            if (parent == null)
+            {
+                return audioObject.pitchCents.GetRandomValue();
+            }
+            else
+            {
+                return parent.GetPitch() + audioObject.pitchCents.GetRandomValue();
             }
         }
     }

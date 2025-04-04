@@ -9,7 +9,7 @@ namespace GISB.Runtime
     public abstract class GISB_RandomizableParameter<T> : GISB_Parameter
     {
         public bool randomize = false;
-        public T minModifieer;
+        public T minModifier;
         public T maxModifier;
         public T baseValue;
         
