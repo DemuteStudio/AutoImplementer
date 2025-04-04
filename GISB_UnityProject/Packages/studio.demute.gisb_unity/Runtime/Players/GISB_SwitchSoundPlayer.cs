@@ -14,6 +14,7 @@ namespace GISB.Runtime
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
         {
+            if (!RollForPlayProbability()) return;
             string switchValue = audioObject.DefaultValue;
             if(activeParameters.TryGetValue(audioObject.ParameterName, out string parameter))
             {

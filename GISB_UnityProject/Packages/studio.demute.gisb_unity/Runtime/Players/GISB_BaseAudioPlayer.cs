@@ -15,6 +15,7 @@ namespace GISB.Runtime
         public abstract GISB_Attenuation GetAttenuation();
         public abstract float GetVolume();
         public abstract float GetPitch();
+        public abstract float GetLowpass();
     }
     
     public abstract class GISB_AudioPlayerTemplate<T> : GISB_BaseAudioPlayer where T : GISB_AudioObjectBase
@@ -26,7 +27,6 @@ namespace GISB.Runtime
             this.audioObject = audioObject;
             this.parent = parent;
         }
-        
         public override GISB_Attenuation GetAttenuation()
         {
             if (audioObject.attenuation.overrideParent || parent == null)
@@ -60,6 +60,31 @@ namespace GISB.Runtime
             else
             {
                 return parent.GetPitch() + audioObject.pitchCents.GetRandomValue();
+            }
+        }
+
+        public override float GetLowpass()
+        {
+            if (parent == null)
+            {
+                return audioObject.lowpass.GetRandomValue();
+            }
+            else
+            {
+                return parent.GetLowpass() + audioObject.lowpass.GetRandomValue();
+            }
+        }
+
+        protected bool RollForPlayProbability()
+        {
+            if(audioObject.playbackProbabilityPercent < 100.0f)
+            {
+                float randomValue = Random.Range(0.0f, 100.0f);
+                return randomValue <= audioObject.playbackProbabilityPercent;
+            }
+            else
+            {
+                return true;
             }
         }
     }

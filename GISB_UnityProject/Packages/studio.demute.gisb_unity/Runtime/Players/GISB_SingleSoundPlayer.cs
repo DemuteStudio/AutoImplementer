@@ -12,11 +12,14 @@ namespace GISB.Runtime
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
         {
+            if (!RollForPlayProbability()) return;
             AudioSource audioSource = gisbEventInstance.GetAudioVoice();
             
             GISB_Attenuation attenuation = GetAttenuation();
+            
             float volume = GetVolume();
             float pitch = GetPitch();
+            float lowpass = GetLowpass();
 
             SetAttenuation(audioSource, attenuation);
             
@@ -24,6 +27,7 @@ namespace GISB.Runtime
             audioSource.loop = audioObject.loop;
             audioSource.volume = decibelsToLinear(volume);
             audioSource.pitch = centsToLinear(pitch);
+            audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(22000, 0, lowpass);
             audioSource.Play();
         }
 

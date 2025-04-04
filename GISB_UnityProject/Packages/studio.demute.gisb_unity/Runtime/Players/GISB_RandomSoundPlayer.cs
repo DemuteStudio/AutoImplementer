@@ -17,6 +17,7 @@ namespace GISB.Runtime
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
         {
+            if (!RollForPlayProbability()) return;
             if(instantiatedPlayers.Count == 0)
             {
                 for (int i = 0; i < audioObject.RandomPlaylist.Length; i++)
