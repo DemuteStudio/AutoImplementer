@@ -4,15 +4,12 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
-    public class GISB_SwitchSoundPlayer : GISB_AudioObjectPlayer
+    public class GISB_SwitchSoundPlayer : GISB_AudioPlayerTemplate<GISB_SwitchSound>
     {
-        private GISB_SwitchSound audioObject;
+        private Dictionary<string, GISB_BaseAudioPlayer> instantiatedPlayers = new Dictionary<string, GISB_BaseAudioPlayer>();
 
-        private Dictionary<string, GISB_AudioObjectPlayer> instantiatedPlayers = new Dictionary<string, GISB_AudioObjectPlayer>();
-        
-        public GISB_SwitchSoundPlayer(GISB_SwitchSound audioObject)
+        public GISB_SwitchSoundPlayer(GISB_SwitchSound audioObject, GISB_BaseAudioPlayer parent = null) : base(audioObject, parent)
         {
-            this.audioObject = audioObject;
         }
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
@@ -34,7 +31,7 @@ namespace GISB.Runtime
                         {
                             break;
                         }
-                        instantiatedPlayers[switchValue] = switchCase.audioObject.GetPlayer();
+                        instantiatedPlayers[switchValue] = switchCase.audioObject.GetPlayer(this);
                         break;
                     }
                 }
@@ -48,7 +45,7 @@ namespace GISB.Runtime
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
         {
-            foreach (KeyValuePair<string, GISB_AudioObjectPlayer> instantiatedPlayer in instantiatedPlayers)
+            foreach (KeyValuePair<string, GISB_BaseAudioPlayer> instantiatedPlayer in instantiatedPlayers)
             {
                 instantiatedPlayer.Value.UpdateParameters(activeParameters);
             }

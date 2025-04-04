@@ -12,7 +12,7 @@ namespace GISB.Runtime
         [SerializeReference, SR, JsonProperty(Order = 2)]
         public GISB_AudioObjectBase rootAudioObject;
         
-        public GISB_AudioObjectPlayer GetPlayer()
+        public GISB_BaseAudioPlayer GetPlayer()
         {
             return rootAudioObject.GetPlayer();
         }

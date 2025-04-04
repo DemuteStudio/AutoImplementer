@@ -26,7 +26,7 @@ namespace GISB.Runtime
             if(!activeEventInstances.ContainsKey(eventToPlay) || activeEventInstances[eventToPlay] == null)
             {
                 GameObject newEventInstanceObject = new GameObject(eventToPlay.name);
-                newEventInstanceObject.transform.parent = this.transform;
+                newEventInstanceObject.transform.SetParent(transform, false);
                 GISB_EventInstance newEventInstance = newEventInstanceObject.AddComponent<GISB_EventInstance>();
                 newEventInstance.eventDefinition = eventToPlay;
                 activeEventInstances[eventToPlay] = newEventInstance;

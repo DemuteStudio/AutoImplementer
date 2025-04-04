@@ -6,7 +6,7 @@ using UnityEngine;
 public class GISB_EventInstance : MonoBehaviour
 {
     public GISB_Event eventDefinition;
-    private GISB_AudioObjectPlayer rootPlayerInstance;
+    private GISB_BaseAudioPlayer rootPlayerInstance;
     private List<AudioSource> audioSources = new List<AudioSource>();
 
     public void Play(Dictionary<string, string> activeParameters)
@@ -41,7 +41,7 @@ public class GISB_EventInstance : MonoBehaviour
         }
         
         GameObject newAudioSourceObject = new GameObject("Audio Voice");
-        newAudioSourceObject.transform.parent = this.transform;
+        newAudioSourceObject.transform.SetParent(transform, false);
         AudioSource newAudioSource = newAudioSourceObject.AddComponent<AudioSource>();
         audioSources.Add(newAudioSource);
         return newAudioSource;

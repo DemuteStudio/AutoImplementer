@@ -21,9 +21,9 @@ namespace GISB.Runtime
         public string DefaultValue;
         public SwitchCase[] SwitchCases;
 
-        public override GISB_AudioObjectPlayer GetPlayer()
+        public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)
         {
-            return new GISB_SwitchSoundPlayer(this);
+            return new GISB_SwitchSoundPlayer(this, parent);
         }
 
         public override Dictionary<string, List<string>> ExtractParameters()
@@ -47,6 +47,24 @@ namespace GISB.Runtime
                 }
             }
             return parameters;
+        }
+
+        public override float ExtractMaxDistance()
+        {
+            float maxDistance = attenuation.overrideParent && attenuation.value.active ? attenuation.value.maxDistance : 0f;
+            foreach (SwitchCase switchCase in SwitchCases)
+            {
+                if (switchCase.audioObject == null)
+                {
+                    continue;
+                }
+                float objectMaxDistance = switchCase.audioObject.ExtractMaxDistance();
+                if (objectMaxDistance > maxDistance)
+                {
+                    maxDistance = objectMaxDistance;
+                }
+            }
+            return maxDistance;
         }
     }
 }

@@ -5,23 +5,21 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
-    [SRName("Random Sound")]
-    public class GISB_RandomSound : GISB_AudioObjectBase
+    [SRName("Blend Sound")]
+    public class GISB_BlendSound : GISB_AudioObjectBase
     {
-        public int avoidLastPlayed = 0;
-        
         [SerializeReference, SR]
-        public GISB_AudioObjectBase[] RandomPlaylist;
+        public GISB_AudioObjectBase[] BlendPlaylist;
         
         public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)
         {
-            return new GISB_RandomSoundPlayer(this, parent);
+            return new GISB_BlendSoundPlayer(this, parent);
         }
-
+        
         public override Dictionary<string, List<string>> ExtractParameters()
         {
             Dictionary<string, List<string>> parameters = new Dictionary<string, List<string>>();
-            foreach (GISB_AudioObjectBase audioObject in RandomPlaylist)
+            foreach (GISB_AudioObjectBase audioObject in BlendPlaylist)
             {
                 if(audioObject == null)
                 {
@@ -43,7 +41,7 @@ namespace GISB.Runtime
         public override float ExtractMaxDistance()
         {
             float maxDistance = attenuation.overrideParent && attenuation.value.active ? attenuation.value.maxDistance : 0f;
-            foreach (GISB_AudioObjectBase audioObject in RandomPlaylist)
+            foreach (GISB_AudioObjectBase audioObject in BlendPlaylist)
             {
                 if(audioObject == null)
                 {
@@ -59,3 +57,4 @@ namespace GISB.Runtime
         }
     }
 }
+
