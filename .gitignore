@@ -16,3 +16,11 @@ AiSoundUnreal/UpgradeLog.htm
 **/.idea
 **/Temp
 **/UserSettings
+
+GisbUnreal/.vs
+GisbUnreal/Saved
+GisbUnreal/Intermediate
+GisbUnreal/Binaries
+GisbUnreal/.vsconfig
+GisbUnreal/*.DotSettings.user
+GisbUnreal/UpgradeLog.htm
