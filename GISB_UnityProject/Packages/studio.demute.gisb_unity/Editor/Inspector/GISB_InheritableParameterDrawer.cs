@@ -41,6 +41,7 @@ namespace GISB.Editor
                         else
                         {
                             GUI.enabled = false;
+                            property.FindPropertyRelative("overrideParent").boolValue = true;
                             EditorGUI.PropertyField(propertyPosition, property.FindPropertyRelative("overrideParent"));
                             GUI.enabled = true;
                         }
@@ -49,7 +50,7 @@ namespace GISB.Editor
                         if (isOverriden)
                         {
                             SerializedProperty valueProperty = property.FindPropertyRelative("value");
-                            DrawChildren(valueProperty, propertyPosition);
+                            EditorGUI.PropertyField(propertyPosition, valueProperty, true);
                         }
                         else
                         {
@@ -65,7 +66,7 @@ namespace GISB.Editor
                                 }
                             }
                             SerializedProperty valueProperty = parentParameter.FindPropertyRelative("value");
-                            DrawChildren(valueProperty, propertyPosition);
+                            EditorGUI.PropertyField(propertyPosition, valueProperty, true);
                             GUI.enabled = true;
                         }
                     }
@@ -81,7 +82,21 @@ namespace GISB.Editor
             if (property.isExpanded)
             {
                 height += baseHeight;
-                height += GetChildrenHeight(property.FindPropertyRelative("value"));
+                SerializedProperty parentParameter = GetParentParameter(property);
+                bool isOverriden = true;
+                if(parentParameter != null)
+                {
+                    isOverriden = property.FindPropertyRelative("overrideParent").boolValue;
+                }
+                if (isOverriden)
+                {
+                    height += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("value"));
+                }
+                else
+                {
+                    height += EditorGUI.GetPropertyHeight(parentParameter.FindPropertyRelative("value"));
+                }
+    
             }
             
             return height;

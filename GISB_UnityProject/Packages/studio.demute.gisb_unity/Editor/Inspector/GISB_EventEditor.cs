@@ -15,7 +15,7 @@ namespace GISB.Editor
     {
         private GISB_AudioComponent editorAudioComponent;
         private Vector2 scrollPosition;
-        
+        private float distance = 0f;
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -51,7 +51,7 @@ namespace GISB.Editor
             if (editorAudioComponent == null)
             {
                 GameObject editorPreviewObject = new GameObject("Editor Preview");
-                editorPreviewObject.hideFlags = HideFlags.HideAndDontSave;
+                editorPreviewObject.hideFlags = HideFlags.DontSave;
                 editorAudioComponent = editorPreviewObject.AddComponent<GISB_AudioComponent>();
             }
             
@@ -59,6 +59,20 @@ namespace GISB.Editor
             {
                 editorAudioComponent.PlayEvent(gisbEvent);
             }
+            
+            if (GUILayout.Button("Stop"))
+            {
+                editorAudioComponent.StopEvent(gisbEvent);
+            }
+            
+            float maxDistance = gisbEvent.rootAudioObject.ExtractMaxDistance();
+            if(maxDistance > 0f)
+            {
+                distance = EditorGUILayout.Slider( "Distance", distance, 0f, maxDistance);
+            }
+            
+            AudioListener audioListener = FindObjectOfType<AudioListener>();
+            editorAudioComponent.transform.position = audioListener.transform.position + audioListener.transform.forward  * distance;
 
             if(gisbEvent.rootAudioObject != null)
             {

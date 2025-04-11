@@ -4,28 +4,26 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
-    public class GISB_RandomSoundPlayer : GISB_AudioObjectPlayer
+    public class GISB_RandomSoundPlayer : GISB_AudioPlayerTemplate<GISB_RandomSound>
     {
-        private GISB_RandomSound audioObject;
-
-        private List<GISB_AudioObjectPlayer> instantiatedPlayers = new List<GISB_AudioObjectPlayer>();
+        private List<GISB_BaseAudioPlayer> instantiatedPlayers = new List<GISB_BaseAudioPlayer>();
         
         private List<int> indexes = new List<int>();
         private Queue<int> excludedIndexes = new Queue<int>();
         
-        public GISB_RandomSoundPlayer(GISB_RandomSound audioObject)
+        public GISB_RandomSoundPlayer(GISB_RandomSound audioObject, GISB_BaseAudioPlayer parent = null) : base(audioObject, parent)
         {
-            this.audioObject = audioObject;
         }
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
         {
+            if (!RollForPlayProbability()) return;
             if(instantiatedPlayers.Count == 0)
             {
                 for (int i = 0; i < audioObject.RandomPlaylist.Length; i++)
                 {
                     indexes.Add(i);
-                    instantiatedPlayers.Add(audioObject.RandomPlaylist[i].GetPlayer());
+                    instantiatedPlayers.Add(audioObject.RandomPlaylist[i].GetPlayer(this));
                 }
             }
             
@@ -38,7 +36,7 @@ namespace GISB.Runtime
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
         {
-            foreach (GISB_AudioObjectPlayer instantiatedPlayer in instantiatedPlayers)
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
             {
                 instantiatedPlayer.UpdateParameters(activeParameters);
             }
