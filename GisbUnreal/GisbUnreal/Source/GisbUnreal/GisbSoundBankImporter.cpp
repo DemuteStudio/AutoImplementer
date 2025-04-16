@@ -30,62 +30,98 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
         {
             FString FilePath = OutFiles[0];
             FString BaseDir = FPaths::ProjectContentDir();
-            FString FullPath = FPaths::Combine(BaseDir, FilePath);
+            FString FullPath = /*FPaths::Combine(BaseDir, FilePath)*/ FilePath;
             FullPath = FPaths::ConvertRelativePathToFull(FullPath);
             
-            UE_LOG(LogTemp, Error, TEXT("File path: %s"), *FilePath);
             // Parse JSON
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonContent);
             TSharedPtr<FJsonObject> JsonObject;
 
             if (FJsonSerializer::Deserialize(Reader, JsonObject))
             {
-                FString EventName;
-                if (!JsonObject->TryGetStringField("name", EventName))
+                FString AssetName;
+                if (!JsonObject->TryGetStringField("name", AssetName))
                 {
                     UE_LOG(LogTemp, Error, TEXT("Failed to get event name from JSON."));
                     return;
                 }
 
-                const TSharedPtr<FJsonObject>* RootAudioObject;
+                const TSharedPtr<FJsonObject>* RootAudioObject; // Used when user selected an audio event
+                TArray<FString> EventArrayJson; // Used when user selected an audio bank
+
                 if (JsonObject->TryGetObjectField("rootAudioObject", RootAudioObject))
                 {
-                    FString AssetName = EventName + "_SoundBank";
-                    FString PackagePath = "/Game/SoundBanks/" + AssetName;
-                    UPackage* Package = CreatePackage(*PackagePath);
+                    ImportEventFromJson(AssetName, FullPath, RootAudioObject);
+                }
 
-                    // Create a new sound asset and set its properties
-                    UGisbSoundBankDataAsset* NewAsset = NewObject<UGisbSoundBankDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
-                    UGisbImportContainerBase* RootContainer = UGisbImportContainerBase::CreateFromJson(*RootAudioObject, NewAsset, FullPath);
-                    
-                    if (RootContainer)
+                // WIP
+                else if (JsonObject->TryGetStringArrayField("events", EventArrayJson ))
+                {
+                    for (const FString& EventEntry : EventArrayJson) 
                     {
-                        NewAsset->EventName = EventName;
-                        NewAsset->RootContainer = RootContainer->ToRuntimeContainer(NewAsset);
-                        RootContainer->MarkPackageDirty();
+                        FString EventFilePath = FPaths::Combine(FPaths::GetPath(FilePath), TEXT("Events"), (EventEntry + TEXT(".json")));
                         
-                        NewAsset->Modify();  // Ensures Unreal tracks the change
-                        NewAsset->MarkPackageDirty();
-                        FAssetRegistryModule::AssetCreated(NewAsset);
-
-                        // Make sure the package is marked dirty for saving
-                        Package->MarkPackageDirty();
-
-                        // Save the asset
-                        const FString AssetFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
-                        bool bSaved = UPackage::SavePackage(Package, NewAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetFileName);
-
-                        if (bSaved)
+                        FString EventJsonContent;
+                        if (FFileHelper::LoadFileToString(EventJsonContent, *EventFilePath))
                         {
-                            UE_LOG(LogTemp, Log, TEXT("Asset successfully saved: %s"), *AssetFileName);
-                        }
-                        else
-                        {
-                            UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
+                            TSharedRef<TJsonReader<>> EventReader = TJsonReaderFactory<>::Create(EventJsonContent);
+                            TSharedPtr<FJsonObject> EventJsonObject;
+                            if (FJsonSerializer::Deserialize(EventReader, EventJsonObject))
+                            {
+                                FString EventName;
+                                if (!EventJsonObject->TryGetStringField("name", EventName))
+                                {
+                                    UE_LOG(LogTemp, Error, TEXT("Failed to get event name from JSON."));
+                                    return;
+                                }
+                                const TSharedPtr<FJsonObject>* EventRootAudioObject;
+                                if (EventJsonObject->TryGetObjectField("rootAudioObject", EventRootAudioObject))
+                                {
+                                    ImportEventFromJson(EventName, EventFilePath, EventRootAudioObject);
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString FullPath,const TSharedPtr<FJsonObject>* RootAudioObject)
+{
+    FString AssetName = EventName + "_SoundBank";
+    FString PackagePath = "/Game/SoundBanks/" + AssetName;
+    UPackage* Package = CreatePackage(*PackagePath);
+
+    // Create a new sound asset and set its properties
+    UGisbSoundBankDataAsset* NewAsset = NewObject<UGisbSoundBankDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
+    UGisbImportContainerBase* RootContainer = UGisbImportContainerBase::CreateFromJson(*RootAudioObject, NewAsset, FullPath);
+
+    if (RootContainer)
+    {
+        NewAsset->EventName = EventName;
+        NewAsset->RootContainer = RootContainer->ToRuntimeContainer(NewAsset);
+        RootContainer->MarkPackageDirty();
+
+        NewAsset->Modify();  // Ensures Unreal tracks the change
+        NewAsset->MarkPackageDirty();
+        FAssetRegistryModule::AssetCreated(NewAsset);
+
+        // Make sure the package is marked dirty for saving
+        Package->MarkPackageDirty();
+
+        // Save the asset
+        const FString AssetFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
+        bool bSaved = UPackage::SavePackage(Package, NewAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetFileName);
+
+        if (bSaved)
+        {
+            UE_LOG(LogTemp, Log, TEXT("Asset successfully saved: %s"), *AssetFileName);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
         }
     }
 }

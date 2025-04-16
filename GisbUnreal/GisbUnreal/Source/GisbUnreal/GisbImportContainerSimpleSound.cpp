@@ -19,8 +19,8 @@ void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& J
     if (FPaths::FileExists(AbsoluteAudioFilePath))
     {
         // Define the package path where the asset will be stored
-        FString PackageName = TEXT("/Game/ImportedAudio/") + FPaths::GetBaseFilename(AbsoluteAudioFilePath);
-        FString PackagePath = FPackageName::ObjectPathToPackageName(PackageName);
+        FString PackagePath = TEXT("/Game/ImportedAudio/") + AudioFilePath;
+        FString PackageName = FPackageName::ObjectPathToPackageName(PackagePath);
 
         // Check if the asset already exists
         if (UEditorAssetLibrary::DoesAssetExist(PackageName))
@@ -30,7 +30,7 @@ void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& J
         }
 
         // Create a new package for the asset
-        UPackage* Package = CreatePackage(*PackagePath);
+        UPackage* Package = CreatePackage(*PackageName);
         if (!Package)
         {
             UE_LOG(LogTemp, Error, TEXT("Failed to create package at path: %s"), *PackagePath);

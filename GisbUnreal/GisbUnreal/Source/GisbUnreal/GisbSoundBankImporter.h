@@ -17,4 +17,6 @@ class GISBUNREAL_API UGisbSoundBankImporter : public UBlueprintFunctionLibrary
 public:
 	UFUNCTION(BlueprintCallable, Category = "SoundBank")
 	static void ImportSoundBankFromJson();
+private:
+	static void ImportEventFromJson(FString EventName, FString FullPath, const TSharedPtr<FJsonObject>* RootAudioObject);
 };
