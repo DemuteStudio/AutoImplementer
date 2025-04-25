@@ -1,17 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-#include "GisbImportContainerRandom.h"
+#include "GisbImportContainerBlend.h"
 
-#include "GisbContainerRandom.h"
+#include "GisbContainerBlend.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
 #include "GisbImportContainerSimpleSound.h"
 
-void UGisbImportContainerRandom::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
+void UGisbImportContainerBlend::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
 	Super::ParseJson(JsonObject, Outer, path);
-	AvoidLastPlayed = FCString::Atoi(*JsonObject->GetStringField("avoidLastPlayed"));
 	const TArray<TSharedPtr<FJsonValue>>* SoundArrayJson;
-	if (JsonObject->TryGetArrayField("RandomPlaylist", SoundArrayJson))
+	if (JsonObject->TryGetArrayField("BlendPlaylist", SoundArrayJson))
 	{
 		for (const auto& SoundEntry : *SoundArrayJson)
 		{
@@ -25,9 +24,9 @@ void UGisbImportContainerRandom::ParseJson(const TSharedPtr<FJsonObject>& JsonOb
 	}
 }
 
-UGisbContainerBase* UGisbImportContainerRandom::ToRuntimeContainer(UObject* Outer)
+UGisbContainerBase* UGisbImportContainerBlend::ToRuntimeContainer(UObject* Outer)
 {
-	UGisbContainerRandom* RuntimeContainer = NewObject<UGisbContainerRandom>(Outer, UGisbContainerRandom::StaticClass(), NAME_None, RF_Public | RF_Transactional | RF_Standalone);
+	UGisbContainerBlend* RuntimeContainer = NewObject<UGisbContainerBlend>(Outer, UGisbContainerBlend::StaticClass(), NAME_None, RF_Public | RF_Transactional | RF_Standalone);
 	AssignBaseVariables(RuntimeContainer);
 	for (int32 i = 0; i < SoundArray.Num(); ++i)
 	{

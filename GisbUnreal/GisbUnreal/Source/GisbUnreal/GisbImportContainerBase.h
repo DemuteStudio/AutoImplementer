@@ -18,8 +18,25 @@ public:
 	UPROPERTY(Transient)
 	FString Type;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGisbAttenuation Attenuation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGisbVolume VolumeDB;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGisbPitch Pitch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGisbLowPass Lowpass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float PlaybackProbabilityPercent;
+
 	static UGisbImportContainerBase* CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path);
 
-	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) PURE_VIRTUAL(USoundContainerBase::ParseJson, );
+	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) /*PURE_VIRTUAL(USoundContainerBase::ParseJson, )*/;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) PURE_VIRTUAL(UGisbImportContainerBase::ToRuntimeContainer, return nullptr;);
+	void AssignBaseVariables(UGisbContainerBase* Container);
+	
 };

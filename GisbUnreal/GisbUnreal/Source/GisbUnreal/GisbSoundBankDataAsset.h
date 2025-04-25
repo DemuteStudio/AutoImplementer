@@ -19,12 +19,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString EventName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString JsonString;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced)
-	class UGisbEvent* InstancedItemData;
-
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category="Gisb")
 	UGisbContainerBase* RootContainer;
 

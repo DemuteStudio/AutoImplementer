@@ -10,8 +10,9 @@
 
 void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
+    Super::ParseJson(JsonObject, Outer, path);
     AudioFilePath = JsonObject->GetStringField("soundClip");
-    loop = FCString::ToBool(*JsonObject->GetStringField("soundClip"));
+    loop = JsonObject->GetBoolField("loop");
 
     // Check if the audio file exists
     FString AbsoluteAudioFilePath = FPaths::Combine(FPaths::GetPath(path), TEXT("Audio Files"), AudioFilePath);
@@ -21,56 +22,62 @@ void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& J
         // Define the package path where the asset will be stored
         FString PackagePath = TEXT("/Game/ImportedAudio/") + AudioFilePath;
         FString PackageName = FPackageName::ObjectPathToPackageName(PackagePath);
+		
+        USoundWave* ImportedSoundWave;
+        UPackage* Package;
 
-        // Check if the asset already exists
-        if (UEditorAssetLibrary::DoesAssetExist(PackageName))
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Asset already exists at path: %s"), *PackageName);
-            return;
-        }
-
-        // Create a new package for the asset
-        UPackage* Package = CreatePackage(*PackageName);
-        if (!Package)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to create package at path: %s"), *PackagePath);
-            return;
-        }
-
-        // Create a new SoundFactory
-        USoundFactory* SoundFactory = NewObject<USoundFactory>(USoundFactory::StaticClass());
-        if (!SoundFactory)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to create SoundFactory"));
-            return;
-        }
-
-        // Import the sound file as a USoundWave asset
-        bool IsCancelled = false;
-        USoundWave* ImportedSoundWave = Cast<USoundWave>(SoundFactory->FactoryCreateFile(
-            USoundWave::StaticClass(),
-            Package,
-            *FPaths::GetBaseFilename(AbsoluteAudioFilePath),
-            RF_Public | RF_Standalone,
-            AbsoluteAudioFilePath,
-            nullptr,
-            GWarn,
-            IsCancelled
-        ));
-
-        if (ImportedSoundWave)
-        {
-            Package->MarkPackageDirty();
-            
-            FAssetRegistryModule::AssetCreated(ImportedSoundWave);
-            
-            SoundWave = ImportedSoundWave;
-
-            UE_LOG(LogTemp, Log, TEXT("Successfully imported sound file: %s"), *AbsoluteAudioFilePath);
-        }
+		if (UEditorAssetLibrary::DoesAssetExist(PackageName))
+		{
+            Package = FindObject<UPackage>(nullptr, *PackageName);
+			SoundWave = Cast<USoundWave>(UEditorAssetLibrary::LoadAsset(PackageName));
+			UE_LOG(LogTemp, Log, TEXT("Sound file already exists at path: %s"), *PackagePath);
+		}
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to import sound file: %s"), *AbsoluteAudioFilePath);
+            Package = CreatePackage(*PackageName);
+            if (!Package)
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to create package at path: %s"), *PackagePath);
+                return;
+            }
+
+            // Create a new SoundFactory
+            USoundFactory* SoundFactory = NewObject<USoundFactory>(USoundFactory::StaticClass());
+            if (!SoundFactory)
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to create SoundFactory"));
+                return;
+            }
+
+            // Import the sound file as a USoundWave asset
+            bool IsCancelled = false;
+            ImportedSoundWave = Cast<USoundWave>(SoundFactory->FactoryCreateFile(
+                USoundWave::StaticClass(),
+                Package,
+                *FPaths::GetBaseFilename(AbsoluteAudioFilePath),
+                RF_Public | RF_Standalone,
+                AbsoluteAudioFilePath,
+                nullptr,
+                GWarn,
+                IsCancelled
+            ));
+            // Create a new package for the asset
+
+            if (ImportedSoundWave)
+            {
+                Package->MarkPackageDirty();
+            
+                FAssetRegistryModule::AssetCreated(ImportedSoundWave);
+            
+                SoundWave = ImportedSoundWave;
+
+                UE_LOG(LogTemp, Log, TEXT("Successfully imported sound file: %s"), *AbsoluteAudioFilePath);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to import sound file: %s"), *AbsoluteAudioFilePath);
+            }
+
         }
     }
     else
@@ -82,7 +89,7 @@ void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& J
 UGisbContainerBase* UGisbImportContainerSimpleSound::ToRuntimeContainer(UObject* Outer)
 {
     UGisbContainerSimpleSound* RuntimeContainer = NewObject<UGisbContainerSimpleSound>(Outer, UGisbContainerSimpleSound::StaticClass(), NAME_None, RF_Public | RF_Transactional | RF_Standalone);
-    
+    AssignBaseVariables(RuntimeContainer);
     RuntimeContainer->Sound = SoundWave;
     RuntimeContainer->loop = loop;
     RuntimeContainer->MarkPackageDirty();

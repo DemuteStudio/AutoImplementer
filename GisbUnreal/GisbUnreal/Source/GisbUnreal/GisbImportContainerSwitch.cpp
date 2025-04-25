@@ -8,6 +8,7 @@
 
 void UGisbImportContainerSwitch::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
+	Super::ParseJson(JsonObject, Outer, path);
 	ParameterID = FName(*JsonObject->GetStringField("ParameterName"));
 	DefaultParameterValue = FName(*JsonObject->GetStringField("DefaultValue"));
 	const TArray<TSharedPtr<FJsonValue>>* SoundArrayJson;
@@ -33,7 +34,7 @@ void UGisbImportContainerSwitch::ParseJson(const TSharedPtr<FJsonObject>& JsonOb
 UGisbContainerBase* UGisbImportContainerSwitch::ToRuntimeContainer(UObject* Outer)
 {
 	UGisbContainerSwitch* RuntimeContainer = NewObject<UGisbContainerSwitch>(Outer, UGisbContainerSwitch::StaticClass(), NAME_None, RF_Public | RF_Transactional | RF_Standalone);
-	
+	AssignBaseVariables(RuntimeContainer);
 	RuntimeContainer->ParameterName = ParameterID;
 	RuntimeContainer->ParameterValue = DefaultParameterValue;
 	for (const auto& Elem : SoundDictionary)

@@ -5,21 +5,20 @@
 #include "CoreMinimal.h"
 #include "GisbContainerBase.h"
 #include "UObject/NoExportTypes.h"
-#include "GisbContainerSimpleSound.generated.h"
+#include "GisbContainerBlend.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced)
-class GISBUNREAL_API UGisbContainerSimpleSound : public UGisbContainerBase
+class GISBUNREAL_API UGisbContainerBlend : public UGisbContainerBase
 {
 	GENERATED_BODY()
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundBase* Sound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool loop;
+public:
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly)
+	TArray<UGisbContainerBase*> ChildContainers;
 
 	virtual void Play(UObject* WorldContext, const TMap<FName, FString>& Parameters) override;
+	
 };

@@ -1,0 +1,663 @@
+{
+  "name": "MatheoRealTest",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_BlendSound, Demute.GISB",
+    "BlendPlaylist": [
+      {
+        "$type": "GISB.Runtime.GISB_BlendSound, Demute.GISB",
+        "BlendPlaylist": [
+          {
+            "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+            "soundClip": "Clap.wav",
+            "loop": true,
+            "attenuation": {
+              "overrideParent": false,
+              "value": {
+                "active": false,
+                "minDistance": 1.0,
+                "maxDistance": 10.0,
+                "preset": 0,
+                "curve": {
+                  "keys": [
+                    {
+                      "time": 0.0,
+                      "value": 1.0,
+                      "inTangent": 0.0,
+                      "outTangent": -1.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    },
+                    {
+                      "time": 1.0,
+                      "value": 0.0,
+                      "inTangent": -1.0,
+                      "outTangent": 0.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    }
+                  ],
+                  "length": 2,
+                  "preWrapMode": 8,
+                  "postWrapMode": 8
+                },
+                "volumeAtMaxDistance": 0.0,
+                "spreadAtMinDistance": 0.0,
+                "spreadAtMaxDistance": 0.0,
+                "lowPassAtMinDistance": 0.0,
+                "lowPassAtMaxDistance": 0.0
+              }
+            },
+            "volumeDB": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "pitchCents": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "lowpass": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "playbackProbabilityPercent": 100.0
+          },
+          {
+            "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+            "soundClip": "Servo.wav",
+            "loop": false,
+            "attenuation": {
+              "overrideParent": false,
+              "value": {
+                "active": false,
+                "minDistance": 1.0,
+                "maxDistance": 10.0,
+                "preset": 0,
+                "curve": {
+                  "keys": [
+                    {
+                      "time": 0.0,
+                      "value": 1.0,
+                      "inTangent": 0.0,
+                      "outTangent": -1.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    },
+                    {
+                      "time": 1.0,
+                      "value": 0.0,
+                      "inTangent": -1.0,
+                      "outTangent": 0.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    }
+                  ],
+                  "length": 2,
+                  "preWrapMode": 8,
+                  "postWrapMode": 8
+                },
+                "volumeAtMaxDistance": 0.0,
+                "spreadAtMinDistance": 0.0,
+                "spreadAtMaxDistance": 0.0,
+                "lowPassAtMinDistance": 0.0,
+                "lowPassAtMaxDistance": 0.0
+              }
+            },
+            "volumeDB": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "pitchCents": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "lowpass": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "playbackProbabilityPercent": 100.0
+          }
+        ],
+        "attenuation": {
+          "overrideParent": false,
+          "value": {
+            "active": false,
+            "minDistance": 1.0,
+            "maxDistance": 10.0,
+            "preset": 0,
+            "curve": {
+              "keys": [
+                {
+                  "time": 0.0,
+                  "value": 1.0,
+                  "inTangent": 0.0,
+                  "outTangent": -1.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                },
+                {
+                  "time": 1.0,
+                  "value": 0.0,
+                  "inTangent": -1.0,
+                  "outTangent": 0.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                }
+              ],
+              "length": 2,
+              "preWrapMode": 8,
+              "postWrapMode": 8
+            },
+            "volumeAtMaxDistance": 0.0,
+            "spreadAtMinDistance": 0.0,
+            "spreadAtMaxDistance": 0.0,
+            "lowPassAtMinDistance": 0.0,
+            "lowPassAtMaxDistance": 0.0
+          }
+        },
+        "volumeDB": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "pitchCents": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "lowpass": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "playbackProbabilityPercent": 0.0
+      },
+      {
+        "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+        "avoidLastPlayed": 0,
+        "RandomPlaylist": [
+          {
+            "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+            "soundClip": "Servo.wav",
+            "loop": false,
+            "attenuation": {
+              "overrideParent": false,
+              "value": {
+                "active": false,
+                "minDistance": 1.0,
+                "maxDistance": 10.0,
+                "preset": 0,
+                "curve": {
+                  "keys": [
+                    {
+                      "time": 0.0,
+                      "value": 1.0,
+                      "inTangent": 0.0,
+                      "outTangent": -1.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    },
+                    {
+                      "time": 1.0,
+                      "value": 0.0,
+                      "inTangent": -1.0,
+                      "outTangent": 0.0,
+                      "inWeight": 0.0,
+                      "outWeight": 0.0,
+                      "weightedMode": 0,
+                      "tangentMode": 0
+                    }
+                  ],
+                  "length": 2,
+                  "preWrapMode": 8,
+                  "postWrapMode": 8
+                },
+                "volumeAtMaxDistance": 0.0,
+                "spreadAtMinDistance": 0.0,
+                "spreadAtMaxDistance": 0.0,
+                "lowPassAtMinDistance": 0.0,
+                "lowPassAtMaxDistance": 0.0
+              }
+            },
+            "volumeDB": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "pitchCents": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "lowpass": {
+              "randomize": false,
+              "minModifier": 0.0,
+              "maxModifier": 0.0,
+              "baseValue": 0.0
+            },
+            "playbackProbabilityPercent": 100.0
+          }
+        ],
+        "attenuation": {
+          "overrideParent": false,
+          "value": {
+            "active": false,
+            "minDistance": 1.0,
+            "maxDistance": 10.0,
+            "preset": 0,
+            "curve": {
+              "keys": [
+                {
+                  "time": 0.0,
+                  "value": 1.0,
+                  "inTangent": 0.0,
+                  "outTangent": -1.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                },
+                {
+                  "time": 1.0,
+                  "value": 0.0,
+                  "inTangent": -1.0,
+                  "outTangent": 0.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                }
+              ],
+              "length": 2,
+              "preWrapMode": 8,
+              "postWrapMode": 8
+            },
+            "volumeAtMaxDistance": 0.0,
+            "spreadAtMinDistance": 0.0,
+            "spreadAtMaxDistance": 0.0,
+            "lowPassAtMinDistance": 0.0,
+            "lowPassAtMaxDistance": 0.0
+          }
+        },
+        "volumeDB": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "pitchCents": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "lowpass": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "playbackProbabilityPercent": 100.0
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+        "soundClip": "IceCubePlopInGlass.wav",
+        "loop": true,
+        "attenuation": {
+          "overrideParent": false,
+          "value": {
+            "active": false,
+            "minDistance": 1.0,
+            "maxDistance": 10.0,
+            "preset": 0,
+            "curve": {
+              "keys": [
+                {
+                  "time": 0.0,
+                  "value": 1.0,
+                  "inTangent": 0.0,
+                  "outTangent": -1.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                },
+                {
+                  "time": 1.0,
+                  "value": 0.0,
+                  "inTangent": -1.0,
+                  "outTangent": 0.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                }
+              ],
+              "length": 2,
+              "preWrapMode": 8,
+              "postWrapMode": 8
+            },
+            "volumeAtMaxDistance": 0.0,
+            "spreadAtMinDistance": 0.0,
+            "spreadAtMaxDistance": 0.0,
+            "lowPassAtMinDistance": 0.0,
+            "lowPassAtMaxDistance": 0.0
+          }
+        },
+        "volumeDB": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "pitchCents": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "lowpass": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "playbackProbabilityPercent": 100.0
+      },
+      {
+        "$type": "GISB.Runtime.GISB_SwitchSound, Demute.GISB",
+        "ParameterName": "MyBeautifulParameter",
+        "DefaultValue": "YesItIs",
+        "SwitchCases": [
+          {
+            "parameterValue": "YesItIs",
+            "audioObject": {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "ImpactBellHitByHammer.wav",
+              "loop": false,
+              "attenuation": {
+                "overrideParent": false,
+                "value": {
+                  "active": false,
+                  "minDistance": 1.0,
+                  "maxDistance": 10.0,
+                  "preset": 0,
+                  "curve": {
+                    "keys": [
+                      {
+                        "time": 0.0,
+                        "value": 1.0,
+                        "inTangent": 0.0,
+                        "outTangent": -1.0,
+                        "inWeight": 0.0,
+                        "outWeight": 0.0,
+                        "weightedMode": 0,
+                        "tangentMode": 0
+                      },
+                      {
+                        "time": 1.0,
+                        "value": 0.0,
+                        "inTangent": -1.0,
+                        "outTangent": 0.0,
+                        "inWeight": 0.0,
+                        "outWeight": 0.0,
+                        "weightedMode": 0,
+                        "tangentMode": 0
+                      }
+                    ],
+                    "length": 2,
+                    "preWrapMode": 8,
+                    "postWrapMode": 8
+                  },
+                  "volumeAtMaxDistance": 0.0,
+                  "spreadAtMinDistance": 0.0,
+                  "spreadAtMaxDistance": 0.0,
+                  "lowPassAtMinDistance": 0.0,
+                  "lowPassAtMaxDistance": 0.0
+                }
+              },
+              "volumeDB": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "pitchCents": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "lowpass": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "playbackProbabilityPercent": 100.0
+            }
+          },
+          {
+            "parameterValue": "NoItIsnt",
+            "audioObject": {
+              "$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB",
+              "soundClip": "Clap.wav",
+              "loop": false,
+              "attenuation": {
+                "overrideParent": false,
+                "value": {
+                  "active": false,
+                  "minDistance": 1.0,
+                  "maxDistance": 10.0,
+                  "preset": 0,
+                  "curve": {
+                    "keys": [
+                      {
+                        "time": 0.0,
+                        "value": 1.0,
+                        "inTangent": 0.0,
+                        "outTangent": -1.0,
+                        "inWeight": 0.0,
+                        "outWeight": 0.0,
+                        "weightedMode": 0,
+                        "tangentMode": 0
+                      },
+                      {
+                        "time": 1.0,
+                        "value": 0.0,
+                        "inTangent": -1.0,
+                        "outTangent": 0.0,
+                        "inWeight": 0.0,
+                        "outWeight": 0.0,
+                        "weightedMode": 0,
+                        "tangentMode": 0
+                      }
+                    ],
+                    "length": 2,
+                    "preWrapMode": 8,
+                    "postWrapMode": 8
+                  },
+                  "volumeAtMaxDistance": 0.0,
+                  "spreadAtMinDistance": 0.0,
+                  "spreadAtMaxDistance": 0.0,
+                  "lowPassAtMinDistance": 0.0,
+                  "lowPassAtMaxDistance": 0.0
+                }
+              },
+              "volumeDB": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "pitchCents": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "lowpass": {
+                "randomize": false,
+                "minModifier": 0.0,
+                "maxModifier": 0.0,
+                "baseValue": 0.0
+              },
+              "playbackProbabilityPercent": 100.0
+            }
+          }
+        ],
+        "attenuation": {
+          "overrideParent": false,
+          "value": {
+            "active": false,
+            "minDistance": 1.0,
+            "maxDistance": 10.0,
+            "preset": 0,
+            "curve": {
+              "keys": [
+                {
+                  "time": 0.0,
+                  "value": 1.0,
+                  "inTangent": 0.0,
+                  "outTangent": -1.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                },
+                {
+                  "time": 1.0,
+                  "value": 0.0,
+                  "inTangent": -1.0,
+                  "outTangent": 0.0,
+                  "inWeight": 0.0,
+                  "outWeight": 0.0,
+                  "weightedMode": 0,
+                  "tangentMode": 0
+                }
+              ],
+              "length": 2,
+              "preWrapMode": 8,
+              "postWrapMode": 8
+            },
+            "volumeAtMaxDistance": 0.0,
+            "spreadAtMinDistance": 0.0,
+            "spreadAtMaxDistance": 0.0,
+            "lowPassAtMinDistance": 0.0,
+            "lowPassAtMaxDistance": 0.0
+          }
+        },
+        "volumeDB": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "pitchCents": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "lowpass": {
+          "randomize": false,
+          "minModifier": 0.0,
+          "maxModifier": 0.0,
+          "baseValue": 0.0
+        },
+        "playbackProbabilityPercent": 100.0
+      }
+    ],
+    "attenuation": {
+      "overrideParent": true,
+      "value": {
+        "active": true,
+        "minDistance": 1.0,
+        "maxDistance": 10.0,
+        "preset": 2,
+        "curve": {
+          "keys": [
+            {
+              "time": 0.0,
+              "value": 1.0,
+              "inTangent": 0.0,
+              "outTangent": -1.0,
+              "inWeight": 0.0,
+              "outWeight": 0.0,
+              "weightedMode": 0,
+              "tangentMode": 0
+            },
+            {
+              "time": 1.0,
+              "value": 0.0,
+              "inTangent": -1.0,
+              "outTangent": 0.0,
+              "inWeight": 0.0,
+              "outWeight": 0.0,
+              "weightedMode": 0,
+              "tangentMode": 0
+            }
+          ],
+          "length": 2,
+          "preWrapMode": 8,
+          "postWrapMode": 8
+        },
+        "volumeAtMaxDistance": 0.0,
+        "spreadAtMinDistance": -1.0,
+        "spreadAtMaxDistance": 0.0,
+        "lowPassAtMinDistance": 0.0,
+        "lowPassAtMaxDistance": 1.0
+      }
+    },
+    "volumeDB": {
+      "randomize": true,
+      "minModifier": -2.0,
+      "maxModifier": 2.0,
+      "baseValue": -6.0
+    },
+    "pitchCents": {
+      "randomize": true,
+      "minModifier": -0.1,
+      "maxModifier": 0.1,
+      "baseValue": 0.0
+    },
+    "lowpass": {
+      "randomize": true,
+      "minModifier": 0.0,
+      "maxModifier": 0.1,
+      "baseValue": 0.0
+    },
+    "playbackProbabilityPercent": 80.0
+  }
+}

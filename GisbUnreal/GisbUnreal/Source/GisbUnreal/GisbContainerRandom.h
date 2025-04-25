@@ -16,6 +16,7 @@ class GISBUNREAL_API UGisbContainerRandom : public UGisbContainerBase
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly)
 	TArray<UGisbContainerBase*> ChildContainers;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
