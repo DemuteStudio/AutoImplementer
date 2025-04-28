@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Curves/CurveFloat.h"
 #include "GisbStructs.generated.h"
 
 USTRUCT(BlueprintType)
@@ -23,6 +24,8 @@ struct FGisbAttenuation
 	float maxDistance = 1000;
 
 	//TBD curve
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)  
+    FRuntimeFloatCurve attenuationCurve;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float volumeAtMax = 0;
@@ -93,3 +96,43 @@ struct FGisbLowPass
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float maxRnd = 0;
 };
+
+/*USTRUCT(BlueprintType)
+struct FGisbCurve
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FGisbKey> keys;
+	
+};
+
+USTRUCT(BlueprintType)
+struct FGisbKey
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float time = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float value = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float inTangent = 0.0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float outTangent = -1.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float inWeight = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float outWeight = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int weightedMode = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int tangentMode = 0;
+};*/
