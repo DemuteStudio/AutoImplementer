@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "GisbImportContainerBase.h"
 #include "Dom/JsonObject.h"
-
+#include "MetasoundFrontendDocument.h"
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSimpleSound.h"
@@ -196,11 +196,26 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 	PlaybackProbabilityPercent = JsonObject->GetNumberField("playbackProbabilityPercent");
 }
 
-void UGisbImportContainerBase::AssignBaseVariables(UGisbContainerBase* Container)
+void UGisbImportContainerBase::AssignBaseVariables(UGisbContainerBase* Container) const
 {
 	Container->Attenuation = Attenuation;
 	Container->VolumeDB = VolumeDB;
 	Container->Pitch = Pitch;
 	Container->Lowpass = Lowpass;
 	Container->PlaybackProbabilityPercent = PlaybackProbabilityPercent;
+}
+
+FMetasoundFrontendDocument UGisbImportContainerBase::ToMSDocument(FString Name)  
+{  
+  FMetasoundFrontendDocument Document;
+
+  FMetasoundFrontendClassMetadata Metadata = FMetasoundFrontendClassMetadata();
+  Metadata.SetDisplayName(FText::FromString(Name));
+  Metadata.SetAuthor("Generated via C++");
+  Metadata.SetType(EMetasoundFrontendClassType::Graph);
+
+  Document.RootGraph.Metadata = Metadata;
+  // TODO: Implement the conversion to Metasound document  
+  // FMetasoundFrontendRegistryContainer::Get();  
+  return Document;
 }

@@ -11,6 +11,7 @@
 #include "Misc/Paths.h"
 #include "UObject/Package.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "MetasoundSource.h"
 
 void UGisbSoundBankImporter::ImportSoundBankFromJson()
 {
@@ -92,28 +93,39 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
 {
     FString AssetName = EventName + "_SoundBank";
     FString PackagePath = "/Game/SoundBanks/" + AssetName;
+	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/" + AssetName;
     UPackage* Package = CreatePackage(*PackagePath);
+	UPackage* MSPackage = CreatePackage(*MSPackagePath);
 
     // Create a new sound asset and set its properties
     UGisbSoundBankDataAsset* NewAsset = NewObject<UGisbSoundBankDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
     UGisbImportContainerBase* RootContainer = UGisbImportContainerBase::CreateFromJson(*RootAudioObject, NewAsset, FullPath);
-
-    if (RootContainer)
+	UMetaSoundSource* GeneratedMS = NewObject<UMetaSoundSource>(MSPackage, *AssetName, RF_Public | RF_Standalone);
+    if (RootContainer && GeneratedMS)
     {
         NewAsset->EventName = EventName;
         NewAsset->RootContainer = RootContainer->ToRuntimeContainer(NewAsset);
         RootContainer->MarkPackageDirty();
 
+        GeneratedMS->SetDocument(RootContainer->ToMSDocument(AssetName));
+		NewAsset->GeneratedMS = GeneratedMS;
+
         NewAsset->Modify();  // Ensures Unreal tracks the change
+		GeneratedMS->Modify();
         NewAsset->MarkPackageDirty();
+		GeneratedMS->MarkPackageDirty();
         FAssetRegistryModule::AssetCreated(NewAsset);
+		FAssetRegistryModule::AssetCreated(GeneratedMS);
 
         // Make sure the package is marked dirty for saving
         Package->MarkPackageDirty();
+		MSPackage->MarkPackageDirty();
 
         // Save the asset
         const FString AssetFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
         bool bSaved = UPackage::SavePackage(Package, NewAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetFileName);
+		const FString AssetMSFileName = FPackageName::LongPackageNameToFilename(MSPackagePath, FPackageName::GetAssetPackageExtension());
+		bool bSavedMS = UPackage::SavePackage(MSPackage, GeneratedMS, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetMSFileName);
 
         if (bSaved)
         {
@@ -122,6 +134,15 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
         else
         {
             UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
+        }
+
+        if (bSavedMS)
+        {
+            UE_LOG(LogTemp, Log, TEXT("MetaSound successfully saved: %s"), *AssetMSFileName);
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to save the MetaSound: %s"), *AssetMSFileName);
         }
     }
 }

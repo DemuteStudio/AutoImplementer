@@ -22,10 +22,14 @@ public class GisbUnreal : ModuleRules
 			"EditorScriptingUtilities", 
 			"AssetTools", 
 			"UnrealEd",
-			"AudioEditor" 
+			"AudioEditor",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+    		"MetasoundEngine", "MetasoundFrontend", "MetasoundGraphCore"
+		});
+
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

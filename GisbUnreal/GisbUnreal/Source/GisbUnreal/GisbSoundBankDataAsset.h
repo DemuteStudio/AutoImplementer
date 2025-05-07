@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GisbImportContainerBase.h"
 #include "Engine/DataAsset.h"
+#include "MetasoundSource.h"
 #include "GisbSoundBankDataAsset.generated.h"
 
 /**
@@ -18,6 +19,9 @@ class GISBUNREAL_API UGisbSoundBankDataAsset : public UPrimaryDataAsset
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString EventName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UMetaSoundSource* GeneratedMS;
 
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category="Gisb")
 	UGisbContainerBase* RootContainer;
