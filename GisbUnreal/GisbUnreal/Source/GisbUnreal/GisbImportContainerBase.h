@@ -5,7 +5,6 @@
 #include "GisbContainerBase.h"
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "MetasoundFrontendDocument.h"
 #include "GisbImportContainerBase.generated.h"
 
 /**
@@ -39,5 +38,4 @@ public:
 	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) /*PURE_VIRTUAL(USoundContainerBase::ParseJson, )*/;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) PURE_VIRTUAL(UGisbImportContainerBase::ToRuntimeContainer, return nullptr;);
 	void AssignBaseVariables(UGisbContainerBase* Container) const;
-	FMetasoundFrontendDocument ToMSDocument(FString Name);
 };

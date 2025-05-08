@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "GisbSoundBankImporter.h"
 #include "Dom/JsonObject.h"
+#include "Containers/StringFwd.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "GisbSoundBankDataAsset.h"
@@ -11,6 +12,7 @@
 #include "Misc/Paths.h"
 #include "UObject/Package.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "GISB_MetasoundBuilder.h"
 #include "MetasoundSource.h"
 
 void UGisbSoundBankImporter::ImportSoundBankFromJson()
@@ -31,7 +33,7 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
         {
             FString FilePath = OutFiles[0];
             FString BaseDir = FPaths::ProjectContentDir();
-            FString FullPath = /*FPaths::Combine(BaseDir, FilePath)*/ FilePath;
+            FString FullPath = FilePath;
             FullPath = FPaths::ConvertRelativePathToFull(FullPath);
             
             // Parse JSON
@@ -41,7 +43,7 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
             if (FJsonSerializer::Deserialize(Reader, JsonObject))
             {
                 FString AssetName;
-                if (!JsonObject->TryGetStringField("name", AssetName))
+                if (!JsonObject->TryGetStringField(TEXT("name"), AssetName))
                 {
                     UE_LOG(LogTemp, Error, TEXT("Failed to get event name from JSON."));
                     return;
@@ -50,13 +52,13 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
                 const TSharedPtr<FJsonObject>* RootAudioObject; // Used when user selected an audio event
                 TArray<FString> EventArrayJson; // Used when user selected an audio bank
 
-                if (JsonObject->TryGetObjectField("rootAudioObject", RootAudioObject))
+                if (JsonObject->TryGetObjectField(TEXT("rootAudioObject"), RootAudioObject))
                 {
                     ImportEventFromJson(AssetName, FullPath, RootAudioObject);
                 }
 
                 // WIP
-                else if (JsonObject->TryGetStringArrayField("events", EventArrayJson ))
+                else if (JsonObject->TryGetStringArrayField(TEXT("events"), EventArrayJson ))
                 {
                     for (const FString& EventEntry : EventArrayJson) 
                     {
@@ -70,13 +72,13 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
                             if (FJsonSerializer::Deserialize(EventReader, EventJsonObject))
                             {
                                 FString EventName;
-                                if (!EventJsonObject->TryGetStringField("name", EventName))
+                                if (!EventJsonObject->TryGetStringField(TEXT("name"), EventName))
                                 {
                                     UE_LOG(LogTemp, Error, TEXT("Failed to get event name from JSON."));
                                     return;
                                 }
                                 const TSharedPtr<FJsonObject>* EventRootAudioObject;
-                                if (EventJsonObject->TryGetObjectField("rootAudioObject", EventRootAudioObject))
+                                if (EventJsonObject->TryGetObjectField(TEXT("rootAudioObject"), EventRootAudioObject))
                                 {
                                     ImportEventFromJson(EventName, EventFilePath, EventRootAudioObject);
                                 }
@@ -93,39 +95,35 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
 {
     FString AssetName = EventName + "_SoundBank";
     FString PackagePath = "/Game/SoundBanks/" + AssetName;
-	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/" + AssetName;
+	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/" + EventName;
     UPackage* Package = CreatePackage(*PackagePath);
-	UPackage* MSPackage = CreatePackage(*MSPackagePath);
 
     // Create a new sound asset and set its properties
     UGisbSoundBankDataAsset* NewAsset = NewObject<UGisbSoundBankDataAsset>(Package, *AssetName, RF_Public | RF_Standalone);
     UGisbImportContainerBase* RootContainer = UGisbImportContainerBase::CreateFromJson(*RootAudioObject, NewAsset, FullPath);
-	UMetaSoundSource* GeneratedMS = NewObject<UMetaSoundSource>(MSPackage, *AssetName, RF_Public | RF_Standalone);
-    if (RootContainer && GeneratedMS)
+    if (RootContainer)
     {
         NewAsset->EventName = EventName;
         NewAsset->RootContainer = RootContainer->ToRuntimeContainer(NewAsset);
         RootContainer->MarkPackageDirty();
 
-        GeneratedMS->SetDocument(RootContainer->ToMSDocument(AssetName));
+		UMetaSoundSource* GeneratedMS = UGISB_MetasoundBuilder::CreateMetasoundFromGISB(RootContainer, EventName, MSPackagePath);
+        
 		NewAsset->GeneratedMS = GeneratedMS;
 
         NewAsset->Modify();  // Ensures Unreal tracks the change
-		GeneratedMS->Modify();
+		
         NewAsset->MarkPackageDirty();
 		GeneratedMS->MarkPackageDirty();
         FAssetRegistryModule::AssetCreated(NewAsset);
-		FAssetRegistryModule::AssetCreated(GeneratedMS);
+		
 
         // Make sure the package is marked dirty for saving
         Package->MarkPackageDirty();
-		MSPackage->MarkPackageDirty();
 
         // Save the asset
         const FString AssetFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
         bool bSaved = UPackage::SavePackage(Package, NewAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetFileName);
-		const FString AssetMSFileName = FPackageName::LongPackageNameToFilename(MSPackagePath, FPackageName::GetAssetPackageExtension());
-		bool bSavedMS = UPackage::SavePackage(MSPackage, GeneratedMS, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetMSFileName);
 
         if (bSaved)
         {
@@ -134,15 +132,6 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
         else
         {
             UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
-        }
-
-        if (bSavedMS)
-        {
-            UE_LOG(LogTemp, Log, TEXT("MetaSound successfully saved: %s"), *AssetMSFileName);
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to save the MetaSound: %s"), *AssetMSFileName);
         }
     }
 }

@@ -9,18 +9,18 @@
 void UGisbImportContainerSwitch::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
 	Super::ParseJson(JsonObject, Outer, path);
-	ParameterID = FName(*JsonObject->GetStringField("ParameterName"));
-	DefaultParameterValue = FName(*JsonObject->GetStringField("DefaultValue"));
+	ParameterID = FName(*JsonObject->GetStringField(TEXT("ParameterName")));
+	DefaultParameterValue = FName(*JsonObject->GetStringField(TEXT("DefaultValue")));
 	const TArray<TSharedPtr<FJsonValue>>* SoundArrayJson;
-	if (JsonObject->TryGetArrayField("SwitchCases", SoundArrayJson))
+	if (JsonObject->TryGetArrayField(TEXT("SwitchCases"), SoundArrayJson))
 	{
 		for (const auto& SoundEntry : *SoundArrayJson)
 		{
 			TSharedPtr<FJsonObject> SoundObj = SoundEntry->AsObject();
-			FString ParameterVal = SoundObj->GetStringField("parameterValue");
+			FString ParameterVal = SoundObj->GetStringField(TEXT("parameterValue"));
 
 			const TSharedPtr<FJsonObject>* AudioObjectJson;
-			SoundObj->TryGetObjectField("audioObject",AudioObjectJson);
+			SoundObj->TryGetObjectField(TEXT("audioObject"),AudioObjectJson);
 			UGisbImportContainerBase* Container = CreateFromJson(*AudioObjectJson, Outer, path);
 
 			if (Container)

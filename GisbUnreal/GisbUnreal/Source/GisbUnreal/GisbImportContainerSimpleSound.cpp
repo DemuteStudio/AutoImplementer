@@ -11,8 +11,8 @@
 void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
     Super::ParseJson(JsonObject, Outer, path);
-    AudioFilePath = JsonObject->GetStringField("soundClip");
-    loop = JsonObject->GetBoolField("loop");
+    AudioFilePath = JsonObject->GetStringField(TEXT("soundClip"));
+    loop = JsonObject->GetBoolField(TEXT("loop"));
 
     // Check if the audio file exists
     FString AbsoluteAudioFilePath = FPaths::Combine(FPaths::GetPath(path), TEXT("Audio Files"), AudioFilePath);

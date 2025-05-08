@@ -9,9 +9,9 @@
 void UGisbImportContainerRandom::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
 	Super::ParseJson(JsonObject, Outer, path);
-	AvoidLastPlayed = FCString::Atoi(*JsonObject->GetStringField("avoidLastPlayed"));
+	AvoidLastPlayed = FCString::Atoi(*JsonObject->GetStringField(TEXT("avoidLastPlayed")));
 	const TArray<TSharedPtr<FJsonValue>>* SoundArrayJson;
-	if (JsonObject->TryGetArrayField("RandomPlaylist", SoundArrayJson))
+	if (JsonObject->TryGetArrayField(TEXT("RandomPlaylist"), SoundArrayJson))
 	{
 		for (const auto& SoundEntry : *SoundArrayJson)
 		{

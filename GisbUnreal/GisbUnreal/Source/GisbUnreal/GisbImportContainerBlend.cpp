@@ -10,7 +10,7 @@ void UGisbImportContainerBlend::ParseJson(const TSharedPtr<FJsonObject>& JsonObj
 {
 	Super::ParseJson(JsonObject, Outer, path);
 	const TArray<TSharedPtr<FJsonValue>>* SoundArrayJson;
-	if (JsonObject->TryGetArrayField("BlendPlaylist", SoundArrayJson))
+	if (JsonObject->TryGetArrayField(TEXT("BlendPlaylist"), SoundArrayJson))
 	{
 		for (const auto& SoundEntry : *SoundArrayJson)
 		{

@@ -1,12 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "GisbImportContainerBase.h"
 #include "Dom/JsonObject.h"
-#include "MetasoundFrontendDocument.h"
-#include "MetasoundFrontendDataTypeRegistry.h"
-/*#include "MetasoundFrontendVersion.h"
-#include "MetasoundFrontendRegistryContainer.h"
-#include "MetasoundFrontendDocumentBuilder.h"*/
-#include "MetasoundFrontendArchetypeRegistry.h"
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSimpleSound.h"
@@ -14,7 +8,7 @@
 
 UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
-	FString Type = JsonObject->GetStringField("$type");
+	FString Type = JsonObject->GetStringField(TEXT("$type"));
 
 	UGisbImportContainerBase* Container = nullptr;
 
@@ -50,13 +44,13 @@ UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TShared
 
 void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
-	TSharedPtr<FJsonObject> JsonAttenuation = JsonObject->GetObjectField("attenuation");
-	TSharedPtr<FJsonObject> JsonAttenuationValue = JsonAttenuation->GetObjectField("value");
+	TSharedPtr<FJsonObject> JsonAttenuation = JsonObject->GetObjectField(TEXT("attenuation"));
+	TSharedPtr<FJsonObject> JsonAttenuationValue = JsonAttenuation->GetObjectField(TEXT("value"));
 
 	FRuntimeFloatCurve* AttenuationCurve = new FRuntimeFloatCurve();
 	FRichCurve* curve = &AttenuationCurve->EditorCurveData;
 	TArray<FRichCurveKey> tempKeys;
-	int curvePreset = JsonAttenuationValue->GetIntegerField("preset");
+	int curvePreset = JsonAttenuationValue->GetIntegerField(TEXT("preset"));
 
 	switch (curvePreset)
 	{
@@ -116,20 +110,20 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 
 		case 3: // No preset (Custom)
 		{
-			TSharedPtr<FJsonObject> JsonCurveValue = JsonAttenuationValue->GetObjectField("curve");
-			TArray<TSharedPtr<FJsonValue>> JsonKeys = JsonCurveValue->GetArrayField("keys");
+			TSharedPtr<FJsonObject> JsonCurveValue = JsonAttenuationValue->GetObjectField(TEXT("curve"));
+			TArray<TSharedPtr<FJsonValue>> JsonKeys = JsonCurveValue->GetArrayField(TEXT("keys"));
 
-			int length = JsonCurveValue->GetIntegerField("length");
-			int preWrapMode = JsonCurveValue->GetIntegerField("preWrapMode");
-			int postWrapMode = JsonCurveValue->GetIntegerField("postWrapMode");
+			int length = JsonCurveValue->GetIntegerField(TEXT("length"));
+			int preWrapMode = JsonCurveValue->GetIntegerField(TEXT("preWrapMode"));
+			int postWrapMode = JsonCurveValue->GetIntegerField(TEXT("postWrapMode"));
 			
 			for(int i = 0; i<length; i++)
 			{
 				TSharedPtr<FJsonObject> JsonKey = JsonKeys[i]->AsObject();
-				float time = (float)JsonKey->GetNumberField("time");
-				float value = (float)JsonKey->GetNumberField("value");
+				float time = (float)JsonKey->GetNumberField(TEXT("time"));
+				float value = (float)JsonKey->GetNumberField(TEXT("value"));
 				auto handle = curve->AddKey(time, value);
-				ERichCurveTangentMode RCTM = (ERichCurveTangentMode)JsonKey->GetIntegerField("tangentMode"); // TO DO : Check if Unity's tangent mode equals UE's one
+				ERichCurveTangentMode RCTM = (ERichCurveTangentMode)JsonKey->GetIntegerField(TEXT("tangentMode")); // TO DO : Check if Unity's tangent mode equals UE's one
 				ERichCurveInterpMode RCIM = ERichCurveInterpMode::RCIM_Cubic; // Not right, just placeholder
 				//(ERichCurveInterpMode)JsonKey->GetIntegerField("weightedMode"); // Not right, just placeholder
 				curve->SetKeyTangentMode(handle, ERichCurveTangentMode::RCTM_Break);
@@ -143,10 +137,10 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 
 				TSharedPtr<FJsonObject> JsonKey = JsonKeys[i]->AsObject();
 
-				float inTngnt = (float)JsonKey->GetNumberField("inTangent");
-				float outTngnt = (float)JsonKey->GetNumberField("outTangent");
-				float inWeight = (float)JsonKey->GetNumberField("inWeight");
-				float outWeight = (float)JsonKey->GetNumberField("outWeight");
+				float inTngnt = (float)JsonKey->GetNumberField(TEXT("inTangent"));
+				float outTngnt = (float)JsonKey->GetNumberField(TEXT("outTangent"));
+				float inWeight = (float)JsonKey->GetNumberField(TEXT("inWeight"));
+				float outWeight = (float)JsonKey->GetNumberField(TEXT("outWeight"));
 				
 				tempKeys[i].ArriveTangent = inTngnt;
 				tempKeys[i].LeaveTangent = outTngnt;
@@ -161,43 +155,43 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 	
 
 	Attenuation = FGisbAttenuation{
-		JsonAttenuation->GetBoolField("overrideParent"),
-		JsonAttenuationValue->GetBoolField("active"),
-		(float)JsonAttenuationValue->GetNumberField("minDistance"),
-		(float)JsonAttenuationValue->GetNumberField("maxDistance"),
+		JsonAttenuation->GetBoolField(TEXT("overrideParent")),
+		JsonAttenuationValue->GetBoolField(TEXT("active")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance")),
 		*AttenuationCurve,
-		(float)JsonAttenuationValue->GetNumberField("volumeAtMaxDistance"),
-		(float)JsonAttenuationValue->GetNumberField("spreadAtMinDistance"),
-		(float)JsonAttenuationValue->GetNumberField("spreadAtMaxDistance"),
-		(float)JsonAttenuationValue->GetNumberField("lowPassAtMinDistance"),
-		(float)JsonAttenuationValue->GetNumberField("lowPassAtMaxDistance")
+		(float)JsonAttenuationValue->GetNumberField(TEXT("volumeAtMaxDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("spreadAtMinDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("spreadAtMaxDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMinDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMaxDistance"))
 	};
 
-	TSharedPtr<FJsonObject> JsonVolume = JsonObject->GetObjectField("volumeDB");
+	TSharedPtr<FJsonObject> JsonVolume = JsonObject->GetObjectField(TEXT("volumeDB"));
 	VolumeDB = FGisbVolume{
-	   (float)JsonVolume->GetNumberField("baseValue"),
-	   JsonVolume->GetBoolField("randomize"),
-	   (float)JsonVolume->GetNumberField("minModifier"),
-	   (float)JsonVolume->GetNumberField("maxModifier")
+	   (float)JsonVolume->GetNumberField(TEXT("baseValue")),
+	   JsonVolume->GetBoolField(TEXT("randomize")),
+	   (float)JsonVolume->GetNumberField(TEXT("minModifier")),
+	   (float)JsonVolume->GetNumberField(TEXT("maxModifier"))
 	};
 
-	TSharedPtr<FJsonObject> JsonPitch = JsonObject->GetObjectField("pitchCents");
+	TSharedPtr<FJsonObject> JsonPitch = JsonObject->GetObjectField(TEXT("pitchCents"));
 	Pitch = FGisbPitch{
-	   (float)JsonPitch->GetNumberField("baseValue"),
-	   JsonPitch->GetBoolField("randomize"),
-	   (float)JsonPitch->GetNumberField("minModifier"),
-	   (float)JsonPitch->GetNumberField("maxModifier")
+	   (float)JsonPitch->GetNumberField(TEXT("baseValue")),
+	   JsonPitch->GetBoolField(TEXT("randomize")),
+	   (float)JsonPitch->GetNumberField(TEXT("minModifier")),
+	   (float)JsonPitch->GetNumberField(TEXT("maxModifier"))
 	};
 
-	TSharedPtr<FJsonObject> JsonLowpass = JsonObject->GetObjectField("lowpass");
+	TSharedPtr<FJsonObject> JsonLowpass = JsonObject->GetObjectField(TEXT("lowpass"));
     Lowpass = FGisbLowPass{
-       (float)JsonLowpass->GetNumberField("baseValue"),
-       JsonLowpass->GetBoolField("randomize"),
-       (float)JsonLowpass->GetNumberField("minModifier"),
-       (float)JsonLowpass->GetNumberField("maxModifier")
+       (float)JsonLowpass->GetNumberField(TEXT("baseValue")),
+       JsonLowpass->GetBoolField(TEXT("randomize")),
+       (float)JsonLowpass->GetNumberField(TEXT("minModifier")),
+       (float)JsonLowpass->GetNumberField(TEXT("maxModifier"))
     };
 	
-	PlaybackProbabilityPercent = JsonObject->GetNumberField("playbackProbabilityPercent");
+	PlaybackProbabilityPercent = JsonObject->GetNumberField(TEXT("playbackProbabilityPercent"));
 }
 
 void UGisbImportContainerBase::AssignBaseVariables(UGisbContainerBase* Container) const
@@ -207,63 +201,4 @@ void UGisbImportContainerBase::AssignBaseVariables(UGisbContainerBase* Container
 	Container->Pitch = Pitch;
 	Container->Lowpass = Lowpass;
 	Container->PlaybackProbabilityPercent = PlaybackProbabilityPercent;
-}
-
-FMetasoundFrontendDocument UGisbImportContainerBase::ToMSDocument(FString Name)  
-{  
-  FMetasoundFrontendDocument Document;
-
-  FMetasoundFrontendClassMetadata Metadata = FMetasoundFrontendClassMetadata();
-  Metadata.SetDisplayName(FText::FromString(Name));
-  Metadata.SetAuthor("Generated via C++");
-  Metadata.SetType(EMetasoundFrontendClassType::Graph);
-
-  Document.RootGraph.Metadata = Metadata;
-  
-  /*
-  // Node registry
-  FMetasoundFrontendClassInputLiteral FrequencyInput;
-  FrequencyInput.Name = TEXT("Frequency");
-  FrequencyInput.TypeName = "Float";
-  FrequencyInput.Value = MakeLiteral(440.0f);
-  */
-  const FMetasoundFrontendClassName ClassName{ TEXT("UE"), TEXT("Sine"), TEXT("Audio") };
-  EMetasoundFrontendClassType ClassType = EMetasoundFrontendClassType::External;
-
-  FMetasoundFrontendClass SineClass;
-  Metasound::Frontend::FNodeRegistryKey key;
-  key = Metasound::Frontend::NodeRegistryKey::CreateKey(ClassType, ClassName.ToString(), 1, 0);
-  FMetasoundFrontendRegistryContainer::Get()->FindFrontendClassFromRegistered(key, SineClass);
-
-  // Add sine oscillator node
-  FMetasoundFrontendNode PitchNode;
-  PitchNode.ClassID = SineClass.ID /*FGuid("C3374D90426FC65520BE6CAC665B0A65")*/;
-  //PitchNode.UpdateID(FGuid("C3374D90426FC65520BE6CAC665B0A65"));
-  PitchNode.Name = TEXT("GISB_Test");
-  FGuid id = PitchNode.GetID();
-  Document.RootGraph.Graph.Nodes.Add(PitchNode);
-
-  /*
-  // Add output node
-  FMetasoundFrontendNode OutputNode;
-  OutputNode.ClassName = {
-	  "UE",
-	  "AudioOutput",
-	  "Audio"
-  };
-  OutputNode.Name = TEXT("OutputNode");
-  Document.RootGraph.Nodes.Add(OutputNode);
-
-  // Connect sine -> output
-  FMetasoundFrontendEdge Edge;
-  Edge.FromNode = PitchNode.Name;
-  Edge.FromVertex = TEXT("Audio");
-  Edge.ToNode = OutputNode.Name;
-  Edge.ToVertex = TEXT("Audio");
-  Document.RootGraph.Edges.Add(Edge);
-
-  */
-  // TODO: Implement the conversion to Metasound document  
-  // FMetasoundFrontendRegistryContainer::Get();  
-  return Document;
 }

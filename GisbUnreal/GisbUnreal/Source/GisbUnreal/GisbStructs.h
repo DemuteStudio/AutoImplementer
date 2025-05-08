@@ -23,7 +23,6 @@ struct FGisbAttenuation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float maxDistance = 1000;
 
-	//TBD curve
     UPROPERTY(EditAnywhere, BlueprintReadWrite)  
     FRuntimeFloatCurve attenuationCurve;
 
