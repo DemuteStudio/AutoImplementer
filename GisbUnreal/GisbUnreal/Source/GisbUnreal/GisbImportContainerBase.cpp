@@ -2,6 +2,11 @@
 #include "GisbImportContainerBase.h"
 #include "Dom/JsonObject.h"
 #include "MetasoundFrontendDocument.h"
+#include "MetasoundFrontendDataTypeRegistry.h"
+/*#include "MetasoundFrontendVersion.h"
+#include "MetasoundFrontendRegistryContainer.h"
+#include "MetasoundFrontendDocumentBuilder.h"*/
+#include "MetasoundFrontendArchetypeRegistry.h"
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSimpleSound.h"
@@ -160,7 +165,6 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 		JsonAttenuationValue->GetBoolField("active"),
 		(float)JsonAttenuationValue->GetNumberField("minDistance"),
 		(float)JsonAttenuationValue->GetNumberField("maxDistance"),
-		//TBD curve
 		*AttenuationCurve,
 		(float)JsonAttenuationValue->GetNumberField("volumeAtMaxDistance"),
 		(float)JsonAttenuationValue->GetNumberField("spreadAtMinDistance"),
@@ -215,6 +219,50 @@ FMetasoundFrontendDocument UGisbImportContainerBase::ToMSDocument(FString Name)
   Metadata.SetType(EMetasoundFrontendClassType::Graph);
 
   Document.RootGraph.Metadata = Metadata;
+  
+  /*
+  // Node registry
+  FMetasoundFrontendClassInputLiteral FrequencyInput;
+  FrequencyInput.Name = TEXT("Frequency");
+  FrequencyInput.TypeName = "Float";
+  FrequencyInput.Value = MakeLiteral(440.0f);
+  */
+  const FMetasoundFrontendClassName ClassName{ TEXT("UE"), TEXT("Sine"), TEXT("Audio") };
+  EMetasoundFrontendClassType ClassType = EMetasoundFrontendClassType::External;
+
+  FMetasoundFrontendClass SineClass;
+  Metasound::Frontend::FNodeRegistryKey key;
+  key = Metasound::Frontend::NodeRegistryKey::CreateKey(ClassType, ClassName.ToString(), 1, 0);
+  FMetasoundFrontendRegistryContainer::Get()->FindFrontendClassFromRegistered(key, SineClass);
+
+  // Add sine oscillator node
+  FMetasoundFrontendNode PitchNode;
+  PitchNode.ClassID = SineClass.ID /*FGuid("C3374D90426FC65520BE6CAC665B0A65")*/;
+  //PitchNode.UpdateID(FGuid("C3374D90426FC65520BE6CAC665B0A65"));
+  PitchNode.Name = TEXT("GISB_Test");
+  FGuid id = PitchNode.GetID();
+  Document.RootGraph.Graph.Nodes.Add(PitchNode);
+
+  /*
+  // Add output node
+  FMetasoundFrontendNode OutputNode;
+  OutputNode.ClassName = {
+	  "UE",
+	  "AudioOutput",
+	  "Audio"
+  };
+  OutputNode.Name = TEXT("OutputNode");
+  Document.RootGraph.Nodes.Add(OutputNode);
+
+  // Connect sine -> output
+  FMetasoundFrontendEdge Edge;
+  Edge.FromNode = PitchNode.Name;
+  Edge.FromVertex = TEXT("Audio");
+  Edge.ToNode = OutputNode.Name;
+  Edge.ToVertex = TEXT("Audio");
+  Document.RootGraph.Edges.Add(Edge);
+
+  */
   // TODO: Implement the conversion to Metasound document  
   // FMetasoundFrontendRegistryContainer::Get();  
   return Document;

@@ -27,7 +27,7 @@ public class GisbUnreal : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-    		"MetasoundEngine", "MetasoundFrontend", "MetasoundGraphCore"
+    		"MetasoundEngine", "MetasoundFrontend", "MetasoundGraphCore", "MetasoundEditor"
 		});
 
 
