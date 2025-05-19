@@ -7,22 +7,24 @@
 #include "MetasoundFrontendDocument.h"
 #include "MetasoundBuilderSubsystem.h"
 #include "MetasoundBuilderBase.h"
+#include "MetasoundDocumentInterface.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "MetasoundEditorSubsystem.h"
 
 FMetasoundFrontendClassName* UGISB_MetasoundBuilder::WavePlayerMonoNode = nullptr;
 FMetasoundFrontendClassName* UGISB_MetasoundBuilder::WavePlayerStereoNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbRandomNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbSwitchNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbProbabilityNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbVolumeNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbPitchNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbLowpassNode = nullptr;
-FMetasoundFrontendClassName* UGISB_MetasoundBuilder::GisbAttenuationNode = nullptr;
+FMetasoundFrontendClassName* UGISB_MetasoundBuilder::ProbabilityNode = nullptr;
 TArray<FMetasoundFrontendClassName*>* UGISB_MetasoundBuilder::MonoMixerNodes = nullptr;
 TArray<FMetasoundFrontendClassName*>* UGISB_MetasoundBuilder::StereoMixerNodes = nullptr;
 TArray<FMetasoundFrontendClassName*>* UGISB_MetasoundBuilder::TriggerAnyNodes = nullptr;
 TArray<FMetasoundFrontendClassName*>* UGISB_MetasoundBuilder::TriggerAccumulateNodes = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::AudioRerouteNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbRandomNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbSwitchNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbVolumeNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbPitchNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbLowpassNode = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbAttenuationNode = nullptr;
 
 UMetaSoundSource* UGISB_MetasoundBuilder::CreateMetasoundFromGISB(UGisbImportContainerBase* gisb, const FString& Name, const FString& path)
 {
@@ -58,17 +60,33 @@ void UGISB_MetasoundBuilder::SetupNodes()
 {
 	FName ue = TEXT("UE");
 	FName wave = TEXT("Wave Player");
-	FName none = TEXT("None");
+
+	UMetaSoundPatch* ReroutePatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_AudioReroute.GISB_AudioReroute")));
+	AudioRerouteNode = TScriptInterface<IMetaSoundDocumentInterface>(ReroutePatch);
 
 	WavePlayerMonoNode = new FMetasoundFrontendClassName(ue, wave, TEXT("Mono"));
+
 	WavePlayerStereoNode = new FMetasoundFrontendClassName(ue, wave, TEXT("Stereo"));
-	GisbAttenuationNode = new FMetasoundFrontendClassName(none, TEXT("D3CBA5154B55E34A2AE5A0BF21DF0423"));
-	GisbProbabilityNode = new FMetasoundFrontendClassName(ue, TEXT("Trigger Filter"));
-	GisbLowpassNode = new FMetasoundFrontendClassName(none, TEXT("C3374D90426FC65520BE6CAC665B0A65"));
-	GisbPitchNode = new FMetasoundFrontendClassName(none, TEXT("22EDDDC74271DA7F01C55EBB71705FED"));
-	GisbRandomNode = new FMetasoundFrontendClassName(none, TEXT("F6D8C5454BB6D02AD68FC49389C4B516"));
-	GisbVolumeNode = new FMetasoundFrontendClassName(none, TEXT("DE4C817A42F6754CAFFE3D80100B3A5F"));
-	GisbSwitchNode = new FMetasoundFrontendClassName(none, TEXT("5C1E1A1249407BA16A3A4A8AAF5CBD7F"));
+
+	UMetaSoundPatch* AttenuationPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_Attenuation.GISB_Attenuation")));
+	GisbAttenuationNode = TScriptInterface<IMetaSoundDocumentInterface>(AttenuationPatch);
+
+	ProbabilityNode = new FMetasoundFrontendClassName(ue, TEXT("Trigger Filter"));
+
+	UMetaSoundPatch* lowpassPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_RandomLowpass.GISB_RandomLowpass")));
+	GisbLowpassNode = TScriptInterface<IMetaSoundDocumentInterface>(lowpassPatch);
+
+	UMetaSoundPatch* pitchPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_RandomPitch.GISB_RandomPitch")));
+	GisbPitchNode = TScriptInterface<IMetaSoundDocumentInterface>(pitchPatch);
+
+	UMetaSoundPatch* randomPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_RandomPlayer.GISB_RandomPlayer")));
+	GisbRandomNode = TScriptInterface<IMetaSoundDocumentInterface>(randomPatch);
+
+	UMetaSoundPatch* volumePatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_RandomVolume.GISB_RandomVolume")));
+	GisbVolumeNode = TScriptInterface<IMetaSoundDocumentInterface>(volumePatch);
+
+	UMetaSoundPatch* switchPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_SwitchPlayer.GISB_SwitchPlayer")));
+	GisbSwitchNode = TScriptInterface<IMetaSoundDocumentInterface>(switchPatch);
 
 	FName mixer = TEXT("AudioMixer");
 	FName any = TEXT("TriggerAny");
@@ -108,7 +126,7 @@ void UGISB_MetasoundBuilder::DetectLoopAndMono(UGisbImportContainerBase* gisb, b
 	if (simplesound != nullptr)
 	{
 		if(simplesound->loop) canLoop = true;
-		if(simplesound->SoundWave->NumChannels > 1) shouldStereo = true;
+		if(simplesound->SoundWave && simplesound->SoundWave->NumChannels > 1) shouldStereo = true;
 	}
 	
 	UGisbImportContainerBlend* blend = Cast<UGisbImportContainerBlend>(gisb);
@@ -145,19 +163,19 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 	FMetaSoundBuilderNodeOutputHandle onFinishHandle;
 	FMetaSoundBuilderNodeOutputHandle firstAudioHandle;
 	FMetaSoundBuilderNodeOutputHandle secondAudioHandle;
-	bool isStereo = false;
+	bool isStereo = audioHandles->Num() > 1;
 
 	if (gisb->PlaybackProbabilityPercent < 99.99f)
 	{
 
 		FMetaSoundNodeHandle probabilityHandle;
-		probabilityHandle = builder->AddNodeByClassName(*GisbProbabilityNode, result);
+		probabilityHandle = builder->AddNodeByClassName(*ProbabilityNode, result);
 		if (result == EMetaSoundBuilderResult::Succeeded)
 		{
 			FMetaSoundBuilderNodeInputHandle floatHandle = builder->FindNodeInputByName(probabilityHandle, TEXT("Probability"), result);
-			FMetaSoundBuilderNodeInputHandle triggerHandle = builder->FindNodeInputByName(probabilityHandle, TEXT("Wave Asset"), result);
+			FMetaSoundBuilderNodeInputHandle triggerHandle = builder->FindNodeInputByName(probabilityHandle, TEXT("Trigger"), result);
 
-			FAudioParameter floatParam = FAudioParameter(TEXT("Wave Asset"), gisb->PlaybackProbabilityPercent);
+			FAudioParameter floatParam = FAudioParameter(TEXT("Probability"), gisb->PlaybackProbabilityPercent * 0.01f);
 			FMetasoundFrontendLiteral floatValue = FMetasoundFrontendLiteral(floatParam);
 			builder->SetNodeInputDefault(floatHandle, floatValue, result);
 
@@ -172,10 +190,13 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 			anyHandle = builder->AddNodeByClassName(*((*TriggerAnyNodes)[0]), result);
 			if(result == EMetaSoundBuilderResult::Succeeded)
 			{
-				FMetaSoundBuilderNodeInputHandle succesHandle = builder->FindNodeInputByName(anyHandle, TEXT("In 0"), result);
 				FMetaSoundBuilderNodeInputHandle failHandle = builder->FindNodeInputByName(anyHandle, TEXT("In 1"), result);
-
 				builder->ConnectNodes(tailsHandle, failHandle, result);
+
+				FMetaSoundBuilderNodeOutputHandle outHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+				builder->ConnectNodes(outHandle, *finishHandle, result);
+
+				FMetaSoundBuilderNodeInputHandle succesHandle = builder->FindNodeInputByName(anyHandle, TEXT("In 0"), result);
 				finishHandle = &succesHandle;
 			}
 		}
@@ -184,7 +205,7 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 	UGisbImportContainerSimpleSound* simplesound = Cast<UGisbImportContainerSimpleSound>(gisb);
 	if (simplesound != nullptr)
 	{
-		isStereo = simplesound->SoundWave->NumChannels > 1;
+		if(simplesound->SoundWave && !isStereo) isStereo = simplesound->SoundWave->NumChannels > 1;
 		FMetaSoundNodeHandle handle;
 		handle = builder->AddNodeByClassName(isStereo ? *WavePlayerStereoNode : *WavePlayerMonoNode, result);
 		if (result == EMetaSoundBuilderResult::Succeeded)
@@ -203,34 +224,385 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 
 			builder->ConnectNodes(*executionHandle, playHandle, result);
 
-
 			onFinishHandle = builder->FindNodeOutputByName(handle, TEXT("On Finished"), result);
 			firstAudioHandle = builder->FindNodeOutputByName(handle, isStereo ? TEXT("Out Left") : TEXT("Out Mono"), result);
 			
-			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(handle, TEXT("Out Right"), result);
+			if (isStereo || audioHandles->Num()>1) secondAudioHandle = builder->FindNodeOutputByName(handle, TEXT("Out Right"), result);
 		}
 	}
 
 	UGisbImportContainerBlend* blend = Cast<UGisbImportContainerBlend>(gisb);
 	if (blend != nullptr)
 	{
-		for (int i = 0; i < blend->SoundArray.Num(); i++)
+		bool canBlendLoop = false;
+		bool shouldContinue = true;
+		if(!isStereo) DetectLoopAndMono(blend, canBlendLoop, isStereo);
+
+		TArray<FMetaSoundBuilderNodeInputHandle> mixerAudioHandles;
+		TArray<FMetaSoundBuilderNodeInputHandle> triggerAudioHandles;
+
+		int numChildren = blend->SoundArray.Num();
+		if (numChildren < 1)
 		{
-			UGisbImportContainerBase* newGisb = blend->SoundArray[i];
-			ConnectContainerToGraph(builder, newGisb, executionHandle, finishHandle, audioHandles);
+			return;
 		}
-		// Create blend node at the beginning and at the end
+		else if (numChildren == 1)
+		{
+			shouldContinue = false;
+			FMetaSoundNodeHandle rerouteHandle;
+			rerouteHandle = builder->AddNode(AudioRerouteNode, result);
+
+			onFinishHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutExec"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutL"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutR"), result);
+
+			FMetaSoundBuilderNodeInputHandle blendExecHandle = builder->FindNodeInputByName(rerouteHandle, TEXT("InExec"), result);
+			TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles = new TArray<FMetaSoundBuilderNodeInputHandle>();
+			audioHandles->Add(builder->FindNodeInputByName(rerouteHandle, TEXT("InL"), result));
+			audioHandles->Add(builder->FindNodeInputByName(rerouteHandle, TEXT("InR"), result));
+
+			ConnectContainerToGraph(builder, blend->SoundArray[0], executionHandle, &blendExecHandle, audioHandles);
+		}
+		else if (numChildren > 8)
+		{
+			int numMixerNodes = FMath::CeilToInt((float)numChildren / 7.0f);
+
+			FMetaSoundBuilderNodeOutputHandle* firstEncapsulatedMixerHandle = nullptr;
+			FMetaSoundBuilderNodeOutputHandle* secondEncapsulatedMixerHandle = nullptr;
+			FMetaSoundBuilderNodeOutputHandle* encapsulatedTriggerHandle = nullptr;
+
+			for (int m = 0; m < numMixerNodes; m++)
+			{
+				int newNumChildren = FMath::Min(numChildren - m * 7, 7) + 1; // We clamp at 7 (instead of 8) and then add 1 to leave room for the previous mixer node
+				FMetaSoundNodeHandle mixerHandle;
+				if(m != 0)
+					mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
+				else
+					mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 3]), result); // Same as before but first spot is not used when it's the first mixer node
+
+				FMetaSoundNodeHandle accumulateHandle;
+				if (m != 0)
+					accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 1]), result); // 1 input is array index 0, 8 inputs is array index 7
+				else
+					accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 2]), result); // Space 1 is free when it's the first accumulate
+				
+
+				if(m == numMixerNodes - 1)
+				{ 
+					onFinishHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+					firstAudioHandle = builder->FindNodeOutputByName(mixerHandle, isStereo ? TEXT("Out L") : TEXT("Out"), result);
+					if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+				}
+
+				if (firstEncapsulatedMixerHandle != nullptr && encapsulatedTriggerHandle != nullptr)
+				{
+					if (isStereo && secondEncapsulatedMixerHandle != nullptr)
+					{
+						FMetaSoundBuilderNodeInputHandle inL = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 L"), result);
+						FMetaSoundBuilderNodeInputHandle inR = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 R"), result);
+						builder->ConnectNodes(*firstEncapsulatedMixerHandle, inL, result);
+						builder->ConnectNodes(*secondEncapsulatedMixerHandle, inR, result);
+					}
+					else
+					{
+						FMetaSoundBuilderNodeInputHandle inAudio = builder->FindNodeInputByName(mixerHandle, TEXT("In 0"), result);
+						builder->ConnectNodes(*firstEncapsulatedMixerHandle, inAudio, result);
+					}
+
+					FMetaSoundBuilderNodeInputHandle inTrigger = builder->FindNodeInputByName(accumulateHandle, TEXT("In 0"), result);
+					builder->ConnectNodes(*encapsulatedTriggerHandle, inTrigger, result);
+				}
+				int start = m != 0 ? 1 : 0;
+				int end = m != 0 ? newNumChildren : newNumChildren - 1; // We don't want to connect the first node again
+				for (int i = start; i < end; i++) // Start at 1 because 0 is for the previous mixer
+				{
+					if (isStereo)
+					{
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d L"), i), result));
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d R"), i), result));
+					}
+					else
+					{
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d"), i), result));
+					}
+					triggerAudioHandles.Add(builder->FindNodeInputByName(accumulateHandle, *FString::Printf(TEXT("In %d"), i), result));
+				}
+
+				if (isStereo)
+				{
+					FMetaSoundBuilderNodeOutputHandle outL = builder->FindNodeOutputByName(mixerHandle, TEXT("Out L"), result);
+					FMetaSoundBuilderNodeOutputHandle outR = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+					firstEncapsulatedMixerHandle = &outL;
+					secondEncapsulatedMixerHandle = &outR;
+				}
+				else
+				{
+					FMetaSoundBuilderNodeOutputHandle outMono = builder->FindNodeOutputByName(mixerHandle, TEXT("Out"), result);
+					firstEncapsulatedMixerHandle = &outMono;
+				}
+
+				FMetaSoundBuilderNodeOutputHandle outTrigger = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+				encapsulatedTriggerHandle = &outTrigger;
+			}
+		}
+		else
+		{
+			FMetaSoundNodeHandle mixerHandle;
+			mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[numChildren-2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
+
+			FMetaSoundNodeHandle accumulateHandle;
+			accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[numChildren - 1]), result); // 1 input is array index 0, 8 inputs is array index 7
+
+			onFinishHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(mixerHandle, isStereo ? TEXT("Out L") : TEXT("Out"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+
+			for (int i = 0; i < numChildren; i++)
+			{
+				if (isStereo)
+				{
+                    mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d L"), i), result));
+					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d R"), i), result));
+				}
+				else
+				{
+					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d"), i), result));
+				}
+				triggerAudioHandles.Add(builder->FindNodeInputByName(accumulateHandle, *FString::Printf(TEXT("In %d"), i), result));
+			}
+		}
+
+		if (shouldContinue)
+		{
+			for (int i = 0; i < numChildren; i++)
+			{
+				UGisbImportContainerBase* newGisb = blend->SoundArray[i];
+
+				TArray<FMetaSoundBuilderNodeInputHandle>* encaplsulatedAudioHandles = new TArray<FMetaSoundBuilderNodeInputHandle>();
+				if (isStereo)
+				{
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i * 2]);
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i * 2 + 1]);
+				}
+				else
+				{
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i]);
+				}
+
+				ConnectContainerToGraph(builder, newGisb, executionHandle, &triggerAudioHandles[i], encaplsulatedAudioHandles);
+			}
+		}
 	}
 
 	UGisbImportContainerRandom* random = Cast<UGisbImportContainerRandom>(gisb);
 	if (random != nullptr)
 	{
-		for (int i = 0; i < random->SoundArray.Num(); i++)
+		bool canRandomLoop = false;
+		bool shouldContinue = true;
+		if (!isStereo) DetectLoopAndMono(random, canRandomLoop, isStereo);
+
+		TArray<FMetaSoundBuilderNodeInputHandle> mixerAudioHandles;
+		TArray<FMetaSoundBuilderNodeInputHandle> triggerAudioHandles;
+
+		TArray<FMetaSoundBuilderNodeOutputHandle> randomHandles;
+
+		int numChildren = random->SoundArray.Num();
+		if (numChildren < 1)
 		{
-			UGisbImportContainerBase* newGisb = random->SoundArray[i];
-			ConnectContainerToGraph(builder, newGisb, executionHandle, finishHandle, audioHandles);
+			return;
 		}
-		// Create random node at the beginning and at the end
+		else if (numChildren == 1)
+		{
+			shouldContinue = false;
+			FMetaSoundNodeHandle rerouteHandle;
+			rerouteHandle = builder->AddNode(AudioRerouteNode, result);
+
+			onFinishHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutExec"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutL"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutR"), result);
+
+			FMetaSoundBuilderNodeInputHandle randomExecHandle = builder->FindNodeInputByName(rerouteHandle, TEXT("InExec"), result);
+			TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles = new TArray<FMetaSoundBuilderNodeInputHandle>();
+			audioHandles->Add(builder->FindNodeInputByName(rerouteHandle, TEXT("InL"), result));
+			audioHandles->Add(builder->FindNodeInputByName(rerouteHandle, TEXT("InR"), result));
+
+			ConnectContainerToGraph(builder, random->SoundArray[0], executionHandle, &randomExecHandle, audioHandles);
+		}
+		else if (numChildren > 8)
+		{
+			int numMixerNodes = FMath::CeilToInt((float)numChildren / 7.0f);
+
+			FMetaSoundBuilderNodeOutputHandle* firstEncapsulatedMixerHandle = nullptr;
+			FMetaSoundBuilderNodeOutputHandle* secondEncapsulatedMixerHandle = nullptr;
+			FMetaSoundBuilderNodeOutputHandle* encapsulatedTriggerHandle = nullptr;
+
+
+
+			for (int m = 0; m < numMixerNodes; m++)
+			{
+				int newNumChildren = FMath::Min(numChildren - m * 7, 7) + 1; // We clamp at 7 (instead of 8) and then add 1 to leave room for the previous mixer node
+				FMetaSoundNodeHandle mixerHandle;
+				if (m != 0)
+					mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
+				else
+					mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 3]), result); // Same as before but first spot is not used when it's the first mixer node
+
+				FMetaSoundNodeHandle accumulateHandle;
+				if (m != 0)
+					accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 1]), result); // 1 input is array index 0, 8 inputs is array index 7
+				else
+					accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 2]), result); // Space 1 is free when it's the first accumulate
+
+				FMetaSoundNodeHandle randomHandle;
+				randomHandle = builder->AddNode(GisbRandomNode, result);
+
+				FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(randomHandle, TEXT("Exec"), result);
+				builder->ConnectNodes(*executionHandle, execHandle, result);
+
+				FMetaSoundBuilderNodeInputHandle noRepeatHandle = builder->FindNodeInputByName(randomHandle, TEXT("No Repeats"), result);
+				FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), random->AvoidLastPlayed);
+				FMetasoundFrontendLiteral noRepeatValue = FMetasoundFrontendLiteral(noRepeatParam);
+				builder->SetNodeInputDefault(noRepeatHandle, noRepeatValue, result);
+
+				TArray<int> possibilities;
+				for (int i = 0; i < numChildren; i++)
+				{
+					possibilities.Add(i);
+				}
+
+				FMetaSoundBuilderNodeInputHandle possibilitiesHandle = builder->FindNodeInputByName(randomHandle, TEXT("Possibilities"), result);
+				FAudioParameter possibilitiesParam = FAudioParameter(TEXT("Possibilities"), possibilities);
+				FMetasoundFrontendLiteral possibilitiesValue = FMetasoundFrontendLiteral(possibilitiesParam);
+				builder->SetNodeInputDefault(possibilitiesHandle, possibilitiesValue, result);
+
+				if (m == numMixerNodes - 1)
+				{
+					onFinishHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+					firstAudioHandle = builder->FindNodeOutputByName(mixerHandle, isStereo ? TEXT("Out L") : TEXT("Out"), result);
+					if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+				}
+
+				if (firstEncapsulatedMixerHandle != nullptr && encapsulatedTriggerHandle != nullptr)
+				{
+					if (isStereo && secondEncapsulatedMixerHandle != nullptr)
+					{
+						FMetaSoundBuilderNodeInputHandle inL = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 L"), result);
+						FMetaSoundBuilderNodeInputHandle inR = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 R"), result);
+						builder->ConnectNodes(*firstEncapsulatedMixerHandle, inL, result);
+						builder->ConnectNodes(*secondEncapsulatedMixerHandle, inR, result);
+					}
+					else
+					{
+						FMetaSoundBuilderNodeInputHandle inAudio = builder->FindNodeInputByName(mixerHandle, TEXT("In 0"), result);
+						builder->ConnectNodes(*firstEncapsulatedMixerHandle, inAudio, result);
+					}
+
+					FMetaSoundBuilderNodeInputHandle inTrigger = builder->FindNodeInputByName(accumulateHandle, TEXT("In 0"), result);
+					builder->ConnectNodes(*encapsulatedTriggerHandle, inTrigger, result);
+				}
+				int start = m != 0 ? 1 : 0;
+				int end = m != 0 ? newNumChildren : newNumChildren - 1; // We don't want to connect the first node again
+				for (int i = start; i < end; i++) // Start at 1 because 0 is for the previous mixer
+				{
+					if (isStereo)
+					{
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d L"), i), result));
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d R"), i), result));
+					}
+					else
+					{
+						mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d"), i), result));
+					}
+					triggerAudioHandles.Add(builder->FindNodeInputByName(accumulateHandle, *FString::Printf(TEXT("In %d"), i), result));
+				}
+
+				if (isStereo)
+				{
+					FMetaSoundBuilderNodeOutputHandle outL = builder->FindNodeOutputByName(mixerHandle, TEXT("Out L"), result);
+					FMetaSoundBuilderNodeOutputHandle outR = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+					firstEncapsulatedMixerHandle = &outL;
+					secondEncapsulatedMixerHandle = &outR;
+				}
+				else
+				{
+					FMetaSoundBuilderNodeOutputHandle outMono = builder->FindNodeOutputByName(mixerHandle, TEXT("Out"), result);
+					firstEncapsulatedMixerHandle = &outMono;
+				}
+
+				FMetaSoundBuilderNodeOutputHandle outTrigger = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+				encapsulatedTriggerHandle = &outTrigger;
+			}
+		}
+		else
+		{
+			FMetaSoundNodeHandle mixerHandle;
+			mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[numChildren - 2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
+
+			FMetaSoundNodeHandle anyHandle;
+			anyHandle = builder->AddNodeByClassName(*((*TriggerAnyNodes)[numChildren - 2]), result); // same as above
+
+			FMetaSoundNodeHandle randomHandle;
+			randomHandle = builder->AddNode(GisbRandomNode, result);
+
+			FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(randomHandle, TEXT("Exec"), result);
+			builder->ConnectNodes(*executionHandle, execHandle, result);
+
+			FMetaSoundBuilderNodeInputHandle noRepeatHandle = builder->FindNodeInputByName(randomHandle, TEXT("No Repeats"), result);
+			FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), random->AvoidLastPlayed);
+			FMetasoundFrontendLiteral noRepeatValue = FMetasoundFrontendLiteral(noRepeatParam);
+			builder->SetNodeInputDefault(noRepeatHandle, noRepeatValue, result);
+
+			TArray<int> possibilities;
+			for (int i = 0; i < numChildren; i++)
+			{
+				possibilities.Add(i);
+			}
+
+			FMetaSoundBuilderNodeInputHandle possibilitiesHandle = builder->FindNodeInputByName(randomHandle, TEXT("Possibilities"), result);
+			FAudioParameter possibilitiesParam = FAudioParameter(TEXT("Possibilities"), possibilities);
+			FMetasoundFrontendLiteral possibilitiesValue = FMetasoundFrontendLiteral(possibilitiesParam);
+			builder->SetNodeInputDefault(possibilitiesHandle, possibilitiesValue, result);
+
+			onFinishHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(mixerHandle, isStereo ? TEXT("Out L") : TEXT("Out"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+
+			for (int i = 0; i < numChildren; i++)
+			{
+				if (isStereo)
+				{
+					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d L"), i), result));
+					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d R"), i), result));
+				}
+				else
+				{
+					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d"), i), result));
+				}
+				triggerAudioHandles.Add(builder->FindNodeInputByName(anyHandle, *FString::Printf(TEXT("In %d"), i), result));
+				randomHandles.Add(builder->FindNodeOutputByName(randomHandle, *FString::Printf(TEXT("Out %d"), i), result));
+			}
+		}
+
+		if (shouldContinue)
+		{
+			for (int i = 0; i < numChildren; i++)
+			{
+				UGisbImportContainerBase* newGisb = random->SoundArray[i];
+
+				TArray<FMetaSoundBuilderNodeInputHandle>* encaplsulatedAudioHandles = new TArray<FMetaSoundBuilderNodeInputHandle>();
+				if (isStereo)
+				{
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i * 2]);
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i * 2 + 1]);
+				}
+				else
+				{
+					encaplsulatedAudioHandles->Add(mixerAudioHandles[i]);
+				}
+
+				ConnectContainerToGraph(builder, newGisb, &randomHandles[i], &triggerAudioHandles[i], encaplsulatedAudioHandles);
+			}
+		}
 		
 	}
 
@@ -257,7 +629,7 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 	if (gisb->VolumeDB.value != 0 || gisb->VolumeDB.randomize)
 	{
 		FMetaSoundNodeHandle volumeHandle;
-		volumeHandle = builder->AddNodeByClassName(*GisbVolumeNode, result);
+		volumeHandle = builder->AddNode(GisbVolumeNode, result);
 		if (result == EMetaSoundBuilderResult::Succeeded)
 		{
 			FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(volumeHandle, TEXT("Exec"), result);
@@ -293,15 +665,15 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 			FMetasoundFrontendLiteral valueValue = FMetasoundFrontendLiteral(valueParam);
 			builder->SetNodeInputDefault(valueHandle, valueValue, result);
 
-			firstAudioHandle = builder->FindNodeOutputByName(volumeHandle, TEXT("Heads"), result);
-			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(volumeHandle, TEXT("Tails"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(volumeHandle, TEXT("OutL"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(volumeHandle, TEXT("OutR"), result);
 		}
 	}
 
 	if(gisb->Pitch.value != 0 || gisb->Pitch.randomize)
 	{
 		FMetaSoundNodeHandle pitchHandle;
-		pitchHandle = builder->AddNodeByClassName(*GisbPitchNode, result);
+		pitchHandle = builder->AddNode(GisbPitchNode, result);
 		if (result == EMetaSoundBuilderResult::Succeeded)
 		{
 			FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(pitchHandle, TEXT("Exec"), result);
@@ -337,15 +709,15 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 			FMetasoundFrontendLiteral valueValue = FMetasoundFrontendLiteral(valueParam);
 			builder->SetNodeInputDefault(valueHandle, valueValue, result);
 
-			firstAudioHandle = builder->FindNodeOutputByName(pitchHandle, TEXT("Heads"), result);
-			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(pitchHandle, TEXT("Tails"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(pitchHandle, TEXT("OutL"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(pitchHandle, TEXT("OutR"), result);
 		}
 	}
 
 	if(gisb->Lowpass.value != 0 || gisb->Lowpass.randomize)
 	{
 		FMetaSoundNodeHandle lowpassHandle;
-		lowpassHandle = builder->AddNodeByClassName(*GisbLowpassNode, result);
+		lowpassHandle = builder->AddNode(GisbLowpassNode, result);
 		if (result == EMetaSoundBuilderResult::Succeeded)
 		{
 			FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(lowpassHandle, TEXT("Exec"), result);
@@ -364,12 +736,12 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 			// 100 is 20
 
 			//21980
-			float frequencyMax = (100.0f - gisb->Lowpass.maxRnd) * 219.80;
+			float frequencyMax = gisb->Lowpass.maxRnd * 219.80;
 			FAudioParameter maxParam = FAudioParameter(TEXT("Min"), frequencyMax);
 			FMetasoundFrontendLiteral maxValue = FMetasoundFrontendLiteral(maxParam);
 			builder->SetNodeInputDefault(maxHandle, maxValue, result);
 
-			float frequencyMin = (100.0f - gisb->Lowpass.minRnd) * 219.80;
+			float frequencyMin = gisb->Lowpass.minRnd * 219.80;
 			FAudioParameter minParam = FAudioParameter(TEXT("Min"), frequencyMin);
 			FMetasoundFrontendLiteral minValue = FMetasoundFrontendLiteral(minParam);
 			builder->SetNodeInputDefault(minHandle, minValue, result);
@@ -383,8 +755,8 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 			FMetasoundFrontendLiteral valueValue = FMetasoundFrontendLiteral(valueParam);
 			builder->SetNodeInputDefault(valueHandle, valueValue, result);
 
-			firstAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("Heads"), result);
-			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("Tails"), result);
+			firstAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("OutL"), result);
+			if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("OutR"), result);
 		}
 	}
 

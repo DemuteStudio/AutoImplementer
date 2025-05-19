@@ -11,6 +11,7 @@
 #include "GisbImportContainerSwitch.h"
 #include "MetasoundFrontend.h"
 #include "MetasoundFrontendDocument.h"
+#include "MetasoundDocumentInterface.h"
 #include "MetasoundBuilderSubsystem.h"
 #include "MetasoundBuilderBase.h"
 #include "MetasoundEditorSubsystem.h"
@@ -31,17 +32,18 @@ public:
 private:
 	static FMetasoundFrontendClassName* WavePlayerMonoNode;
 	static FMetasoundFrontendClassName* WavePlayerStereoNode;
-	static FMetasoundFrontendClassName* GisbRandomNode;
-	static FMetasoundFrontendClassName* GisbSwitchNode;
-	static FMetasoundFrontendClassName* GisbProbabilityNode;
-	static FMetasoundFrontendClassName* GisbVolumeNode;
-	static FMetasoundFrontendClassName* GisbPitchNode;
-	static FMetasoundFrontendClassName* GisbLowpassNode;
-	static FMetasoundFrontendClassName* GisbAttenuationNode;
+	static FMetasoundFrontendClassName* ProbabilityNode;
 	static TArray<FMetasoundFrontendClassName*>* MonoMixerNodes;
 	static TArray<FMetasoundFrontendClassName*>* StereoMixerNodes;
 	static TArray<FMetasoundFrontendClassName*>* TriggerAnyNodes;
 	static TArray<FMetasoundFrontendClassName*>* TriggerAccumulateNodes;
+	static TScriptInterface<IMetaSoundDocumentInterface> AudioRerouteNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbRandomNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbSwitchNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbVolumeNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbPitchNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbLowpassNode;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbAttenuationNode;
 	static void SetupNodes();
 	static void DetectLoopAndMono(UGisbImportContainerBase* gisb, bool& shouldLoop, bool& shouldStereo);
 	static void ConnectContainerToGraph(UMetaSoundSourceBuilder* builder, UGisbImportContainerBase* gisb, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeInputHandle* finishHandle, TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles);
