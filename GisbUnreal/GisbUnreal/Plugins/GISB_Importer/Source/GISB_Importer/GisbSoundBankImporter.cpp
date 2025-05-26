@@ -11,9 +11,11 @@
 #include "GisbImportContainerBase.h"
 #include "Misc/Paths.h"
 #include "UObject/Package.h"
+#include "UObject/SavePackage.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "GISB_MetasoundBuilder.h"
 #include "MetasoundSource.h"
+#include "EditorAssetLibrary.h"
 
 void UGisbSoundBankImporter::ImportSoundBankFromJson()
 {
@@ -95,7 +97,7 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
 {
     FString AssetName = EventName + "_SoundBank";
     FString PackagePath = "/Game/SoundBanks/" + AssetName;
-	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/" + EventName;
+	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/";
     UPackage* Package = CreatePackage(*PackagePath);
 
     // Create a new sound asset and set its properties
@@ -123,15 +125,29 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
 
         // Save the asset
         const FString AssetFileName = FPackageName::LongPackageNameToFilename(PackagePath, FPackageName::GetAssetPackageExtension());
-        bool bSaved = UPackage::SavePackage(Package, NewAsset, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *AssetFileName);
-
-        if (bSaved)
+        const FString PackageName = FPackageName::ObjectPathToPackageName(PackagePath);
+        if (UEditorAssetLibrary::DoesAssetExist(PackageName))
         {
-            UE_LOG(LogTemp, Log, TEXT("Asset successfully saved: %s"), *AssetFileName);
+            UE_LOG(LogTemp, Error, TEXT("Asset already exists at: %s"), *AssetFileName);
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
+            FSavePackageArgs SaveArgs;
+            SaveArgs.TopLevelFlags = RF_Standalone;
+            SaveArgs.SaveFlags = EObjectFlags::RF_Public | EObjectFlags::RF_Standalone;
+            SaveArgs.bWarnOfLongFilename = true;
+            SaveArgs.bForceByteSwapping = false;
+            bool bSaved = UPackage::SavePackage(Package, NewAsset, *AssetFileName, SaveArgs);
+
+            if (bSaved)
+            {
+                UE_LOG(LogTemp, Log, TEXT("Asset successfully saved: %s"), *AssetFileName);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to save the asset: %s"), *AssetFileName);
+            }
+
         }
     }
 }
