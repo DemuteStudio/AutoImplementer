@@ -439,7 +439,8 @@ void UGISB_MetasoundBuilder::ConnectRandom(UMetaSoundSourceBuilder* builder, UGi
 {
 	EMetaSoundBuilderResult result;
 	bool canRandomLoop = false;
-	if (!isStereo) DetectLoopAndMono(random, canRandomLoop, isStereo);
+	bool unusedBool = false;
+	DetectLoopAndMono(random, canRandomLoop, isStereo? unusedBool : isStereo);
 
 	int numChildren = random->SoundArray.Num();
 	if (numChildren < 1) return;
@@ -469,103 +470,58 @@ void UGISB_MetasoundBuilder::ConnectRandom(UMetaSoundSourceBuilder* builder, UGi
 
 	if (numChildren > 8)
 	{
-		int numMixerNodes = FMath::CeilToInt((float)numChildren / 7.0f);
+		int numMixerNodes = FMath::CeilToInt((float)numChildren / 8.0f);
 
-		FMetaSoundBuilderNodeOutputHandle* firstEncapsulatedMixerHandle = nullptr;
-		FMetaSoundBuilderNodeOutputHandle* secondEncapsulatedMixerHandle = nullptr;
-		FMetaSoundBuilderNodeOutputHandle* encapsulatedTriggerHandle = nullptr;
+		if (numMixerNodes > 8)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Too many children in random container. Max is 64, but found %d."), numChildren);
+			numMixerNodes = 8;
+		}
+
+		int numChildrenPerMixer = FMath::CeilToInt((float)numChildren / numMixerNodes);
+
+		FMetaSoundNodeHandle mainRandomHandle = builder->AddNode(GisbRandomNode, result);
+		TArray<int> mainPossibilities;
+
+		FMetaSoundNodeHandle mainMixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[numChildrenPerMixer - 2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
+		FMetaSoundNodeHandle mainAnyHandle = builder->AddNodeByClassName(*((*TriggerAnyNodes)[numChildrenPerMixer - 2]), result);
+
+		FMetaSoundBuilderNodeInputHandle mainNoRepeatHandle = builder->FindNodeInputByName(mainRandomHandle, TEXT("No Repeats"), result);
+		FAudioParameter mainNoRepeatParam = FAudioParameter(TEXT("No Repeats"), numMixerNodes-1);
+		FMetasoundFrontendLiteral mainNoRepeatValue = FMetasoundFrontendLiteral(mainNoRepeatParam);
+		builder->SetNodeInputDefault(mainNoRepeatHandle, mainNoRepeatValue, result);
 
 		for (int m = 0; m < numMixerNodes; m++)
 		{
-			int newNumChildren = FMath::Min(numChildren - m * 7, 7) + 1; // We clamp at 7 (instead of 8) and then add 1 to leave room for the previous mixer node
-			FMetaSoundNodeHandle mixerHandle;
-			if (m != 0)
-				mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 2]), result); // 2 inputs is array index 0, 8 inputs is array index 6
-			else
-				mixerHandle = builder->AddNodeByClassName(*((isStereo ? *StereoMixerNodes : *MonoMixerNodes)[newNumChildren - 3]), result); // Same as before but first spot is not used when it's the first mixer node
+			mainPossibilities.Add(m);
+			FMetaSoundNodeHandle randomHandle = builder->AddNode(GisbRandomNode, result);
 
-			FMetaSoundNodeHandle accumulateHandle;
-			if (m != 0)
-				accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 1]), result); // 1 input is array index 0, 8 inputs is array index 7
-			else
-				accumulateHandle = builder->AddNodeByClassName(*((*TriggerAccumulateNodes)[newNumChildren - 2]), result); // Space 1 is free when it's the first accumulate
-
-			FMetaSoundNodeHandle randomHandle;
-			randomHandle = builder->AddNode(GisbRandomNode, result);
-
-			FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(randomHandle, TEXT("Exec"), result);
-			builder->ConnectNodes(*executionHandle, execHandle, result);
+			int newNumChildren = numChildrenPerMixer;
+			if (m == numMixerNodes - 1)
+			{
+				newNumChildren = numChildren - m * numChildrenPerMixer; // Last node gets the rest of the children
+			}
 
 			FMetaSoundBuilderNodeInputHandle noRepeatHandle = builder->FindNodeInputByName(randomHandle, TEXT("No Repeats"), result);
-			FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), random->AvoidLastPlayed);
+			FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), random->AvoidLastPlayed / numMixerNodes);
 			FMetasoundFrontendLiteral noRepeatValue = FMetasoundFrontendLiteral(noRepeatParam);
 			builder->SetNodeInputDefault(noRepeatHandle, noRepeatValue, result);
 
 			TArray<int> possibilities;
-			for (int i = 0; i < numChildren; i++) possibilities.Add(i);
+			for (int i = 0; i < newNumChildren; i++) possibilities.Add(i);
 			
 			FMetaSoundBuilderNodeInputHandle possibilitiesHandle = builder->FindNodeInputByName(randomHandle, TEXT("Possibilities"), result);
 			FAudioParameter possibilitiesParam = FAudioParameter(TEXT("Possibilities"), possibilities);
 			FMetasoundFrontendLiteral possibilitiesValue = FMetasoundFrontendLiteral(possibilitiesParam);
 			builder->SetNodeInputDefault(possibilitiesHandle, possibilitiesValue, result);
 
-			if (m == numMixerNodes - 1)
-			{
-				onFinishHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
-				firstAudioHandle = builder->FindNodeOutputByName(mixerHandle, isStereo ? TEXT("Out L") : TEXT("Out"), result);
-				if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
-			}
-
-			if (firstEncapsulatedMixerHandle != nullptr && encapsulatedTriggerHandle != nullptr)
-			{
-				if (isStereo && secondEncapsulatedMixerHandle != nullptr)
-				{
-					FMetaSoundBuilderNodeInputHandle inL = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 L"), result);
-					FMetaSoundBuilderNodeInputHandle inR = builder->FindNodeInputByName(mixerHandle, TEXT("In 0 R"), result);
-					builder->ConnectNodes(*firstEncapsulatedMixerHandle, inL, result);
-					builder->ConnectNodes(*secondEncapsulatedMixerHandle, inR, result);
-				}
-				else
-				{
-					FMetaSoundBuilderNodeInputHandle inAudio = builder->FindNodeInputByName(mixerHandle, TEXT("In 0"), result);
-					builder->ConnectNodes(*firstEncapsulatedMixerHandle, inAudio, result);
-				}
-
-				FMetaSoundBuilderNodeInputHandle inTrigger = builder->FindNodeInputByName(accumulateHandle, TEXT("In 0"), result);
-				builder->ConnectNodes(*encapsulatedTriggerHandle, inTrigger, result);
-			}
-			int start = m != 0 ? 1 : 0;
-			int end = m != 0 ? newNumChildren : newNumChildren - 1; // We don't want to connect the first node again
-			for (int i = start; i < end; i++) // Start at 1 because 0 is for the previous mixer
-			{
-				if (isStereo)
-				{
-					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d L"), i), result));
-					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d R"), i), result));
-				}
-				else
-				{
-					mixerAudioHandles.Add(builder->FindNodeInputByName(mixerHandle, *FString::Printf(TEXT("In %d"), i), result));
-				}
-				triggerAudioHandles.Add(builder->FindNodeInputByName(accumulateHandle, *FString::Printf(TEXT("In %d"), i), result));
-			}
-
-			if (isStereo)
-			{
-				FMetaSoundBuilderNodeOutputHandle outL = builder->FindNodeOutputByName(mixerHandle, TEXT("Out L"), result);
-				FMetaSoundBuilderNodeOutputHandle outR = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
-				firstEncapsulatedMixerHandle = &outL;
-				secondEncapsulatedMixerHandle = &outR;
-			}
-			else
-			{
-				FMetaSoundBuilderNodeOutputHandle outMono = builder->FindNodeOutputByName(mixerHandle, TEXT("Out"), result);
-				firstEncapsulatedMixerHandle = &outMono;
-			}
-
-			FMetaSoundBuilderNodeOutputHandle outTrigger = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
-			encapsulatedTriggerHandle = &outTrigger;
+			// TODO: Connect the random nodes to the main random node, the mixer nodes to the main mixer node and the any nodes to the main any node
+			// TODO: Add data to mixerAudioHandles, randomHandles and triggerAudioHandles
 		}
+		FMetaSoundBuilderNodeInputHandle mainPossibilitiesHandle = builder->FindNodeInputByName(mainRandomHandle, TEXT("Possibilities"), result);
+		FAudioParameter mainPossibilitiesParam = FAudioParameter(TEXT("Possibilities"), mainPossibilities);
+		FMetasoundFrontendLiteral mainPossibilitiesValue = FMetasoundFrontendLiteral(mainPossibilitiesParam);
+		builder->SetNodeInputDefault(mainPossibilitiesHandle, mainPossibilitiesValue, result);
 	}
 	else
 	{
