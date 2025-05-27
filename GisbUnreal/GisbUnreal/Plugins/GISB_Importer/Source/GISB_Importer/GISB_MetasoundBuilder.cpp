@@ -693,8 +693,6 @@ void UGISB_MetasoundBuilder::ConnectLowpass(UMetaSoundSourceBuilder* builder, co
 		builder->ConnectNodes(firstAudioHandle, audioLeftHandle, result);
 		if (isStereo) builder->ConnectNodes(secondAudioHandle, audioRightHandle, result);
 
-		// 0 is 22 000
-		// 100 is 20
 
 		//21980
 		float frequencyMax = lowpass.maxRnd * 219.80;
@@ -711,6 +709,8 @@ void UGISB_MetasoundBuilder::ConnectLowpass(UMetaSoundSourceBuilder* builder, co
 		FMetasoundFrontendLiteral randomizeValue = FMetasoundFrontendLiteral(randomizeParam);
 		builder->SetNodeInputDefault(randomizeHandle, randomizeValue, result);
 
+		// 0 is 22 000
+		// 100 is 20
 		float frequencyValue = (100.0f - FMath::Clamp(lowpass.value, 0.0f, 100.0f)) * 219.80 + 20;
 		FAudioParameter valueParam = FAudioParameter(TEXT("Value"), frequencyValue);
 		FMetasoundFrontendLiteral valueValue = FMetasoundFrontendLiteral(valueParam);
