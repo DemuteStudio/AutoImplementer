@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using GISB.Runtime;
@@ -8,6 +9,8 @@ public class GISB_EventInstance : MonoBehaviour
     public GISB_Event eventDefinition;
     private GISB_BaseAudioPlayer rootPlayerInstance;
     private List<AudioSource> audioSources = new List<AudioSource>();
+    private AudioSource audioClock;
+    public Queue<Action> scheduledActions = new Queue<Action>();
 
     public void Play(Dictionary<string, string> activeParameters)
     {
@@ -18,7 +21,17 @@ public class GISB_EventInstance : MonoBehaviour
         
         if(rootPlayerInstance != null)
         {
-            rootPlayerInstance.Play(activeParameters, this);
+            rootPlayerInstance.Play(activeParameters, this, 0.0f);
+        }
+
+        if (audioClock == null)
+        {
+            audioClock = gameObject.AddComponent<AudioSource>();
+        }
+
+        if (audioClock != null)
+        {
+            audioClock.Play();
         }
     }
     
@@ -51,9 +64,31 @@ public class GISB_EventInstance : MonoBehaviour
 
     public void Stop()
     {
-        foreach (AudioSource audioSource in audioSources)
+        if (rootPlayerInstance != null)
         {
-            audioSource.Stop();
+            rootPlayerInstance.Stop();
+        }
+        
+        if (audioClock != null)
+        {
+            audioClock.Stop();
+        }
+    }
+
+    public void OnAudioFilterRead(float[] data, int channels)
+    {
+        if(rootPlayerInstance != null)
+        {
+            rootPlayerInstance.UpdateTime(AudioSettings.dspTime);
+        }
+    }
+
+
+    public void Update()
+    {
+        while(scheduledActions.Count > 0)
+        {
+            scheduledActions.Dequeue().Invoke();
         }
     }
 }

@@ -12,7 +12,7 @@ namespace GISB.Runtime
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
+        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime)
         {
             if (!RollForPlayProbability()) return;
             string switchValue = audioObject.DefaultValue;
@@ -40,7 +40,23 @@ namespace GISB.Runtime
             
             if(instantiatedPlayers.ContainsKey(switchValue))
             {
-                instantiatedPlayers[switchValue].Play(activeParameters, gisbEventInstance);
+                instantiatedPlayers[switchValue].Play(activeParameters, gisbEventInstance, scheduledTime);
+            }
+        }
+
+        public override void Stop()
+        {
+            foreach (KeyValuePair<string, GISB_BaseAudioPlayer> instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.Value.Stop();
+            }
+        }
+
+        public override void UpdateTime(double dspTime)
+        {
+            foreach (KeyValuePair<string, GISB_BaseAudioPlayer> instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.Value.UpdateTime(dspTime);
             }
         }
 

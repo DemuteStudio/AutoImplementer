@@ -13,7 +13,7 @@ namespace GISB.Runtime
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
+        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime)
         {
             if (!RollForPlayProbability()) return;
             if (instantiatedPlayers.Count != audioObject.BlendPlaylist.Length)
@@ -29,8 +29,24 @@ namespace GISB.Runtime
             {
                 foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
                 {
-                    instantiatedPlayer.Play(activeParameters, gisbEventInstance);
+                    instantiatedPlayer.Play(activeParameters, gisbEventInstance, scheduledTime);
                 }
+            }
+        }
+
+        public override void Stop()
+        {
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.Stop();
+            }
+        }
+
+        public override void UpdateTime(double dspTime)
+        {
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.UpdateTime(dspTime);
             }
         }
 

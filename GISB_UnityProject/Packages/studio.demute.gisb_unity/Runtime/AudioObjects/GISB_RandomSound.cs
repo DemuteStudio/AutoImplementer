@@ -10,6 +10,19 @@ namespace GISB.Runtime
     {
         public int avoidLastPlayed = 0;
         
+        public bool loop = false;
+
+        public enum TransitionMode
+        {
+            TriggerRate,
+            Crossfade
+        }
+        
+        public TransitionMode transitionMode = TransitionMode.TriggerRate;
+
+        public float triggerRate = 1.0f;
+        public float crossfadeDuration = 1.0f;
+        
         [SerializeReference, SR]
         public GISB_AudioObjectBase[] RandomPlaylist;
         

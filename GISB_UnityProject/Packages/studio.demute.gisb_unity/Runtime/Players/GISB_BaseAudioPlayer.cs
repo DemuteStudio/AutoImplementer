@@ -8,7 +8,11 @@ namespace GISB.Runtime
     {
         protected GISB_BaseAudioPlayer parent = null;
         
-        public abstract void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance);
+        public abstract void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime);
+
+        public abstract void Stop();
+
+        public abstract void UpdateTime(double dspTime);
 
         public abstract void UpdateParameters(Dictionary<string, string> activeParameters);
         
@@ -67,11 +71,11 @@ namespace GISB.Runtime
         {
             if (parent == null)
             {
-                return audioObject.lowpass.GetRandomValue();
+                return audioObject.lowpassPercent.GetRandomValue();
             }
             else
             {
-                return parent.GetLowpass() + audioObject.lowpass.GetRandomValue();
+                return parent.GetLowpass() + audioObject.lowpassPercent.GetRandomValue();
             }
         }
 

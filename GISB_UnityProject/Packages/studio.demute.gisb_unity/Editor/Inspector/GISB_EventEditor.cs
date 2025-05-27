@@ -18,8 +18,17 @@ namespace GISB.Editor
         private float distance = 0f;
         public override void OnInspectorGUI()
         {
+            EditorGUI.BeginChangeCheck();
             base.OnInspectorGUI();
-        
+            if (EditorGUI.EndChangeCheck())
+            {
+                //Reload editor preview
+                if (editorAudioComponent != null)
+                {
+                    DestroyImmediate(editorAudioComponent.gameObject);
+                    editorAudioComponent = null;
+                }
+            }
             GISB_Event gisbEvent = (GISB_Event)target;
 
             if(GUILayout.Button("Export to JSON"))
@@ -52,7 +61,7 @@ namespace GISB.Editor
             {
                 GameObject editorPreviewObject = new GameObject("Editor Preview");
                 editorPreviewObject.hideFlags = HideFlags.DontSave;
-                editorAudioComponent = editorPreviewObject.AddComponent<GISB_AudioComponent>();
+                editorAudioComponent = editorPreviewObject.AddComponent<GISB_EditorPreviewComponent>();
             }
             
             if (GUILayout.Button("Play"))
@@ -65,7 +74,7 @@ namespace GISB.Editor
                 editorAudioComponent.StopEvent(gisbEvent);
             }
             
-            float maxDistance = gisbEvent.rootAudioObject.ExtractMaxDistance();
+            float maxDistance = gisbEvent.rootAudioObject?.ExtractMaxDistance() ?? 0f;
             if(maxDistance > 0f)
             {
                 distance = EditorGUILayout.Slider( "Distance", distance, 0f, maxDistance);

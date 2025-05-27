@@ -7,13 +7,15 @@ namespace GISB.Runtime
 {
     public class GISB_SingleSoundPlayer : GISB_AudioPlayerTemplate<GISB_SingleSound>
     {
+        private AudioSource audioVoice;
+        
         public GISB_SingleSoundPlayer(GISB_SingleSound audioObject, GISB_BaseAudioPlayer parent = null) : base(audioObject, parent)
         { }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance)
+        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime)
         {
             if (!RollForPlayProbability()) return;
-            AudioSource audioSource = gisbEventInstance.GetAudioVoice();
+            audioVoice = gisbEventInstance.GetAudioVoice();
             
             GISB_Attenuation attenuation = GetAttenuation();
             
@@ -21,14 +23,35 @@ namespace GISB.Runtime
             float pitch = GetPitch();
             float lowpass = GetLowpass();
 
-            SetAttenuation(audioSource, attenuation);
+            SetAttenuation(audioVoice, attenuation);
             
-            audioSource.clip = audioObject.soundClip;
-            audioSource.loop = audioObject.loop;
-            audioSource.volume = decibelsToLinear(volume);
-            audioSource.pitch = centsToLinear(pitch);
-            audioSource.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(22000, 0, lowpass);
-            audioSource.Play();
+            audioVoice.clip = audioObject.soundClip;
+            audioVoice.loop = audioObject.loop;
+            audioVoice.volume = decibelsToLinear(volume);
+            audioVoice.pitch = centsToLinear(pitch);
+            audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(22000, 0, lowpass);
+            if(scheduledTime > 0)
+            {
+                audioVoice.PlayScheduled(scheduledTime);
+                //Debug.LogFormat("Scheduled sound {0} to play at {1} with volume {2}, pitch {3}, lowpass {4}", 
+                //    audioObject.soundClip, scheduledTime, audioVoice.volume, audioVoice.pitch, audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency);
+            }
+            else
+            {
+                audioVoice.Play();
+            }
+        }
+
+        public override void Stop()
+        {
+            if(audioVoice == null) return;
+            audioVoice.Stop();
+            audioVoice = null;
+        }
+
+        public override void UpdateTime(double dspTime)
+        {
+            //Do nothing
         }
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
@@ -92,13 +115,13 @@ namespace GISB.Runtime
         private float lowpassToFilterValue(float lowpass)
         {
             //When the lowpass is 0, the filter value is 1
-            //When the lowpass is 1, the filter value is 0
-            //When the lowpass is 0.5, the filter value is 0.5
-            //When the lowpass is 2, the filter value is -1 (clamped to 0)
-            //When the lowpass is -1, the filter value is 2 (clamped to 1)
+            //When the lowpass is 100, the filter value is 0
+            //When the lowpass is 50, the filter value is 0.5
+            //When the lowpass is 200, the filter value is -1 (clamped to 0)
+            //When the lowpass is -100, the filter value is 2 (clamped to 1)
             
             //Clamp the lowpass value to 0 and 1
-            lowpass = Mathf.Clamp(lowpass, 0, 1);
+            lowpass = Mathf.Clamp(lowpass*0.01f, 0, 1);
             //Invert the lowpass value
             lowpass = 1 - lowpass;
 
