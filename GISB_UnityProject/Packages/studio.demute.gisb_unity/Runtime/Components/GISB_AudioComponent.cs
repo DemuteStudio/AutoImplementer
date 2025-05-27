@@ -14,12 +14,12 @@ namespace GISB.Runtime
         
         public Dictionary<GISB_Event, GISB_EventInstance> activeEventInstances = new Dictionary<GISB_Event, GISB_EventInstance>();
 
-        public void PlayEvent()
+        public void PlayEvent(float fadeInTime = 0.0f)
         {
-            PlayEvent(associatedAsset.GetEvent(""));
+            PlayEvent(associatedAsset.GetEvent(""), fadeInTime);
         }
         
-        public void PlayEvent(GISB_Event eventToPlay)
+        public void PlayEvent(GISB_Event eventToPlay, float fadeInTime = 0.0f)
         {
             if(!eventToPlay) return;
 
@@ -32,7 +32,7 @@ namespace GISB.Runtime
                 activeEventInstances[eventToPlay] = newEventInstance;
             }
 
-            activeEventInstances[eventToPlay].Play(activeParameters);
+            activeEventInstances[eventToPlay].Play(activeParameters, fadeInTime);
         }
         
         public void PlayEvent(string eventName)
@@ -50,11 +50,11 @@ namespace GISB.Runtime
             }
         }
         
-        public void StopEvent(GISB_Event eventToStop)
+        public void StopEvent(GISB_Event eventToStop, float fadeOutTime = 0.0f)
         {
             if(activeEventInstances.ContainsKey(eventToStop) && activeEventInstances[eventToStop] != null)
             {
-                activeEventInstances[eventToStop].Stop();
+                activeEventInstances[eventToStop].Stop(fadeOutTime);
             }
         }
         

@@ -26,6 +26,11 @@ namespace GISB.Runtime
                 return baseValue;
             }
         }
+        
+        static public float decibelsToLinear(float db)
+        {
+            return Mathf.Pow(10f, db / 20f);
+        }
     }
 }
 

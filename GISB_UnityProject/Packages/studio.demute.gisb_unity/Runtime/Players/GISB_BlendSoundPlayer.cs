@@ -13,8 +13,10 @@ namespace GISB.Runtime
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime)
+        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
+            base.Play(activeParameters, gisbEventInstance, fadeInTime, scheduledTime);
+            
             if (!RollForPlayProbability()) return;
             if (instantiatedPlayers.Count != audioObject.BlendPlaylist.Length)
             {
@@ -25,11 +27,12 @@ namespace GISB.Runtime
                 }
             }
 
+            //fade in isn't passed on to children as it is evaluated on the highest container
             if (instantiatedPlayers.Count > 0)
             {
                 foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
                 {
-                    instantiatedPlayer.Play(activeParameters, gisbEventInstance, scheduledTime);
+                    instantiatedPlayer.Play(activeParameters, gisbEventInstance, 0.0f, scheduledTime);
                 }
             }
         }
@@ -42,11 +45,21 @@ namespace GISB.Runtime
             }
         }
 
-        public override void UpdateTime(double dspTime)
+        public override void UpdateAudioThread(double dspTime)
+        {
+            base.UpdateAudioThread(dspTime);
+            
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.UpdateAudioThread(dspTime);
+            }
+        }
+
+        public override void UpdateGameThread(float deltaTime)
         {
             foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
             {
-                instantiatedPlayer.UpdateTime(dspTime);
+                instantiatedPlayer.UpdateGameThread(deltaTime);
             }
         }
 
@@ -56,6 +69,21 @@ namespace GISB.Runtime
             {
                 instantiatedPlayer.UpdateParameters(activeParameters);
             }
+        }
+
+        public override double GetDuration()
+        {
+            //Return duration of longest child
+            double maxDuration = 0.0;
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                double duration = instantiatedPlayer.GetDuration();
+                if (duration > maxDuration)
+                {
+                    maxDuration = duration;
+                }
+            }
+            return maxDuration;
         }
     }
 }

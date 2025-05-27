@@ -16,6 +16,9 @@ namespace GISB.Editor
         private GISB_AudioComponent editorAudioComponent;
         private Vector2 scrollPosition;
         private float distance = 0f;
+        
+        private float fadeInTime = 0.0f;
+        private float fadeOutTime = 0.0f;
         public override void OnInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
@@ -63,15 +66,19 @@ namespace GISB.Editor
                 editorPreviewObject.hideFlags = HideFlags.DontSave;
                 editorAudioComponent = editorPreviewObject.AddComponent<GISB_EditorPreviewComponent>();
             }
+
+            fadeInTime = EditorGUILayout.FloatField("Fade In Time", fadeInTime);
             
             if (GUILayout.Button("Play"))
             {
-                editorAudioComponent.PlayEvent(gisbEvent);
+                editorAudioComponent.PlayEvent(gisbEvent, fadeInTime);
             }
+            
+            fadeOutTime = EditorGUILayout.FloatField("Fade Out Time", fadeOutTime);
             
             if (GUILayout.Button("Stop"))
             {
-                editorAudioComponent.StopEvent(gisbEvent);
+                editorAudioComponent.StopEvent(gisbEvent, fadeOutTime);
             }
             
             float maxDistance = gisbEvent.rootAudioObject?.ExtractMaxDistance() ?? 0f;

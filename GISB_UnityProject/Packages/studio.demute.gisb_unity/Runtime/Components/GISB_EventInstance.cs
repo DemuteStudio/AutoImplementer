@@ -12,7 +12,7 @@ public class GISB_EventInstance : MonoBehaviour
     private AudioSource audioClock;
     public Queue<Action> scheduledActions = new Queue<Action>();
 
-    public void Play(Dictionary<string, string> activeParameters)
+    public void Play(Dictionary<string, string> activeParameters, float fadeInTime = 0.0f)
     {
         if(rootPlayerInstance == null)
         {
@@ -21,7 +21,7 @@ public class GISB_EventInstance : MonoBehaviour
         
         if(rootPlayerInstance != null)
         {
-            rootPlayerInstance.Play(activeParameters, this, 0.0f);
+            rootPlayerInstance.Play(activeParameters, this, fadeInTime, 0.0f);
         }
 
         if (audioClock == null)
@@ -62,16 +62,11 @@ public class GISB_EventInstance : MonoBehaviour
         return newAudioSource;
     }
 
-    public void Stop()
+    public void Stop(float fadeOutTime = 0.0f)
     {
         if (rootPlayerInstance != null)
         {
-            rootPlayerInstance.Stop();
-        }
-        
-        if (audioClock != null)
-        {
-            audioClock.Stop();
+            rootPlayerInstance.Stop(fadeOutTime);
         }
     }
 
@@ -79,7 +74,7 @@ public class GISB_EventInstance : MonoBehaviour
     {
         if(rootPlayerInstance != null)
         {
-            rootPlayerInstance.UpdateTime(AudioSettings.dspTime);
+            rootPlayerInstance.UpdateAudioThread(AudioSettings.dspTime);
         }
     }
 
@@ -89,6 +84,11 @@ public class GISB_EventInstance : MonoBehaviour
         while(scheduledActions.Count > 0)
         {
             scheduledActions.Dequeue().Invoke();
+        }
+        
+        if (rootPlayerInstance != null)
+        {
+            rootPlayerInstance.UpdateGameThread(Time.deltaTime);
         }
     }
 }

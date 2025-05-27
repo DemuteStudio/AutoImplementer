@@ -8,18 +8,21 @@ namespace GISB.Runtime
     public class GISB_SingleSoundPlayer : GISB_AudioPlayerTemplate<GISB_SingleSound>
     {
         private AudioSource audioVoice;
+
+        private double soundDuration = -1f;
         
         public GISB_SingleSoundPlayer(GISB_SingleSound audioObject, GISB_BaseAudioPlayer parent = null) : base(audioObject, parent)
         { }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double scheduledTime)
+        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
+            base.Play(activeParameters, gisbEventInstance, fadeInTime, scheduledTime);
+            
             if (!RollForPlayProbability()) return;
             audioVoice = gisbEventInstance.GetAudioVoice();
             
             GISB_Attenuation attenuation = GetAttenuation();
             
-            float volume = GetVolume();
             float pitch = GetPitch();
             float lowpass = GetLowpass();
 
@@ -27,18 +30,33 @@ namespace GISB.Runtime
             
             audioVoice.clip = audioObject.soundClip;
             audioVoice.loop = audioObject.loop;
-            audioVoice.volume = decibelsToLinear(volume);
+            audioVoice.volume = GetVolume();
             audioVoice.pitch = centsToLinear(pitch);
             audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(22000, 0, lowpass);
+            //Store clip duration here because we can't get it from the audio thread
+            if (audioVoice.loop)
+            {
+                soundDuration = -1f; //Looping sounds have no duration
+            }
+            else
+            {
+                soundDuration = audioObject.soundClip.length / audioVoice.pitch;
+            }
+            
             if(scheduledTime > 0)
             {
                 audioVoice.PlayScheduled(scheduledTime);
-                //Debug.LogFormat("Scheduled sound {0} to play at {1} with volume {2}, pitch {3}, lowpass {4}", 
-                //    audioObject.soundClip, scheduledTime, audioVoice.volume, audioVoice.pitch, audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency);
+                // Debug.LogFormat(
+                //     "Scheduled sound {0} to play at {1} with volume {2}, pitch {3}, lowpass {4}, duration {5}",
+                //     audioObject.soundClip, scheduledTime, audioVoice.volume, audioVoice.pitch,
+                //     audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency, soundDuration);
             }
             else
             {
                 audioVoice.Play();
+                // Debug.LogFormat("Playing sound {0} with volume {1}, pitch {2}, lowpass {3}, duration {4}",
+                //     audioObject.soundClip, audioVoice.volume, audioVoice.pitch,
+                //     audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency, soundDuration);
             }
         }
 
@@ -49,14 +67,22 @@ namespace GISB.Runtime
             audioVoice = null;
         }
 
-        public override void UpdateTime(double dspTime)
+        public override void UpdateGameThread(float deltaTime)
         {
-            //Do nothing
+            if (audioVoice == null) return;
+
+            //Update volume
+            audioVoice.volume = GetVolume();
         }
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
         {
             //Do nothing
+        }
+
+        public override double GetDuration()
+        {
+            return soundDuration;
         }
 
         private void SetAttenuation(AudioSource audioSource, GISB_Attenuation attenuation)
@@ -100,11 +126,6 @@ namespace GISB.Runtime
                 curve.MoveKey(1, new Keyframe(1, lowpassToFilterValue(attenuation.lowPassAtMaxDistance)));
                 audioSource.GetComponent<AudioLowPassFilter>().customCutoffCurve = curve;
             }
-        }
-        
-        private float decibelsToLinear(float db)
-        {
-            return Mathf.Pow(10f, db / 20f);
         }
         
         private float centsToLinear(float cents)
