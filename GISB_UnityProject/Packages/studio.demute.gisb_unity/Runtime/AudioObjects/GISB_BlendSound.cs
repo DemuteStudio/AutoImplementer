@@ -8,7 +8,7 @@ namespace GISB.Runtime
     [SRName("Blend Sound")]
     public class GISB_BlendSound : GISB_AudioObjectBase
     {
-        [SerializeReference, SR]
+        [SerializeReference, GISB_AudioList]
         public GISB_AudioObjectBase[] BlendPlaylist;
         
         public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)

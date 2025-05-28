@@ -23,7 +23,7 @@ namespace GISB.Runtime
         public float triggerRate = 1.0f;
         public float crossfadeDuration = 1.0f;
         
-        [SerializeReference, SR]
+        [SerializeReference, GISB_AudioList]
         public GISB_AudioObjectBase[] RandomPlaylist;
         
         public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)

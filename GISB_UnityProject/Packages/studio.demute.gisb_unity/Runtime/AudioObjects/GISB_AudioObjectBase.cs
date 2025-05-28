@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using SerializeReferenceEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -23,5 +24,21 @@ namespace GISB.Runtime
         //Authoring Functions
         public abstract Dictionary<string, List<string>> ExtractParameters();
         public abstract float ExtractMaxDistance();
+    }
+    
+    public class GISB_AudioListAttribute : SRAttribute
+    {
+
+        public GISB_AudioListAttribute() : base()
+        {
+        }
+        
+        public GISB_AudioListAttribute(Type baseType) : base(baseType)
+        {
+        }
+        
+        public GISB_AudioListAttribute(params Type[] types) : base(types)
+        {
+        }
     }
 }

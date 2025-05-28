@@ -1,11 +1,11 @@
 {
   "dependencies": {
     "com.elmortem.serializereferenceeditor": {
-      "version": "https://github.com/elmortem/serializereferenceeditor.git?path=SerializeReferenceEditor/Packages/SREditor",
+      "version": "https://github.com/elmortem/serializereferenceeditor.git?path=SerializeReferenceEditor/Assets/SREditor/Package",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "7e1b6d5a7bcaad54f2d8661e9348ac257aeba790"
+      "hash": "08816fd129981d2c3b44f29378159c2d648b33fa"
     },
     "com.unity.collab-proxy": {
       "version": "2.6.0",

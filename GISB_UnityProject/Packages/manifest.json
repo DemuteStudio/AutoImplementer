@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.elmortem.serializereferenceeditor": "https://github.com/elmortem/serializereferenceeditor.git?path=SerializeReferenceEditor/Packages/SREditor",
+    "com.elmortem.serializereferenceeditor": "https://github.com/elmortem/serializereferenceeditor.git?path=SerializeReferenceEditor/Assets/SREditor/Package",
     "com.unity.collab-proxy": "2.6.0",
     "com.unity.ide.rider": "3.0.36",
     "com.unity.textmeshpro": "3.0.7",

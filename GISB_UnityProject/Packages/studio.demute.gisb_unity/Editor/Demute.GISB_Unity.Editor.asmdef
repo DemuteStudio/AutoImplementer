@@ -2,7 +2,8 @@
     "name": "Demute.GISB_Unity.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:fc491e50d8c14ea428a3e9414f201a62"
+        "GUID:fc491e50d8c14ea428a3e9414f201a62",
+        "GUID:8f30366ec9b14f4a8f51a8165d42a035"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
