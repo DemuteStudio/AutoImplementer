@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace GISB.Runtime
 {
-    [System.Serializable]
-    public class GISB_Attenuation
+    [CreateAssetMenu(fileName = "GISB_Attenuation", menuName = "GISB/ShareSets/Attenuation", order = 1)]
+    public class GISB_Attenuation : GISB_ShareSet
     {
         public enum AttenuationPreset
         {
@@ -16,12 +16,22 @@ namespace GISB.Runtime
             Inverse,
             Custom
         }
+
+        [Serializable]
+        public struct GISB_AttenuationCurve
+        {
+            public AttenuationPreset preset;
+            public AnimationCurve curve;
+        }
         
         public bool active = false;
         public float minDistance = 1;
         public float maxDistance = 10;
-        public AttenuationPreset preset = AttenuationPreset.Linear;
-        public AnimationCurve curve = AnimationCurve.Linear(0, 1, 1, 0);
+        public GISB_AttenuationCurve attenuationCurve = new GISB_AttenuationCurve
+        {
+            preset = AttenuationPreset.Linear,
+            curve = AnimationCurve.Linear(0, 1, 1, 0)
+        };
         public float volumeAtMaxDistance = 0.0f;
         public float spreadAtMinDistance = 0.0f;
         public float spreadAtMaxDistance = 0.0f;

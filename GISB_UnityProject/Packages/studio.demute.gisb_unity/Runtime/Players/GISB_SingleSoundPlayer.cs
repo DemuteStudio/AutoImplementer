@@ -94,8 +94,8 @@ namespace GISB.Runtime
             
             if (attenuation.active)
             {
-                AnimationCurve curve = new AnimationCurve(attenuation.curve.keys);
-                switch (attenuation.preset)
+                AnimationCurve curve = new AnimationCurve(attenuation.attenuationCurve.curve.keys);
+                switch (attenuation.attenuationCurve.preset)
                 {
                     case GISB_Attenuation.AttenuationPreset.Linear:
                         curve = AnimationCurve.Linear(0,1,1,0);

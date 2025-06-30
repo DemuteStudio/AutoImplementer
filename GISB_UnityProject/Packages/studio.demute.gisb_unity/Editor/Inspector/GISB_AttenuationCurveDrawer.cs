@@ -7,8 +7,8 @@ using UnityEngine;
 
 namespace GISB.Editor
 {
-    [CustomPropertyDrawer(typeof(GISB_Attenuation), true)]
-    public class GISB_AttenuationDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(GISB_Attenuation.GISB_AttenuationCurve), true)]
+    public class GISB_AttenuationCurveDrawer : PropertyDrawer
     {
         private const float curveHeightMultiplier = 4f;
 

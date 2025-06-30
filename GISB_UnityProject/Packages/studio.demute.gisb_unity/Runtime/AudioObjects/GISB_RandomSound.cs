@@ -55,7 +55,7 @@ namespace GISB.Runtime
 
         public override float ExtractMaxDistance()
         {
-            float maxDistance = attenuation.overrideParent && attenuation.value.active ? attenuation.value.maxDistance : 0f;
+            float maxDistance = attenuation.overrideParent && attenuation.value != null && attenuation.value.active ? attenuation.value.maxDistance : 0f;
             foreach (GISB_AudioObjectBase audioObject in RandomPlaylist)
             {
                 if(audioObject == null)

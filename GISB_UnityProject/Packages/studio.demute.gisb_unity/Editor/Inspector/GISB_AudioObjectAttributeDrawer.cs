@@ -29,7 +29,6 @@ namespace GISB.Editor
                         break;
                     case EventType.DragPerform:
                         DragAndDrop.AcceptDrag();
-                        bool firstElement = true;
                         foreach (object obj in DragAndDrop.objectReferences)
                         {
                             if (obj is AudioClip audioClip)

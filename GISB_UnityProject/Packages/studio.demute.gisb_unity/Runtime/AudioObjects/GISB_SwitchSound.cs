@@ -51,7 +51,7 @@ namespace GISB.Runtime
 
         public override float ExtractMaxDistance()
         {
-            float maxDistance = attenuation.overrideParent && attenuation.value.active ? attenuation.value.maxDistance : 0f;
+            float maxDistance = attenuation.overrideParent && attenuation.value != null && attenuation.value.active ? attenuation.value.maxDistance : 0f;
             foreach (SwitchCase switchCase in SwitchCases)
             {
                 if (switchCase.audioObject == null)

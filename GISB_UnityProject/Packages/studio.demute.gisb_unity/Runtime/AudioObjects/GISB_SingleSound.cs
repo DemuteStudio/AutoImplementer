@@ -25,7 +25,7 @@ namespace GISB.Runtime
 
         public override float ExtractMaxDistance()
         {
-            return attenuation.overrideParent && attenuation.value.active ? attenuation.value.maxDistance : 0f;
+            return attenuation.overrideParent && attenuation.value != null && attenuation.value.active ? attenuation.value.maxDistance : 0f;
         }
     }
 }
