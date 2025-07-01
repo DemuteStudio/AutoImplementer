@@ -105,7 +105,13 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
     RootContainer->MarkPackageDirty();
 
     UMetaSoundSource* GeneratedMS = UGISB_MetasoundBuilder::CreateMetasoundFromGISB(RootContainer, EventName, MSPackagePath);
-        
+
+    if (!GeneratedMS)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create MetaSound from GISB container."));
+        return;
+    }
+    
 	NewAsset->GeneratedMS = GeneratedMS;
 
     NewAsset->Modify();  // Ensures Unreal tracks the change

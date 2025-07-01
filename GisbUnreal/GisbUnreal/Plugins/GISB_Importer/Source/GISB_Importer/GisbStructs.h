@@ -15,31 +15,7 @@ struct FGisbAttenuation
 	bool overrideParent = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	bool active = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float minDistance = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float maxDistance = 1000;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-    FRuntimeFloatCurve attenuationCurve;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float volumeAtMax = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float spreadAtMin = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float spreadAtMax = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float lowPassAtMin = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float lowPassAtMax = 0;
+	USoundAttenuation* soundAttenuation = nullptr;
 };
 
 USTRUCT(BlueprintType)

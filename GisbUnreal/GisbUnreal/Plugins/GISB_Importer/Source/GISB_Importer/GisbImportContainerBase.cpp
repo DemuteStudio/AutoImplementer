@@ -5,6 +5,7 @@
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSimpleSound.h"
 #include "GisbImportContainerSwitch.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 
 UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path)
 {
@@ -47,8 +48,34 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 	TSharedPtr<FJsonObject> JsonAttenuation = JsonObject->GetObjectField(TEXT("attenuation"));
 	TSharedPtr<FJsonObject> JsonAttenuationValue = JsonAttenuation->GetObjectField(TEXT("value"));
 
-	FRuntimeFloatCurve* AttenuationCurve = new FRuntimeFloatCurve();
-	FRichCurve* curve = &AttenuationCurve->EditorCurveData;
+	//Save attenuation asset
+	FString AssetName = JsonAttenuationValue->GetStringField(TEXT("name"));
+	FString AssetPath = FPaths::Combine("/Game/SoundBanks/", AssetName);
+	if (!FPackageName::IsValidLongPackageName(AssetPath))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Invalid package name: %s"), *AssetPath);
+		return;
+	}
+	UPackage* Package = CreatePackage(*AssetPath);
+	if (!Package)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to create package for attenuation asset: %s"), *AssetPath);
+		return;
+	}
+
+	USoundAttenuation* SoundAttenuation = NewObject<USoundAttenuation>(Package, *AssetName, RF_Public | RF_Standalone);
+	SoundAttenuation->Modify();
+	SoundAttenuation->Attenuation.bAttenuate = JsonAttenuationValue->GetBoolField(TEXT("active"));
+	SoundAttenuation->Attenuation.bSpatialize = JsonAttenuationValue->GetBoolField(TEXT("active"));
+	SoundAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+	SoundAttenuation->Attenuation.FalloffDistance = (float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance"));
+	SoundAttenuation->Attenuation.AttenuationShapeExtents = FVector(
+		(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
+		(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance"))
+	);
+	
+	FRichCurve* curve = &SoundAttenuation->Attenuation.CustomAttenuationCurve.EditorCurveData;
 	TArray<FRichCurveKey> tempKeys;
 	int curvePreset = JsonAttenuationValue->GetIntegerField(TEXT("preset"));
 
@@ -57,59 +84,27 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 		default:
 		case 0: //Linear preset
 		{
-			curve->AddKey(0, 1);
-			curve->AddKey(1, 0);
+			SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Linear;
 		}
 		break;
 
 		case 1: //Logarithmic preset
 		{
-			FKeyHandle LogH1, LogH2;
-
-			LogH1 = curve->AddKey(0, 1);
-			curve->SetKeyTangentMode(LogH1, ERichCurveTangentMode::RCTM_Break);
-			curve->SetKeyInterpMode(LogH1, ERichCurveInterpMode::RCIM_Cubic);
-
-			LogH2 = curve->AddKey(1, 0);
-			curve->SetKeyTangentMode(LogH2, ERichCurveTangentMode::RCTM_Break);
-			curve->SetKeyInterpMode(LogH2, ERichCurveInterpMode::RCIM_Cubic);
-
-			tempKeys = curve->Keys;
-
-			tempKeys[0].ArriveTangent = 0.0f;
-			tempKeys[0].LeaveTangent = -2.302f;
-			tempKeys[1].ArriveTangent = -0.105f;
-			tempKeys[1].LeaveTangent = 0.0f;
-
-			curve->SetKeys(tempKeys);
+				SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Logarithmic;
 		}
 		break;
 
 		case 2: // Inverse preset
 		{
-			FKeyHandle InvH1, InvH2;
-
-			InvH1 = curve->AddKey(0, 1);
-			curve->SetKeyTangentMode(InvH1, ERichCurveTangentMode::RCTM_Break);
-			curve->SetKeyInterpMode(InvH1, ERichCurveInterpMode::RCIM_Cubic);
-
-			InvH2 = curve->AddKey(1, 0);
-			curve->SetKeyTangentMode(InvH2, ERichCurveTangentMode::RCTM_Break);
-			curve->SetKeyInterpMode(InvH2, ERichCurveInterpMode::RCIM_Cubic);
-
-			tempKeys = curve->Keys;
-
-			tempKeys[0].ArriveTangent = 0.0f;
-			tempKeys[0].LeaveTangent = -3.0f;
-			tempKeys[1].ArriveTangent = 0.0f;
-			tempKeys[1].LeaveTangent = 0.0f;
-
-			curve->SetKeys(tempKeys);
+				SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Inverse;
 		}
 		break;
 
 		case 3: // No preset (Custom)
 		{
+				SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Custom;
+
+				
 			TSharedPtr<FJsonObject> JsonCurveValue = JsonAttenuationValue->GetObjectField(TEXT("curve"));
 			TArray<TSharedPtr<FJsonValue>> JsonKeys = JsonCurveValue->GetArrayField(TEXT("keys"));
 
@@ -152,19 +147,13 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 		}
 		break;
 	}
-	
+
+	SoundAttenuation->MarkPackageDirty();
+	FAssetRegistryModule::AssetCreated(SoundAttenuation);
 
 	Attenuation = FGisbAttenuation{
 		JsonAttenuation->GetBoolField(TEXT("overrideParent")),
-		JsonAttenuationValue->GetBoolField(TEXT("active")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance")),
-		*AttenuationCurve,
-		(float)JsonAttenuationValue->GetNumberField(TEXT("volumeAtMaxDistance")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("spreadAtMinDistance")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("spreadAtMaxDistance")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMinDistance")),
-		(float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMaxDistance"))
+		SoundAttenuation,
 	};
 
 	TSharedPtr<FJsonObject> JsonVolume = JsonObject->GetObjectField(TEXT("volumeDB"));
