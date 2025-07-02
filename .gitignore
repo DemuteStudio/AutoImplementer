@@ -24,3 +24,7 @@ GisbUnreal/Binaries
 GisbUnreal/.vsconfig
 GisbUnreal/*.DotSettings.user
 GisbUnreal/UpgradeLog.htm
+**/Binaries
+**/DerivedDataCache
+**/Intermediate
+**/Saved
