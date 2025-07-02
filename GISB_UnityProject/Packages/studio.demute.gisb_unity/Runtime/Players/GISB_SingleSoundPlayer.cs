@@ -87,6 +87,13 @@ namespace GISB.Runtime
 
         private void SetAttenuation(AudioSource audioSource, GISB_Attenuation attenuation)
         {
+            if (attenuation == null)
+            {
+                audioSource.spatialBlend = 0.0f; // No spatialization
+                audioSource.spatialize = false; // No spatialization
+                return;
+            }
+            
             audioSource.spatialize = attenuation.active;
             audioSource.spatialBlend = attenuation.active ? 1.0f : 0.0f;
             audioSource.minDistance = attenuation.minDistance;
