@@ -48,6 +48,7 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 {
 	TSharedPtr<FJsonObject> JsonAttenuation = JsonObject->GetObjectField(TEXT("attenuation"));
 	TSharedPtr<FJsonObject> JsonAttenuationValue = JsonAttenuation->GetObjectField(TEXT("value"));
+	TSharedPtr<FJsonObject> JsonAttenuationCurve = JsonAttenuationValue->GetObjectField(TEXT("attenuationCurve"));
 
 	//Save attenuation asset
 	FString AssetName = JsonAttenuationValue->GetStringField(TEXT("name"));
@@ -70,10 +71,17 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 				(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
 				(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance"))
 			);
+			SoundAttenuation->Attenuation.bAttenuateWithLPF = true;
+			SoundAttenuation->Attenuation.LPFRadiusMin = (float)JsonAttenuationValue->GetNumberField(TEXT("minDistance"));
+			SoundAttenuation->Attenuation.LPFRadiusMax = (float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance"));
+			SoundAttenuation->Attenuation.LPFFrequencyAtMin = 20000.0f - (200.0f * (float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMinDistance")));
+			SoundAttenuation->Attenuation.LPFFrequencyAtMax = 20000.0f - (200.0f * (float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMaxDistance")));
 
 			FRichCurve* curve = &SoundAttenuation->Attenuation.CustomAttenuationCurve.EditorCurveData;
+			FRichCurve* lowPassCurve = &SoundAttenuation->Attenuation.CustomLowpassAirAbsorptionCurve.EditorCurveData;
+			FRichCurve* highPassCurve = &SoundAttenuation->Attenuation.CustomHighpassAirAbsorptionCurve.EditorCurveData;
 			TArray<FRichCurveKey> tempKeys;
-			int curvePreset = JsonAttenuationValue->GetIntegerField(TEXT("preset"));
+			int curvePreset = JsonAttenuationCurve->GetIntegerField(TEXT("preset"));
 
 			switch (curvePreset)
 			{
@@ -81,18 +89,57 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 			case 0: //Linear preset
 				{
 					SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Linear;
+					SoundAttenuation->Attenuation.AbsorptionMethod = EAirAbsorptionMethod::Linear;
 				}
 				break;
 
 			case 1: //Logarithmic preset
 				{
 					SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Logarithmic;
+					SoundAttenuation->Attenuation.AbsorptionMethod = EAirAbsorptionMethod::CustomCurve;
+					FKeyHandle LogH1, LogH2;
+
+					LogH1 = lowPassCurve->AddKey(0, 1);
+					lowPassCurve->SetKeyTangentMode(LogH1, ERichCurveTangentMode::RCTM_Break);
+					lowPassCurve->SetKeyInterpMode(LogH1, ERichCurveInterpMode::RCIM_Cubic);
+
+					LogH2 = lowPassCurve->AddKey(1, 0);
+					lowPassCurve->SetKeyTangentMode(LogH2, ERichCurveTangentMode::RCTM_Break);
+					lowPassCurve->SetKeyInterpMode(LogH2, ERichCurveInterpMode::RCIM_Cubic);
+
+					tempKeys = lowPassCurve->Keys;
+
+					tempKeys[0].ArriveTangent = 0.0f;
+					tempKeys[0].LeaveTangent = -2.302f;
+					tempKeys[1].ArriveTangent = -0.105f;
+					tempKeys[1].LeaveTangent = 0.0f;
+
+					lowPassCurve->SetKeys(tempKeys);
 				}
 				break;
 
 			case 2: // Inverse preset
 				{
 					SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Inverse;
+					SoundAttenuation->Attenuation.AbsorptionMethod = EAirAbsorptionMethod::CustomCurve;
+					FKeyHandle InvH1, InvH2;
+
+					InvH1 = lowPassCurve->AddKey(0, 1);
+					lowPassCurve->SetKeyTangentMode(InvH1, ERichCurveTangentMode::RCTM_Break);
+					lowPassCurve->SetKeyInterpMode(InvH1, ERichCurveInterpMode::RCIM_Cubic);
+
+					InvH2 = lowPassCurve->AddKey(1, 0);
+					lowPassCurve->SetKeyTangentMode(InvH2, ERichCurveTangentMode::RCTM_Break);
+					lowPassCurve->SetKeyInterpMode(InvH2, ERichCurveInterpMode::RCIM_Cubic);
+
+					tempKeys = lowPassCurve->Keys;
+
+					tempKeys[0].ArriveTangent = 0.0f;
+					tempKeys[0].LeaveTangent = -3.0f;
+					tempKeys[1].ArriveTangent = 0.0f;
+					tempKeys[1].LeaveTangent = 0.0f;
+
+					lowPassCurve->SetKeys(tempKeys);
 				}
 				break;
 
@@ -101,7 +148,7 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 					SoundAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Custom;
 
 
-					TSharedPtr<FJsonObject> JsonCurveValue = JsonAttenuationValue->GetObjectField(TEXT("curve"));
+					TSharedPtr<FJsonObject> JsonCurveValue = JsonAttenuationCurve->GetObjectField(TEXT("curve"));
 					TArray<TSharedPtr<FJsonValue>> JsonKeys = JsonCurveValue->GetArrayField(TEXT("keys"));
 
 					int length = JsonCurveValue->GetIntegerField(TEXT("length"));
@@ -141,6 +188,42 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 					}
 
 					curve->SetKeys(tempKeys);
+
+					SoundAttenuation->Attenuation.AbsorptionMethod = EAirAbsorptionMethod::CustomCurve;
+					
+					for (int i = 0; i < length; i++)
+					{
+						TSharedPtr<FJsonObject> JsonKey = JsonKeys[i]->AsObject();
+						float time = (float)JsonKey->GetNumberField(TEXT("time"));
+						float value = (float)JsonKey->GetNumberField(TEXT("value"));
+						auto handle = lowPassCurve->AddKey(time, value);
+						ERichCurveTangentMode RCTM = (ERichCurveTangentMode)JsonKey->
+							GetIntegerField(TEXT("tangentMode"));
+						// TO DO : Check if Unity's tangent mode equals UE's one
+						ERichCurveInterpMode RCIM = ERichCurveInterpMode::RCIM_Cubic; // Not right, just placeholder
+						//(ERichCurveInterpMode)JsonKey->GetIntegerField("weightedMode"); // Not right, just placeholder
+						lowPassCurve->SetKeyTangentMode(handle, ERichCurveTangentMode::RCTM_Break);
+						lowPassCurve->SetKeyInterpMode(handle, ERichCurveInterpMode::RCIM_Cubic);
+					}
+
+					tempKeys = lowPassCurve->Keys;
+
+					for (int i = 0; i < length; i++)
+					{
+						TSharedPtr<FJsonObject> JsonKey = JsonKeys[i]->AsObject();
+
+						float inTngnt = (float)JsonKey->GetNumberField(TEXT("inTangent"));
+						float outTngnt = (float)JsonKey->GetNumberField(TEXT("outTangent"));
+						float inWeight = (float)JsonKey->GetNumberField(TEXT("inWeight"));
+						float outWeight = (float)JsonKey->GetNumberField(TEXT("outWeight"));
+
+						tempKeys[i].ArriveTangent = inTngnt;
+						tempKeys[i].LeaveTangent = outTngnt;
+						tempKeys[i].ArriveTangentWeight = inWeight;
+						tempKeys[i].LeaveTangentWeight = outWeight;
+					}
+
+					lowPassCurve->SetKeys(tempKeys);
 				}
 				break;
 			}

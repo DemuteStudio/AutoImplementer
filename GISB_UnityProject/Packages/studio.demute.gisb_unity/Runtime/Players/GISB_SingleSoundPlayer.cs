@@ -26,13 +26,14 @@ namespace GISB.Runtime
             float pitch = GetPitch();
             float lowpass = GetLowpass();
 
-            SetAttenuation(audioVoice, attenuation);
             
             audioVoice.clip = audioObject.soundClip;
             audioVoice.loop = audioObject.loop;
             audioVoice.volume = GetVolume();
             audioVoice.pitch = centsToLinear(pitch);
             audioVoice.GetComponent<AudioLowPassFilter>().cutoffFrequency = Mathf.Lerp(22000, 0, lowpass);
+            SetAttenuation(audioVoice, attenuation);
+
             //Store clip duration here because we can't get it from the audio thread
             if (audioVoice.loop)
             {
