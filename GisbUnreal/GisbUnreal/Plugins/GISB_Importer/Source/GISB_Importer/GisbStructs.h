@@ -15,7 +15,7 @@ struct FGisbAttenuation
 	bool overrideParent = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	USoundAttenuation* soundAttenuation = nullptr;
+	TObjectPtr<USoundAttenuation> soundAttenuation = nullptr;
 };
 
 USTRUCT(BlueprintType)

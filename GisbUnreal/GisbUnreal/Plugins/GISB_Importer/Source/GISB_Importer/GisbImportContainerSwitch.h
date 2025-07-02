@@ -20,7 +20,7 @@ public:
 	FName ParameterID;
 	FName DefaultParameterValue;
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "GISB")
-	TMap<FString, UGisbImportContainerBase*> SoundDictionary;
+	TMap<FString, TObjectPtr<UGisbImportContainerBase>> SoundDictionary;
 
 	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path ) override;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) override;

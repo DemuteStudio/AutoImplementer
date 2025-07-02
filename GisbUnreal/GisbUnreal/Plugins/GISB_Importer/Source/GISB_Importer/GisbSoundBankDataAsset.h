@@ -21,10 +21,10 @@ public:
 	FString EventName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	UMetaSoundSource* GeneratedMS;
+	TObjectPtr<UMetaSoundSource> GeneratedMS;
 
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category="GISB")
-	UGisbContainerBase* RootContainer;
+	TObjectPtr<UGisbContainerBase> RootContainer;
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
 

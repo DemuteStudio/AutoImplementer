@@ -16,7 +16,7 @@ class UGisbImportContainerRandom : public UGisbImportContainerBase
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "GISB")
-	TArray<UGisbImportContainerBase*> SoundArray;
+	TArray<TObjectPtr<UGisbImportContainerBase>> SoundArray;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GISB")
 	int AvoidLastPlayed = 0;

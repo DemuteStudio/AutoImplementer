@@ -21,7 +21,7 @@ public:
 	bool loop;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GISB")
-	USoundWave* SoundWave = nullptr;
+	TObjectPtr<USoundWave> SoundWave = nullptr;
 
 	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) override;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) override;

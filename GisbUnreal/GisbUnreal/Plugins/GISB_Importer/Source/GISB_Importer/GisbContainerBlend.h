@@ -17,7 +17,7 @@ class UGisbContainerBlend : public UGisbContainerBase
 
 public:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "GISB")
-	TArray<UGisbContainerBase*> ChildContainers;
+	TArray<TObjectPtr<UGisbContainerBase>> ChildContainers;
 
 	virtual void Play(UObject* WorldContext, const TMap<FName, FString>& Parameters) override;
 	

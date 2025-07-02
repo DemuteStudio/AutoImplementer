@@ -8,7 +8,7 @@ void UGisbContainerSwitch::Play(UObject* WorldContext, const TMap<FName, FString
 	if (!Parameters.Contains(ParameterName)) return;
 
 	FString Value = Parameters[ParameterName];
-	if (UGisbContainerBase** Found = SwitchMap.Find(Value))
+	if (TObjectPtr<UGisbContainerBase>* Found = SwitchMap.Find(Value))
 	{
 		if (*Found)
 		{

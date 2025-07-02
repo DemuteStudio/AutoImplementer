@@ -54,6 +54,7 @@ UMetaSoundSource* UGISB_MetasoundBuilder::CreateMetasoundFromGISB(UGisbImportCon
 	}
 	UObject* Object = ms.GetObject();
 	UMetaSoundSource* GeneratedMS = Cast<UMetaSoundSource>(Object);
+	GeneratedMS->AttenuationSettings = gisb->Attenuation.soundAttenuation;
 	return GeneratedMS;
 }
 
@@ -184,7 +185,7 @@ void UGISB_MetasoundBuilder::ConnectContainerToGraph(UMetaSoundSourceBuilder* bu
 	UGisbImportContainerSwitch* swtch = Cast<UGisbImportContainerSwitch>(gisb);
 	if (swtch != nullptr)
 	{
-		for (TPair<FString, UGisbImportContainerBase*>& pair : swtch->SoundDictionary)
+		for (TPair<FString, TObjectPtr<UGisbImportContainerBase>>& pair : swtch->SoundDictionary)
 		{
 			UGisbImportContainerBase* newGisb = pair.Value;
 			ConnectContainerToGraph(builder, newGisb, executionHandle, finishHandle, audioHandles);

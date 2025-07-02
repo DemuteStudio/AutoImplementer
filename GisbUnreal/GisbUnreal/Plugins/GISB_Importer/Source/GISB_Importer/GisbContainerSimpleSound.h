@@ -16,7 +16,7 @@ class UGisbContainerSimpleSound : public UGisbContainerBase
 	GENERATED_BODY()
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	USoundBase* Sound;
+	TObjectPtr<USoundBase> Sound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
 	bool loop;

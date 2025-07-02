@@ -22,7 +22,7 @@ public:
 	FName ParameterValue;
 	
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "GISB")
-	TMap<FString, UGisbContainerBase*> SwitchMap;
+	TMap<FString, TObjectPtr<UGisbContainerBase>> SwitchMap;
 
 	virtual void Play(UObject* WorldContext, const TMap<FName, FString>& Parameters) override;
 };

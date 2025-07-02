@@ -17,7 +17,7 @@ class UGisbContainerRandom : public UGisbContainerBase
 
 public:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadOnly, Category = "GISB")
-	TArray<UGisbContainerBase*> ChildContainers;
+	TArray<TObjectPtr<UGisbContainerBase>> ChildContainers;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
 	int AvoidLastPlayed = 0;
