@@ -25,20 +25,14 @@ namespace GISB.Runtime
         public abstract Dictionary<string, List<string>> ExtractParameters();
         public abstract float ExtractMaxDistance();
     }
-    
-    public class GISB_AudioListAttribute : SRAttribute
-    {
 
-        public GISB_AudioListAttribute() : base()
+    public class GISB_AudioDropAttribute : PropertyAttribute
+    {
+        public string listName;
+
+        public GISB_AudioDropAttribute(string listName)
         {
-        }
-        
-        public GISB_AudioListAttribute(Type baseType) : base(baseType)
-        {
-        }
-        
-        public GISB_AudioListAttribute(params Type[] types) : base(types)
-        {
+            this.listName = listName;
         }
     }
 }

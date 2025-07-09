@@ -1,7 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using SerializeReferenceEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace GISB.Runtime
 {
@@ -23,7 +26,11 @@ namespace GISB.Runtime
         public float triggerRate = 1.0f;
         public float crossfadeDuration = 1.0f;
         
-        [SerializeReference, GISB_AudioList]
+#if UNITY_EDITOR
+        [GISB_AudioDrop("RandomPlaylist"), JsonIgnore] public Object dragAndDropAudioClips;
+#endif //UNITY_EDITOR   
+        
+        [SerializeReference, SR]
         public GISB_AudioObjectBase[] RandomPlaylist;
         
         public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)

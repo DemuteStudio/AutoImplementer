@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using SerializeReferenceEditor;
 using UnityEngine;
 
@@ -8,7 +9,10 @@ namespace GISB.Runtime
     [SRName("Blend Sound")]
     public class GISB_BlendSound : GISB_AudioObjectBase
     {
-        [SerializeReference, GISB_AudioList]
+        #if UNITY_EDITOR
+        [GISB_AudioDrop("BlendPlaylist"), JsonIgnore] public Object dragAndDropAudioClips;
+        #endif //UNITY_EDITOR
+        [SerializeReference, SR]
         public GISB_AudioObjectBase[] BlendPlaylist;
         
         public override GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null)

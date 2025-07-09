@@ -8,16 +8,15 @@ using SerializeReferenceEditor.Editor;
 
 namespace GISB.Editor
 {
-    [CustomPropertyDrawer(typeof(GISB_AudioListAttribute))]
-    public class GISB_AudioObjectAttributeDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(GISB_AudioDropAttribute))]
+    public class GISB_AudioDropAttributeDrawer : PropertyDrawer
     {
-        private SRDrawer _srDrawer = new();
-
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            _srDrawer.Draw(position, property, label);
+            EditorGUI.HelpBox(position, "Drag and drop AudioClip assets here to add them to the playlist.", MessageType.Info);
+            GISB_AudioDropAttribute audioDropAttribute = (GISB_AudioDropAttribute)attribute;
             
-            SerializedProperty arrayProperty = property.serializedObject.FindProperty(property.propertyPath.Substring(0, property.propertyPath.LastIndexOf('.')));
+            SerializedProperty arrayProperty = property.serializedObject.FindProperty(property.propertyPath.Substring(0, property.propertyPath.LastIndexOf('.'))+ $".{audioDropAttribute.listName}");
 
             if (position.Contains(Event.current.mousePosition))
             {
@@ -42,7 +41,7 @@ namespace GISB.Editor
                             }
                         }
                         property.serializedObject.ApplyModifiedProperties();
-
+                        Event.current.Use();
                         break;
                 }
             }
@@ -50,7 +49,7 @@ namespace GISB.Editor
         
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return _srDrawer.GetPropertyHeight(property, label);
+            return EditorGUIUtility.singleLineHeight * 2; // Adjust height as needed
         }
     }
 }
