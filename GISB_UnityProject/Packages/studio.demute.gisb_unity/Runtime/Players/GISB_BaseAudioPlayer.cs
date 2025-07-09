@@ -54,6 +54,8 @@ namespace GISB.Runtime
 
         public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
+            if (audioObject.mute) return;
+            
             targetVolume = GISB_VolumeParameter.decibelsToLinear(audioObject.volumeDB.GetRandomValue());
             currentVolume = fadeInTime > 0 ? 0.0f : targetVolume; // Start with 0 volume if fading in, otherwise set to target volume immediately
             LastPlayTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
