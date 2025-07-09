@@ -444,6 +444,9 @@ void UGISB_MetasoundBuilder::ConnectRandom(UMetaSoundSourceBuilder* builder, UGi
 	DetectLoopAndMono(random, canRandomLoop, isStereo? unusedBool : isStereo);
 
 	int numChildren = random->SoundArray.Num();
+
+	//TODO : remove this hack when using configurable nodes
+	if (numChildren > 8) numChildren = 8; // We limit the number of children to 8, because the nodes only support up to 8 inputs
 	if (numChildren < 1) return;
 
 	if (numChildren == 1) // No need to random one element
