@@ -654,13 +654,13 @@ void UGISB_MetasoundBuilder::ConnectPitch(UMetaSoundSourceBuilder* builder, cons
 		builder->ConnectNodes(firstAudioHandle, audioLeftHandle, result);
 		if (isStereo) builder->ConnectNodes(secondAudioHandle, audioRightHandle, result);
 
-		float linearMax = std::pow(2.0f, pitch.maxRnd * 0.00083333f);
-		FAudioParameter maxParam = FAudioParameter(TEXT("Min"), linearMax);
+		float semitonesMax = pitch.maxRnd * 0.01f; //cents to semitones
+		FAudioParameter maxParam = FAudioParameter(TEXT("Min"), semitonesMax);
 		FMetasoundFrontendLiteral maxValue = FMetasoundFrontendLiteral(maxParam);
 		builder->SetNodeInputDefault(maxHandle, maxValue, result);
 
-		float linearMin = std::pow(2.0f, pitch.minRnd * 0.00083333f);
-		FAudioParameter minParam = FAudioParameter(TEXT("Min"), linearMin);
+		float semitonesMin = pitch.minRnd * 0.01f; //cents to semitones
+		FAudioParameter minParam = FAudioParameter(TEXT("Min"), semitonesMin);
 		FMetasoundFrontendLiteral minValue = FMetasoundFrontendLiteral(minParam);
 		builder->SetNodeInputDefault(minHandle, minValue, result);
 
@@ -668,8 +668,8 @@ void UGISB_MetasoundBuilder::ConnectPitch(UMetaSoundSourceBuilder* builder, cons
 		FMetasoundFrontendLiteral randomizeValue = FMetasoundFrontendLiteral(randomizeParam);
 		builder->SetNodeInputDefault(randomizeHandle, randomizeValue, result);
 
-		float linearValue = std::pow(2.0f, pitch.value * 0.00083333f);
-		FAudioParameter valueParam = FAudioParameter(TEXT("Value"), linearValue);
+		float semitonesValue = pitch.value * 0.01f; //cents to semitones
+		FAudioParameter valueParam = FAudioParameter(TEXT("Value"), semitonesValue);
 		FMetasoundFrontendLiteral valueValue = FMetasoundFrontendLiteral(valueParam);
 		builder->SetNodeInputDefault(valueHandle, valueValue, result);
 
