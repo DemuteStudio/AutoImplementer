@@ -12,8 +12,13 @@ namespace GISB.Runtime
         [FormerlySerializedAs("associatedPlayable")] public GISB_Asset associatedAsset;
         public Dictionary<string, string> activeParameters = new Dictionary<string, string>();
         
-        public Dictionary<GISB_Event, GISB_EventInstance> activeEventInstances = new Dictionary<GISB_Event, GISB_EventInstance>();
+        public List<GISB_EventInstance> activeEventInstances = new List<GISB_EventInstance>();
 
+        private List<GISB_AudioVoice> audioVoices = new List<GISB_AudioVoice>();
+        private AudioSource audioClock;
+        
+        public Dictionary<GISB_RandomSound, GISB_RandomSoundPlayer.RandomizationValues> randomizationValuesCache = new Dictionary<GISB_RandomSound, GISB_RandomSoundPlayer.RandomizationValues>();
+        
         public void PlayEvent(float fadeInTime = 0.0f)
         {
             PlayEvent(associatedAsset.GetEvent(""), fadeInTime);
@@ -23,16 +28,19 @@ namespace GISB.Runtime
         {
             if(!eventToPlay) return;
 
-            if(!activeEventInstances.ContainsKey(eventToPlay) || activeEventInstances[eventToPlay] == null)
+            GISB_EventInstance newEventInstance = new GISB_EventInstance(eventToPlay, this);
+            activeEventInstances.Add(newEventInstance);
+            newEventInstance.Play(fadeInTime);
+            
+            if (audioClock == null)
             {
-                GameObject newEventInstanceObject = new GameObject(eventToPlay.name);
-                newEventInstanceObject.transform.SetParent(transform, false);
-                GISB_EventInstance newEventInstance = newEventInstanceObject.AddComponent<GISB_EventInstance>();
-                newEventInstance.eventDefinition = eventToPlay;
-                activeEventInstances[eventToPlay] = newEventInstance;
+                audioClock = gameObject.AddComponent<AudioSource>();
             }
 
-            activeEventInstances[eventToPlay].Play(activeParameters, fadeInTime);
+            if (audioClock != null)
+            {
+                audioClock.Play();
+            }
         }
         
         public void PlayEvent(string eventName)
@@ -44,17 +52,20 @@ namespace GISB.Runtime
         public void SetParameter(string parameterName, string parameterValue)
         {
             activeParameters[parameterName] = parameterValue;
-            foreach (KeyValuePair<GISB_Event, GISB_EventInstance> activeEventInstance in activeEventInstances)
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
             {
-                activeEventInstance.Value.UpdateParameters(activeParameters);
+                activeEventInstance.UpdateParameters(activeParameters);
             }
         }
         
         public void StopEvent(GISB_Event eventToStop, float fadeOutTime = 0.0f)
         {
-            if(activeEventInstances.ContainsKey(eventToStop) && activeEventInstances[eventToStop] != null)
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
             {
-                activeEventInstances[eventToStop].Stop(fadeOutTime);
+                if (activeEventInstance.eventDefinition == eventToStop)
+                {
+                    activeEventInstance.Stop(fadeOutTime);
+                }
             }
         }
         
@@ -62,6 +73,50 @@ namespace GISB.Runtime
         {
             GISB_Event eventToStop = associatedAsset.GetEvent(eventName);
             StopEvent(eventToStop);
+        }
+        
+        public GISB_AudioVoice GetAudioVoice()
+        {
+            foreach (GISB_AudioVoice audioVoice in audioVoices)
+            {
+                if (audioVoice.owner == null)
+                {
+                    return audioVoice;
+                }
+            }
+        
+            GameObject newAudioVoiceObject = new GameObject("Audio Voice");
+            newAudioVoiceObject.transform.SetParent(transform, false);
+            GISB_AudioVoice newAudioVoice = newAudioVoiceObject.AddComponent<GISB_AudioVoice>();
+            newAudioVoice.Init();
+            audioVoices.Add(newAudioVoice);
+            return newAudioVoice;
+        }
+        
+        public void OnAudioFilterRead(float[] data, int channels)
+        {
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
+            {
+                activeEventInstance.UpdateAudioThread(AudioSettings.dspTime);
+            }
+        }
+
+
+        public void Update()
+        {
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
+            {
+                activeEventInstance.UpdateGameThread(Time.deltaTime);
+            }
+            
+            // Remove finished event instances
+            for (int i = activeEventInstances.Count - 1; i >= 0; i--)
+            {
+                if (!activeEventInstances[i].IsPlaying())
+                {
+                    activeEventInstances.RemoveAt(i);
+                }
+            }
         }
     }
 }

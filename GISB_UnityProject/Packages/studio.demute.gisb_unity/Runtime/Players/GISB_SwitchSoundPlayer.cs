@@ -14,13 +14,13 @@ namespace GISB.Runtime
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
+        public override void Play(GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
-            base.Play(activeParameters, gisbEventInstance, fadeInTime, scheduledTime);
+            base.Play(gisbEventInstance, fadeInTime, scheduledTime);
             
             if (!RollForPlayProbability()) return;
             currentSwitchValue = audioObject.DefaultValue;
-            if(activeParameters.TryGetValue(audioObject.ParameterName, out string parameter))
+            if(gisbEventInstance.ownerComponent.activeParameters.TryGetValue(audioObject.ParameterName, out string parameter))
             {
                 currentSwitchValue = parameter;
             }
@@ -44,7 +44,7 @@ namespace GISB.Runtime
             
             if(instantiatedPlayers.ContainsKey(currentSwitchValue))
             {
-                instantiatedPlayers[currentSwitchValue].Play(activeParameters, gisbEventInstance, 0.0f, scheduledTime);
+                instantiatedPlayers[currentSwitchValue].Play(gisbEventInstance, 0.0f, scheduledTime);
             }
         }
 
@@ -86,6 +86,12 @@ namespace GISB.Runtime
         {
             if (currentSwitchValue == string.Empty) return 0.0f;
             return instantiatedPlayers[currentSwitchValue].GetDuration();
+        }
+        
+        public override bool IsPlaying()
+        {
+            if (currentSwitchValue == string.Empty) return false;
+            return instantiatedPlayers[currentSwitchValue].IsPlaying();
         }
     }
 }

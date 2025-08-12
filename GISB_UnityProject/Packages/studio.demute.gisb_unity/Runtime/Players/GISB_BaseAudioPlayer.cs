@@ -8,7 +8,7 @@ namespace GISB.Runtime
     {
         protected GISB_BaseAudioPlayer parent = null;
 
-        public abstract void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance,
+        public abstract void Play(GISB_EventInstance gisbEventInstance,
             double fadeInTime, double scheduledTime);
         
         public abstract void Stop(double fadeOutTime);
@@ -28,13 +28,15 @@ namespace GISB.Runtime
         public abstract float GetLowpass();
 
         public abstract double GetDuration();
+
+        public abstract bool IsPlaying();
     }
     
     public abstract class GISB_AudioPlayerTemplate<T> : GISB_BaseAudioPlayer where T : GISB_AudioObjectBase
     {
         protected T audioObject;
         
-        protected GISB_EventInstance lastGisbEventInstance;
+        protected GISB_EventInstance ownerInstance;
                 
         //Volume calculated from the audioObject's volumeDB with random
         private float targetVolume;
@@ -43,24 +45,24 @@ namespace GISB.Runtime
         private float currentVolume;
 
         //The last time this player was triggered to play
-        protected double LastPlayTime;
+        protected double playTime;
         
-        private double lastFadeInTime = 0.0f;
+        private double fadeInTime = 0.0f;
 
         //The last time this player was stopped (used for fading out)
-        private double lastStopTime;
+        private double stopTime;
         
-        private double lastFadeOutTime = 0.0f;
+        private double fadeOutTime = 0.0f;
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
+        public override void Play(GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
             if (audioObject.mute) return;
             
             targetVolume = GISB_VolumeParameter.decibelsToLinear(audioObject.volumeDB.GetRandomValue());
             currentVolume = fadeInTime > 0 ? 0.0f : targetVolume; // Start with 0 volume if fading in, otherwise set to target volume immediately
-            LastPlayTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
-            lastFadeInTime = fadeInTime;
-            lastGisbEventInstance = gisbEventInstance;
+            playTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
+            this.fadeInTime = fadeInTime;
+            this.ownerInstance = gisbEventInstance;
             
             // if(lastFadeInTime > 0) Debug.LogFormat("Starting fade-in for audio: {0}, Target Volume: {1}, Fade-in Time: {2}", 
             //     audioObject, targetVolume, lastFadeInTime);
@@ -71,8 +73,8 @@ namespace GISB.Runtime
         {
             if (fadeOutTime <= 0.0f) Stop();
             
-            lastStopTime = AudioSettings.dspTime;
-            lastFadeOutTime = fadeOutTime;
+            stopTime = AudioSettings.dspTime;
+            this.fadeOutTime = fadeOutTime;
             targetVolume = currentVolume; //Just in case our volume when stopping isn't at the target volume
             
             // if (lastFadeOutTime > 0) Debug.LogFormat("Starting fade-out for audio: {0}, Current Volume: {1}, Fade-out Time: {2}", 
@@ -84,38 +86,38 @@ namespace GISB.Runtime
         {
             // This method can be overridden by subclasses to handle time updates
             // For example, to handle fading in or out of the audio
-            if (lastFadeInTime > 0)
+            if (fadeInTime > 0)
             {
-                double elapsed = dspTime - LastPlayTime;
-                if (elapsed < lastFadeInTime)
+                double elapsed = dspTime - playTime;
+                if (elapsed < fadeInTime)
                 {
-                    currentVolume = Mathf.Lerp(0.0f, targetVolume, (float)(elapsed / lastFadeInTime));
+                    currentVolume = Mathf.Lerp(0.0f, targetVolume, (float)(elapsed / fadeInTime));
                     // Debug.LogFormat("Fading in audio: Current Volume: {0}, Target Volume: {1}, Elapsed Time: {2}", 
                     //     currentVolume, targetVolume, elapsed);
                 }
                 else
                 {
                     currentVolume = targetVolume; // Reached target volume
-                    lastFadeInTime = 0.0f; // Reset fade-in time
+                    fadeInTime = 0.0f; // Reset fade-in time
                 }
             }
             
-            if (lastFadeOutTime > 0)
+            if (fadeOutTime > 0)
             {
-                double elapsed = dspTime - lastStopTime;
-                if (elapsed < lastFadeOutTime)
+                double elapsed = dspTime - stopTime;
+                if (elapsed < fadeOutTime)
                 {
-                    currentVolume = Mathf.Lerp(targetVolume, 0.0f, (float)(elapsed / lastFadeOutTime));
+                    currentVolume = Mathf.Lerp(targetVolume, 0.0f, (float)(elapsed / fadeOutTime));
                     // Debug.LogFormat("Fading out audio: Current Volume: {0}, Target Volume: {1}, Elapsed Time: {2}", 
                     //     currentVolume, targetVolume, elapsed);
                 }
                 else
                 {
                     currentVolume = 0.0f; // Reached zero volume
-                    lastFadeOutTime = 0.0f; // Reset fade-out time
+                    fadeOutTime = 0.0f; // Reset fade-out time
                     
                     //Enqueue stop action if volume reaches zero
-                    lastGisbEventInstance.scheduledActions.Enqueue(Stop);
+                    ownerInstance.scheduledActions.Enqueue(Stop);
                 }
             }
         }

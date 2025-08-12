@@ -23,9 +23,9 @@ namespace GISB.Editor
 
         public void EditorUpdate()
         {
-            foreach (GISB_EventInstance eventInstance in activeEventInstances.Values)
+            foreach (GISB_EventInstance eventInstance in activeEventInstances)
             {
-                eventInstance.Update();
+                eventInstance.UpdateGameThread(Time.deltaTime);
             }
         }
     }

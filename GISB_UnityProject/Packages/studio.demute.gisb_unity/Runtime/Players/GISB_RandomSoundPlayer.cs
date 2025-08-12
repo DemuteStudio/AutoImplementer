@@ -8,33 +8,68 @@ namespace GISB.Runtime
 {
     public class GISB_RandomSoundPlayer : GISB_AudioPlayerTemplate<GISB_RandomSound>
     {
-        private List<GISB_BaseAudioPlayer> instantiatedPlayers = new List<GISB_BaseAudioPlayer>();
-        
-        private List<int> indexes = new List<int>();
-        private Queue<int> excludedIndexes = new Queue<int>();
-        private int currentIndex = -1;
+        public class RandomizationValues
+        {
+            private List<int> indexes;
+            private Queue<int> excludedIndexes;
+            private int lastTriggeredIndex;
+            private int avoidLastPlayed;
+            
+            public RandomizationValues(int count, int avoidLastPlayed)
+            {
+                
+                indexes = new List<int>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    indexes.Add(i);
+                }
+                lastTriggeredIndex = -1;
+                excludedIndexes = new Queue<int>();
+                this.avoidLastPlayed = Mathf.Min(avoidLastPlayed, count - 1); // Ensure we don't avoid more than available sounds
+            }
+
+            public int GetRandomIndex()
+            {
+                int index = indexes[Random.Range(0, indexes.Count)];
+                indexes.Remove(index);
+                excludedIndexes.Enqueue(index);
+                while(excludedIndexes.Count > avoidLastPlayed)
+                {
+                    indexes.Add(excludedIndexes.Dequeue());
+                }
+                return index;
+            }
+        }
+
         
         private bool isLooping = false;
+        private int currentIndex = -1;
         private double lastChildTriggerTime = 0.0f;
-
-        private Dictionary<string, string> lastParameters;
-        
         private const double SCHEDULING_DELAY = 0.1f;
+        
+        private List<GISB_BaseAudioPlayer> instantiatedPlayers = new List<GISB_BaseAudioPlayer>();
+        
         
         public GISB_RandomSoundPlayer(GISB_RandomSound audioObject, GISB_BaseAudioPlayer parent = null) : base(audioObject, parent)
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
+        public override void Play(GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
-            base.Play(activeParameters, gisbEventInstance, fadeInTime, scheduledTime);
+            base.Play(gisbEventInstance, fadeInTime, scheduledTime);
             
             if (!RollForPlayProbability()) return;
+
+            if (!gisbEventInstance.ownerComponent.randomizationValuesCache.ContainsKey(audioObject))
+            {
+                gisbEventInstance.ownerComponent.randomizationValuesCache[audioObject] =
+                    new RandomizationValues(audioObject.RandomPlaylist.Length, audioObject.avoidLastPlayed);
+            }
+            
             if(instantiatedPlayers.Count == 0)
             {
                 for (int i = 0; i < audioObject.RandomPlaylist.Length; i++)
                 {
-                    indexes.Add(i);
                     instantiatedPlayers.Add(audioObject.RandomPlaylist[i].GetPlayer(this));
                 }
             }
@@ -43,12 +78,11 @@ namespace GISB.Runtime
             if(instantiatedPlayers.Count > 0)
             {
                 currentIndex = GetRandomIndex();
-                instantiatedPlayers[currentIndex].Play(activeParameters, gisbEventInstance, 0.0f, scheduledTime);
+                instantiatedPlayers[currentIndex].Play(gisbEventInstance, 0.0f, scheduledTime);
             }
 
             isLooping = audioObject.loop;
             lastChildTriggerTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
-            lastParameters = activeParameters;
         }
 
         public override void Stop()
@@ -83,10 +117,10 @@ namespace GISB.Runtime
                         if (dspTime + SCHEDULING_DELAY > lastChildTriggerTime + audioObject.triggerRate)
                         {
                             double newScheduledTime = lastChildTriggerTime + audioObject.triggerRate;
-                            lastGisbEventInstance.scheduledActions.Enqueue(() =>
+                            ownerInstance.scheduledActions.Enqueue(() =>
                             {
                                 currentIndex = GetRandomIndex();
-                                instantiatedPlayers[currentIndex].Play(lastParameters, lastGisbEventInstance, 0.0f,
+                                instantiatedPlayers[currentIndex].Play(ownerInstance, 0.0f,
                                     newScheduledTime);
                             });
                             lastChildTriggerTime = newScheduledTime;
@@ -98,12 +132,12 @@ namespace GISB.Runtime
                         //We don't use scheduling delay here because it is less time critical
                         if (dspTime > lastChildTriggerTime + instantiatedPlayers[currentIndex].GetDuration() - audioObject.crossfadeDuration)
                         {
-                            lastGisbEventInstance.scheduledActions.Enqueue(() => 
+                            ownerInstance.scheduledActions.Enqueue(() => 
                                 instantiatedPlayers[currentIndex].Stop(audioObject.crossfadeDuration));
-                            lastGisbEventInstance.scheduledActions.Enqueue(() =>
+                            ownerInstance.scheduledActions.Enqueue(() =>
                             {
                                 currentIndex = GetRandomIndex();
-                                instantiatedPlayers[currentIndex].Play(lastParameters, lastGisbEventInstance, audioObject.crossfadeDuration,
+                                instantiatedPlayers[currentIndex].Play(ownerInstance, audioObject.crossfadeDuration,
                                     0.0f);
                             });
                             lastChildTriggerTime = dspTime;
@@ -130,7 +164,6 @@ namespace GISB.Runtime
             {
                 instantiatedPlayer.UpdateParameters(activeParameters);
             }
-            lastParameters = activeParameters;
         }
 
         public override double GetDuration()
@@ -143,14 +176,14 @@ namespace GISB.Runtime
 
         private int GetRandomIndex()
         {
-            int index = indexes[Random.Range(0, indexes.Count)];
-            indexes.Remove(index);
-            excludedIndexes.Enqueue(index);
-            while(excludedIndexes.Count > audioObject.avoidLastPlayed)
-            {
-                indexes.Add(excludedIndexes.Dequeue());
-            }
-            return index;
+            return ownerInstance.ownerComponent.randomizationValuesCache[audioObject].GetRandomIndex();
+        }
+
+        public override bool IsPlaying()
+        {
+            if (isLooping) return true;
+            if (currentIndex < 0) return false; // No sound is currently playing
+            return instantiatedPlayers[currentIndex].IsPlaying();
         }
     }
 }

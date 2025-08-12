@@ -1,0 +1,84 @@
+﻿using System;
+using UnityEngine;
+
+namespace GISB.Runtime
+{
+    public class GISB_AudioVoice : MonoBehaviour
+    {
+        public GISB_SingleSoundPlayer owner = null;
+        public AudioSource source;
+        public AudioLowPassFilter lowPassFilter;
+        
+        public void Init()
+        {
+            source = gameObject.AddComponent<AudioSource>();
+            lowPassFilter = gameObject.AddComponent<AudioLowPassFilter>();
+        }
+        
+        public void SetAttenuation(GISB_Attenuation attenuation)
+        {
+            if (attenuation == null)
+            {
+                source.spatialBlend = 0.0f; // No spatialization
+                source.spatialize = false; // No spatialization
+                return;
+            }
+            
+            source.spatialize = attenuation.active;
+            source.spatialBlend = attenuation.active ? 1.0f : 0.0f;
+            source.minDistance = attenuation.minDistance;
+            source.maxDistance = attenuation.maxDistance;
+            
+            if (attenuation.active)
+            {
+                AnimationCurve curve = new AnimationCurve(attenuation.attenuationCurve.curve.keys);
+                switch (attenuation.attenuationCurve.preset)
+                {
+                    case GISB_Attenuation.AttenuationPreset.Linear:
+                        curve = AnimationCurve.Linear(0,1,1,0);
+                        break;
+                    case GISB_Attenuation.AttenuationPreset.Logarithmic:
+                        curve = GISB_Attenuation.GetAttenuationCurveForPreset(GISB_Attenuation.AttenuationPreset
+                            .Logarithmic);
+                        break;
+                    case GISB_Attenuation.AttenuationPreset.Inverse:
+                        curve = GISB_Attenuation.GetAttenuationCurveForPreset(GISB_Attenuation.AttenuationPreset
+                            .Inverse);
+                        break;
+                    case GISB_Attenuation.AttenuationPreset.Custom:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                
+                source.rolloffMode = AudioRolloffMode.Custom;
+                //Volume
+                curve.MoveKey(1, new Keyframe(1, attenuation.volumeAtMaxDistance));
+                source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, curve);
+                //Spread
+                curve.MoveKey(0, new Keyframe(0, attenuation.spreadAtMinDistance));
+                curve.MoveKey(1, new Keyframe(1, attenuation.spreadAtMaxDistance));
+                source.SetCustomCurve(AudioSourceCurveType.Spread, curve);
+                curve.MoveKey(0, new Keyframe(0, lowpassToFilterValue(attenuation.lowPassAtMinDistance)));
+                curve.MoveKey(1, new Keyframe(1, lowpassToFilterValue(attenuation.lowPassAtMaxDistance)));
+                lowPassFilter.customCutoffCurve = curve;
+            }
+        }
+        
+        private float lowpassToFilterValue(float lowpass)
+        {
+            //When the lowpass is 0, the filter value is 1
+            //When the lowpass is 100, the filter value is 0
+            //When the lowpass is 50, the filter value is 0.5
+            //When the lowpass is 200, the filter value is -1 (clamped to 0)
+            //When the lowpass is -100, the filter value is 2 (clamped to 1)
+            
+            //Clamp the lowpass value to 0 and 1
+            lowpass = Mathf.Clamp(lowpass*0.01f, 0, 1);
+            //Invert the lowpass value
+            lowpass = 1 - lowpass;
+
+            return lowpass;
+        }
+    }
+}

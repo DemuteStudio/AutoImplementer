@@ -13,9 +13,9 @@ namespace GISB.Runtime
         {
         }
 
-        public override void Play(Dictionary<string, string> activeParameters, GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
+        public override void Play(GISB_EventInstance gisbEventInstance, double fadeInTime, double scheduledTime)
         {
-            base.Play(activeParameters, gisbEventInstance, fadeInTime, scheduledTime);
+            base.Play(gisbEventInstance, fadeInTime, scheduledTime);
             
             if (!RollForPlayProbability()) return;
             if (instantiatedPlayers.Count != audioObject.BlendPlaylist.Length)
@@ -32,7 +32,7 @@ namespace GISB.Runtime
             {
                 foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
                 {
-                    instantiatedPlayer.Play(activeParameters, gisbEventInstance, 0.0f, scheduledTime);
+                    instantiatedPlayer.Play(gisbEventInstance, 0.0f, scheduledTime);
                 }
             }
         }
@@ -84,6 +84,18 @@ namespace GISB.Runtime
                 }
             }
             return maxDuration;
+        }
+
+        public override bool IsPlaying()
+        {
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                if (instantiatedPlayer.IsPlaying())
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
