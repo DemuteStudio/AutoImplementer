@@ -40,6 +40,14 @@ public class GISB_EventInstance
         }
     }
 
+    public void UpdateParameters(Dictionary<string, float> activeParameters)
+    {
+        if (rootPlayerInstance != null)
+        {
+            rootPlayerInstance.UpdateParameters(activeParameters);
+        }
+    }
+
     public void Stop(float fadeOutTime = 0.0f)
     {
         if (rootPlayerInstance != null)

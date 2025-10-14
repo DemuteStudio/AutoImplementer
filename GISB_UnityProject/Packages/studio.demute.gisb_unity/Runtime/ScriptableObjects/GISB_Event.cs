@@ -31,6 +31,11 @@ namespace GISB.Runtime
         {
             return rootAudioObject.ExtractParameters();
         }
+        
+        public override List<string> ExtractFloatParameters()
+        {
+            return rootAudioObject.ExtractFloatParameters();
+        }
     }
 }
 

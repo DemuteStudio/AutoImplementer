@@ -11,6 +11,8 @@ namespace GISB.Runtime
         public abstract List<GISB_Event> GetAllEvents();
         
         public abstract Dictionary<string, List<string>> ExtractParameters();
+        
+        public abstract List<string> ExtractFloatParameters();
     }
 }
 

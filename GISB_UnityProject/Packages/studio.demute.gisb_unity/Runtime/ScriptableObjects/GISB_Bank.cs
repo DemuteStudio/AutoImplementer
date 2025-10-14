@@ -49,6 +49,27 @@ namespace GISB.Runtime
             }
             return parameters;
         }
+        
+        public override List<string> ExtractFloatParameters()
+        {
+            List<string> floatParameters = new List<string>();
+            foreach (GISB_Event gisbEvent in events)
+            {
+                if(gisbEvent == null)
+                {
+                    continue;
+                }
+                List<string> extractedFloatParameters = gisbEvent.ExtractFloatParameters();
+                foreach (string floatParameter in extractedFloatParameters)
+                {
+                    if (!floatParameters.Contains(floatParameter))
+                    {
+                        floatParameters.Add(floatParameter);
+                    }
+                }
+            }
+            return floatParameters;
+        }
     }
 }
 

@@ -12,7 +12,6 @@ namespace GISB.Runtime
         {
             private List<int> indexes;
             private Queue<int> excludedIndexes;
-            private int lastTriggeredIndex;
             private int avoidLastPlayed;
             
             public RandomizationValues(int count, int avoidLastPlayed)
@@ -23,7 +22,6 @@ namespace GISB.Runtime
                 {
                     indexes.Add(i);
                 }
-                lastTriggeredIndex = -1;
                 excludedIndexes = new Queue<int>();
                 this.avoidLastPlayed = Mathf.Min(avoidLastPlayed, count - 1); // Ensure we don't avoid more than available sounds
             }
@@ -159,6 +157,14 @@ namespace GISB.Runtime
         }
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
+        {
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.UpdateParameters(activeParameters);
+            }
+        }
+        
+        public override void UpdateParameters(Dictionary<string, float> activeParameters)
         {
             foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
             {

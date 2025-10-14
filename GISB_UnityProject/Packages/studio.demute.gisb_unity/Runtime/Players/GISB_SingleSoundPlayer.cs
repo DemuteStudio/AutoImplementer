@@ -95,6 +95,11 @@ namespace GISB.Runtime
         {
             //Do nothing
         }
+        
+        public override void UpdateParameters(Dictionary<string, float> activeParameters)
+        {
+            //Do nothing
+        }
 
         public override double GetDuration()
         {

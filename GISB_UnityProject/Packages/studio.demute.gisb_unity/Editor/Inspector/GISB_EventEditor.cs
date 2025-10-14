@@ -102,19 +102,27 @@ namespace GISB.Editor
                     string[] values = parameter.Value.ToArray();
                     if (values.Length > 0)
                     {
-                        if(editorAudioComponent.activeParameters.ContainsKey(parameter.Key) == false)
+                        if(!editorAudioComponent.activeStringParameters.ContainsKey(parameter.Key))
                         {
-                            editorAudioComponent.activeParameters.Add(parameter.Key, values[0]);
+                            editorAudioComponent.activeStringParameters.Add(parameter.Key, values[0]);
                         }
-                        int selectedIndex = Array.IndexOf(values, editorAudioComponent.activeParameters[parameter.Key]);
+                        int selectedIndex = Array.IndexOf(values, editorAudioComponent.activeStringParameters[parameter.Key]);
                         int newSelectedIndex = EditorGUILayout.Popup(selectedIndex, values);
                         if (newSelectedIndex != selectedIndex)
                         {
-                            editorAudioComponent.activeParameters[parameter.Key] = values[newSelectedIndex];
+                            editorAudioComponent.activeStringParameters[parameter.Key] = values[newSelectedIndex];
                         }
                     }
                     EditorGUILayout.EndHorizontal();
                 }
+                List<string> floatParameters = gisbEvent.rootAudioObject.ExtractFloatParameters();
+                foreach (string floatParameter in floatParameters)
+                {
+                    editorAudioComponent.activeFloatParameters.TryAdd(floatParameter, 0);
+                    float newValue = EditorGUILayout.FloatField(floatParameter, editorAudioComponent.activeFloatParameters[floatParameter]);
+                    editorAudioComponent.activeFloatParameters[floatParameter] = newValue;
+                }
+
                 EditorGUILayout.EndScrollView();
             }
         }

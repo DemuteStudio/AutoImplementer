@@ -22,6 +22,19 @@ namespace GISB.Runtime
         {
             return new Dictionary<string, List<string>>();
         }
+        
+        public override List<string> ExtractFloatParameters()
+        {
+            List<string> floatParameters = new List<string>();
+            foreach (GISB_Modulator modulator in modulators)
+            {
+                if (!floatParameters.Contains(modulator.ParameterName))
+                {
+                    floatParameters.Add(modulator.ParameterName);
+                }            
+            }
+            return floatParameters;
+        }
 
         public override float ExtractMaxDistance()
         {

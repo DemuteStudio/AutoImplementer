@@ -21,6 +21,8 @@ namespace GISB.Runtime
 
         public abstract void UpdateParameters(Dictionary<string, string> activeParameters);
         
+        public abstract void UpdateParameters(Dictionary<string, float> activeParameters);
+        
         public abstract GISB_Attenuation GetAttenuation();
 
         public abstract float GetVolume();
@@ -58,7 +60,7 @@ namespace GISB.Runtime
         {
             if (audioObject.mute) return;
             
-            targetVolume = GISB_VolumeParameter.decibelsToLinear(audioObject.volumeDB.GetRandomValue());
+            targetVolume = GISB_VolumeParameter.decibelsToLinear(audioObject.volumeDB.GetValue());
             currentVolume = fadeInTime > 0 ? 0.0f : targetVolume; // Start with 0 volume if fading in, otherwise set to target volume immediately
             playTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
             this.fadeInTime = fadeInTime;
@@ -141,25 +143,36 @@ namespace GISB.Runtime
 
         public override float GetVolume()
         {
-            if(parent == null)
+            float finalVolume = currentVolume;
+            if(parent != null)
             {
-                return currentVolume;
+                finalVolume *= parent.GetVolume();
             }
-            else
+            //Modulators
+            foreach (GISB_Modulator modulator in audioObject.modulators)
             {
-                return parent.GetVolume() * currentVolume;
+                if (modulator.Target == GISB_Modulator.ModulatorTarget.Volume)
+                {
+                    if (ownerInstance.ownerComponent.activeFloatParameters.TryGetValue(modulator.ParameterName,
+                            out float parameterValue))
+                    {
+                        finalVolume *=  GISB_VolumeParameter.decibelsToLinear(modulator.Curve.Evaluate(parameterValue));
+                    }
+                }
             }
+
+            return finalVolume;
         }
 
         public override float GetPitch()
         {
             if (parent == null)
             {
-                return audioObject.pitchCents.GetRandomValue();
+                return audioObject.pitchCents.GetValue();
             }
             else
             {
-                return parent.GetPitch() + audioObject.pitchCents.GetRandomValue();
+                return parent.GetPitch() + audioObject.pitchCents.GetValue();
             }
         }
 
@@ -167,11 +180,11 @@ namespace GISB.Runtime
         {
             if (parent == null)
             {
-                return audioObject.lowpassPercent.GetRandomValue();
+                return audioObject.lowpassPercent.GetValue();
             }
             else
             {
-                return parent.GetLowpass() + audioObject.lowpassPercent.GetRandomValue();
+                return parent.GetLowpass() + audioObject.lowpassPercent.GetValue();
             }
         }
 

@@ -15,7 +15,7 @@ namespace GISB.Runtime
             baseValue = 0.0f;
         }
         
-        public override float GetRandomValue()
+        public override float GetValue()
         {
             if (randomize)
             {

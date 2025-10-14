@@ -10,7 +10,8 @@ namespace GISB.Runtime
     public class GISB_AudioComponent : MonoBehaviour
     {
         [FormerlySerializedAs("associatedPlayable")] public GISB_Asset associatedAsset;
-        public Dictionary<string, string> activeParameters = new Dictionary<string, string>();
+        public Dictionary<string, string> activeStringParameters = new Dictionary<string, string>();
+        public Dictionary<string, float> activeFloatParameters = new Dictionary<string, float>();
         
         public List<GISB_EventInstance> activeEventInstances = new List<GISB_EventInstance>();
 
@@ -51,10 +52,19 @@ namespace GISB.Runtime
 
         public void SetParameter(string parameterName, string parameterValue)
         {
-            activeParameters[parameterName] = parameterValue;
+            activeStringParameters[parameterName] = parameterValue;
             foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
             {
-                activeEventInstance.UpdateParameters(activeParameters);
+                activeEventInstance.UpdateParameters(activeStringParameters);
+            }
+        }
+        
+        public void SetParameter(string parameterName, float parameterValue)
+        {
+            activeFloatParameters[parameterName] = parameterValue;
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
+            {
+                activeEventInstance.UpdateParameters(activeFloatParameters);
             }
         }
         

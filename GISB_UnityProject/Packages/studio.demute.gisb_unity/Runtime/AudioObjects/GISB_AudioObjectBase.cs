@@ -18,12 +18,14 @@ namespace GISB.Runtime
         public GISB_PitchParameter pitchCents = new GISB_PitchParameter();
         public GISB_LowpassParameter lowpassPercent = new GISB_LowpassParameter();
         public float playbackProbabilityPercent = 100.0f;
+        public List<GISB_Modulator> modulators = new List<GISB_Modulator>();
         
         //Runtime Functions
         public abstract GISB_BaseAudioPlayer GetPlayer(GISB_BaseAudioPlayer parent = null);
         
         //Authoring Functions
         public abstract Dictionary<string, List<string>> ExtractParameters();
+        public abstract List<string> ExtractFloatParameters();
         public abstract float ExtractMaxDistance();
     }
 

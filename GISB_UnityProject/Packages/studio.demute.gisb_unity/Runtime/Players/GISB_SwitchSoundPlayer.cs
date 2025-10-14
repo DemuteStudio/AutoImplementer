@@ -20,7 +20,7 @@ namespace GISB.Runtime
             
             if (!RollForPlayProbability()) return;
             currentSwitchValue = audioObject.DefaultValue;
-            if(gisbEventInstance.ownerComponent.activeParameters.TryGetValue(audioObject.ParameterName, out string parameter))
+            if(gisbEventInstance.ownerComponent.activeStringParameters.TryGetValue(audioObject.ParameterName, out string parameter))
             {
                 currentSwitchValue = parameter;
             }
@@ -75,6 +75,14 @@ namespace GISB.Runtime
         }
 
         public override void UpdateParameters(Dictionary<string, string> activeParameters)
+        {
+            foreach (KeyValuePair<string, GISB_BaseAudioPlayer> instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.Value.UpdateParameters(activeParameters);
+            }
+        }
+
+        public override void UpdateParameters(Dictionary<string, float> activeParameters)
         {
             foreach (KeyValuePair<string, GISB_BaseAudioPlayer> instantiatedPlayer in instantiatedPlayers)
             {

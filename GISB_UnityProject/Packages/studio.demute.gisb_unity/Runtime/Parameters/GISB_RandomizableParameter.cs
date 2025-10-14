@@ -13,7 +13,7 @@ namespace GISB.Runtime
         public T maxModifier;
         public T baseValue;
         
-        public abstract T GetRandomValue();
+        public abstract T GetValue();
     }
 }
 

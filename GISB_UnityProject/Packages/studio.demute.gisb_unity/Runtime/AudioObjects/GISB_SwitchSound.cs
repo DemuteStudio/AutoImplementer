@@ -48,6 +48,34 @@ namespace GISB.Runtime
             }
             return parameters;
         }
+        
+        public override List<string> ExtractFloatParameters()
+        {
+            List<string> floatParameters = new List<string>();
+            foreach (SwitchCase switchCase in SwitchCases)
+            {
+                if (switchCase.audioObject != null)
+                {
+                    List<string> extractedFloatParameters = switchCase.audioObject.ExtractFloatParameters();
+                    foreach (string floatParameter in extractedFloatParameters)
+                    {
+                        if (!floatParameters.Contains(floatParameter))
+                        {
+                            floatParameters.Add(floatParameter);
+                        }
+                    }
+                }
+            }
+
+            foreach (GISB_Modulator modulator in modulators)
+            {
+                if (!floatParameters.Contains(modulator.ParameterName))
+                {
+                    floatParameters.Add(modulator.ParameterName);
+                }            
+            }
+            return floatParameters;
+        }
 
         public override float ExtractMaxDistance()
         {

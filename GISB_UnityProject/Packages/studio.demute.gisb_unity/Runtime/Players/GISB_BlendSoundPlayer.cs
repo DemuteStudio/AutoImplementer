@@ -70,6 +70,14 @@ namespace GISB.Runtime
                 instantiatedPlayer.UpdateParameters(activeParameters);
             }
         }
+        
+        public override void UpdateParameters(Dictionary<string, float> activeParameters)
+        {
+            foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
+            {
+                instantiatedPlayer.UpdateParameters(activeParameters);
+            }
+        }
 
         public override double GetDuration()
         {
