@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>ISX_Format_Specification.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="interactive-sound-exchange-isx-format-specification">Interactive Sound Exchange (ISX) Format Specification</h1>
+<blockquote>
+<p><strong>Note:</strong> ISX was previously known internally as GISB. Type identifiers retain the <code>GISB</code> prefix for compatibility.</p>
+</blockquote>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#1-introduction">1. Introduction</a></li>
+<li><a href="#2-file-organization">2. File Organization</a></li>
+<li><a href="#3-type-system">3. Type System</a></li>
+<li><a href="#4-container-types">4. Container Types</a></li>
+<li><a href="#5-randomizable-parameters">5. Randomizable Parameters</a></li>
+<li><a href="#6-3d-spatialization-attenuation">6. 3D Spatialization (Attenuation)</a></li>
+<li><a href="#7-runtime-parameters--modulation">7. Runtime Parameters &amp; Modulation</a></li>
+<li><a href="#8-playback-semantics">8. Playback Semantics</a></li>
+<li><a href="#9-field-reference">9. Field Reference</a></li>
+<li><a href="#appendix-a-examples">Appendix A: Examples</a></li>
+</ul>
+<hr>
+<h2 id="1-introduction">1. Introduction</h2>
+<h3 id="what-is-isx">What is ISX?</h3>
+<p>ISX (Interactive Sound Exchange) is a JSON-based format for describing interactive audio logic. It defines hierarchical sound containers that can be parsed and played back by any compatible interpreter.</p>
+<h3 id="design-goals">Design Goals</h3>
+<ul>
+<li><strong>Portability:</strong> Engine-agnostic representation of audio behavior</li>
+<li><strong>Hierarchy:</strong> Composite pattern allowing containers to nest within containers</li>
+<li><strong>Interactivity:</strong> Runtime parameters control playback decisions</li>
+<li><strong>Variation:</strong> Built-in randomization to reduce repetitive audio</li>
+</ul>
+<h3 id="format-overview">Format Overview</h3>
+<p>ISX uses JSON with polymorphic type information. Audio logic is organized into <strong>Banks</strong> (collections of events) and <strong>Events</strong> (playable sound definitions). Each event contains a tree of <strong>Containers</strong> that define what audio plays and how.</p>
+<hr>
+<h2 id="2-file-organization">2. File Organization</h2>
+<h3 id="directory-structure">Directory Structure</h3>
+<pre class="hljs"><code><div>BankName/
+├── Bank_BankName.json      # Bank definition
+├── Events/                 # Event definitions
+│   ├── EventName1.json
+│   └── EventName2.json
+└── Audio Files/            # Audio assets
+    ├── sound1.ogg
+    └── sound2.wav
+</div></code></pre>
+<h3 id="bank-file">Bank File</h3>
+<p>Banks group related events. The interpreter loads a bank, which references its events by name.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Bank identifier</td>
+</tr>
+<tr>
+<td><code>hideFlags</code></td>
+<td>int</td>
+<td>Legacy (always <code>0</code>)</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td>string[]</td>
+<td>Event names (without <code>.json</code> extension)</td>
+</tr>
+</tbody>
+</table>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Bank_Footsteps"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"events"</span>: [<span class="hljs-string">"Footstep_Walk"</span>, <span class="hljs-string">"Footstep_Run"</span>]
+}
+</div></code></pre>
+<h3 id="event-file">Event File</h3>
+<p>Events are the playable units. Each event has a root container that defines its audio hierarchy.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Event identifier</td>
+</tr>
+<tr>
+<td><code>hideFlags</code></td>
+<td>int</td>
+<td>Legacy (always <code>0</code>)</td>
+</tr>
+<tr>
+<td><code>rootAudioObject</code></td>
+<td>object</td>
+<td>Root container</td>
+</tr>
+</tbody>
+</table>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Footstep_Walk"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"rootAudioObject"</span>: { ... }
+}
+</div></code></pre>
+<h3 id="audio-file-references">Audio File References</h3>
+<p>The <code>soundClip</code> field in Simple containers references audio files by filename only (no path). Files are resolved from the <code>Audio Files/</code> directory.</p>
+<hr>
+<h2 id="3-type-system">3. Type System</h2>
+<h3 id="polymorphic-deserialization">Polymorphic Deserialization</h3>
+<p>Containers use the <code>$type</code> field for polymorphic deserialization. This field contains a fully-qualified type identifier that the interpreter uses to determine which container class to instantiate.</p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>,
+  <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"example.ogg"</span>,
+  <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>
+}
+</div></code></pre>
+<h3 id="type-identifiers">Type Identifiers</h3>
+<table>
+<thead>
+<tr>
+<th>Container</th>
+<th>Type Identifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simple</td>
+<td><code>GISB.Runtime.GISB_SingleSound, Demute.GISB</code></td>
+</tr>
+<tr>
+<td>Random</td>
+<td><code>GISB.Runtime.GISB_RandomSound, Demute.GISB</code></td>
+</tr>
+<tr>
+<td>Switch</td>
+<td><code>GISB.Runtime.GISB_SwitchSound, Demute.GISB</code></td>
+</tr>
+<tr>
+<td>Blend</td>
+<td><code>GISB.Runtime.GISB_BlendSound, Demute.GISB</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-hierarchy-composite-pattern">Container Hierarchy (Composite Pattern)</h3>
+<p>Containers follow the composite pattern:</p>
+<ul>
+<li><strong>Leaf containers</strong> (Simple) play audio directly</li>
+<li><strong>Composite containers</strong> (Random, Switch, Blend) contain child containers</li>
+</ul>
+<p>Children can be any container type, allowing arbitrary nesting depth.</p>
+<hr>
+<h2 id="4-container-types">4. Container Types</h2>
+<h3 id="base-container-fields">Base Container Fields</h3>
+<p>All containers inherit these optional fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mute</code></td>
+<td>boolean</td>
+<td>false</td>
+<td>Silences this container and all descendants (may still be traversed for timing)</td>
+</tr>
+<tr>
+<td><code>volumeDB</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>Volume parameter. See <a href="#5-randomizable-parameters">Randomizable Parameters</a></td>
+</tr>
+<tr>
+<td><code>pitchCents</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>Pitch parameter. See <a href="#5-randomizable-parameters">Randomizable Parameters</a></td>
+</tr>
+<tr>
+<td><code>lowpass</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>Lowpass filter parameter. See <a href="#5-randomizable-parameters">Randomizable Parameters</a></td>
+</tr>
+<tr>
+<td><code>attenuation</code></td>
+<td>object</td>
+<td>null (2D)</td>
+<td>3D spatialization settings. See <a href="#6-3d-spatialization-attenuation">Attenuation</a></td>
+</tr>
+<tr>
+<td><code>playbackProbabilityPercent</code></td>
+<td>float</td>
+<td>100</td>
+<td>Chance to play (0-100). Random 0-100 generated per-play; if &gt; probability, container is skipped</td>
+</tr>
+<tr>
+<td><code>modulators</code></td>
+<td>array</td>
+<td>[]</td>
+<td>Runtime modulation bindings. See <a href="#modulator-structure">Modulator Structure</a></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id="simple-singlesound">Simple (SingleSound)</h3>
+<p>Plays a single audio file. This is the only leaf container type.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>soundClip</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Audio filename</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>boolean</td>
+<td>No</td>
+<td>Loop playback continuously</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Playback behavior:</strong></p>
+<ul>
+<li>If <code>loop</code> is true, audio repeats until explicitly stopped</li>
+<li>If <code>loop</code> is false, audio plays once then the voice is released</li>
+</ul>
+<hr>
+<h3 id="random-randomsound">Random (RandomSound)</h3>
+<p>Selects one child container to play based on random selection.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RandomPlaylist</code></td>
+<td>array</td>
+<td>Yes</td>
+<td>Child containers to select from</td>
+</tr>
+<tr>
+<td><code>avoidLastPlayed</code></td>
+<td>int</td>
+<td>No</td>
+<td>Number of recent selections to exclude</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>boolean</td>
+<td>No</td>
+<td>Continuously select and play children</td>
+</tr>
+<tr>
+<td><code>transitionMode</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>&quot;TriggerRate&quot;</code> or <code>&quot;Crossfade&quot;</code></td>
+</tr>
+<tr>
+<td><code>triggerRate</code></td>
+<td>float</td>
+<td>No</td>
+<td>Selections per second (<code>&quot;TriggerRate&quot;</code> mode)</td>
+</tr>
+<tr>
+<td><code>crossfadeDuration</code></td>
+<td>float</td>
+<td>No</td>
+<td>Crossfade time in seconds (<code>&quot;Crossfade&quot;</code> mode)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Selection algorithm:</strong></p>
+<ol>
+<li>Build candidate list from <code>RandomPlaylist</code></li>
+<li>Remove the last <code>avoidLastPlayed</code> selections from candidates</li>
+<li>Select randomly from remaining candidates</li>
+<li>Record selection in history</li>
+</ol>
+<p><strong>Transition modes (when looping):</strong></p>
+<ul>
+<li><code>TriggerRate</code>: Trigger new selection at specified rate</li>
+<li><code>Crossfade</code>: Crossfade between selections over specified duration</li>
+</ul>
+<hr>
+<h3 id="switch-switchsound">Switch (SwitchSound)</h3>
+<p>Selects a child container based on a runtime parameter value.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParameterName</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Runtime parameter to evaluate. See <a href="#switch-parameters">Switch Parameters</a></td>
+</tr>
+<tr>
+<td><code>DefaultValue</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Fallback value if parameter not set</td>
+</tr>
+<tr>
+<td><code>SwitchCases</code></td>
+<td>array</td>
+<td>Yes</td>
+<td>Array of case definitions</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SwitchCase structure:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>parameterValue</code></td>
+<td>string</td>
+<td>Value to match</td>
+</tr>
+<tr>
+<td><code>audioObject</code></td>
+<td>object</td>
+<td>Container to play when matched</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Selection behavior:</strong></p>
+<ol>
+<li>Query runtime parameter by <code>ParameterName</code></li>
+<li>If parameter not set, use <code>DefaultValue</code></li>
+<li>Find case where <code>parameterValue</code> matches</li>
+<li>Play the matched case's <code>audioObject</code></li>
+<li>If no match found, play nothing</li>
+</ol>
+<hr>
+<h3 id="blend-blendsound">Blend (BlendSound)</h3>
+<p>Plays all child containers simultaneously (layered audio).</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BlendPlaylist</code></td>
+<td>array</td>
+<td>Yes</td>
+<td>Child containers to play together</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Playback behavior:</strong></p>
+<ul>
+<li>All children in <code>BlendPlaylist</code> are instantiated and played concurrently</li>
+<li>The blend completes when all children complete (or continues if any child loops)</li>
+</ul>
+<hr>
+<h2 id="5-randomizable-parameters">5. Randomizable Parameters</h2>
+<p>Volume, Pitch, and Lowpass use a randomizable structure:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>randomize</code></td>
+<td>boolean</td>
+<td>Enable random variation</td>
+</tr>
+<tr>
+<td><code>baseValue</code></td>
+<td>float</td>
+<td>Base value</td>
+</tr>
+<tr>
+<td><code>minModifier</code></td>
+<td>float</td>
+<td>Minimum random offset</td>
+</tr>
+<tr>
+<td><code>maxModifier</code></td>
+<td>float</td>
+<td>Maximum random offset</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Evaluation:</strong></p>
+<pre class="hljs"><code><div>if randomize:
+    value = baseValue + random(minModifier, maxModifier)
+else:
+    value = baseValue
+</div></code></pre>
+<h4 id="volume-volumedb">Volume (<code>volumeDB</code>)</h4>
+<ul>
+<li><strong>Unit:</strong> Decibels (dB)</li>
+<li><strong>Application:</strong> Multiply audio amplitude by <code>10^(dB/20)</code></li>
+<li><strong>Typical range:</strong> -60 (near silent) to 0 (full volume)</li>
+</ul>
+<h4 id="pitch-pitchcents">Pitch (<code>pitchCents</code>)</h4>
+<ul>
+<li><strong>Unit:</strong> Cents (100 cents = 1 semitone)</li>
+<li><strong>Application:</strong> Multiply playback rate by <code>2^(cents/1200)</code></li>
+<li><strong>Example:</strong> +1200 cents = double speed (one octave up)</li>
+</ul>
+<h4 id="lowpass-lowpass">Lowpass (<code>lowpass</code>)</h4>
+<ul>
+<li><strong>Unit:</strong> Percentage (0-100)</li>
+<li><strong>Application:</strong> 0 = no filtering, 100 = maximum filtering</li>
+<li><strong>Implementation:</strong> Map to lowpass filter cutoff frequency</li>
+</ul>
+<hr>
+<h2 id="6-3d-spatialization-attenuation">6. 3D Spatialization (Attenuation)</h2>
+<h3 id="attenuation-structure">Attenuation Structure</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>active</code></td>
+<td>boolean</td>
+<td>Enable 3D spatialization</td>
+</tr>
+<tr>
+<td><code>minDistance</code></td>
+<td>float</td>
+<td>Distance where attenuation begins</td>
+</tr>
+<tr>
+<td><code>maxDistance</code></td>
+<td>float</td>
+<td>Distance where sound is inaudible</td>
+</tr>
+<tr>
+<td><code>preset</code></td>
+<td>int</td>
+<td>Falloff curve preset (<code>&quot;Linear&quot;</code>, <code>&quot;Logarithmic&quot;</code>, <code>&quot;Inverse&quot;</code> or <code>&quot;Custom&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>curve</code></td>
+<td>object</td>
+<td>Custom curve (when preset=3 <code>&quot;Custom&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>volumeAtMaxDistance</code></td>
+<td>float</td>
+<td>Volume reduction at max distance (dB)</td>
+</tr>
+<tr>
+<td><code>spreadAtMinDistance</code></td>
+<td>float</td>
+<td>Stereo spread at min distance (0 = mono/point source, 1 = full stereo)</td>
+</tr>
+<tr>
+<td><code>spreadAtMaxDistance</code></td>
+<td>float</td>
+<td>Stereo spread at max distance (0 = mono/point source, 1 = full stereo)</td>
+</tr>
+<tr>
+<td><code>lowPassAtMinDistance</code></td>
+<td>float</td>
+<td>Lowpass amount at min distance (0-1) to stimulate air absorption</td>
+</tr>
+<tr>
+<td><code>lowPassAtMaxDistance</code></td>
+<td>float</td>
+<td>Lowpass amount at max distance (0-1) to stimulate air absorption</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inheritance">Inheritance</h3>
+<p>Attenuation uses an inheritable wrapper structure:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>overrideParent</code></td>
+<td>boolean</td>
+<td>If true, use this value; if false, inherit from parent</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>object</td>
+<td>Attenuation settings (structure above)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Inheritance behavior:</strong></p>
+<ul>
+<li>Walk up the container hierarchy</li>
+<li>Use the first attenuation where <code>overrideParent</code> is true</li>
+<li>If none found, the audio plays in 2D (no spatialization)</li>
+</ul>
+<h3 id="distance-model">Distance Model</h3>
+<ul>
+<li>
+<p>Below <code>minDistance</code>: No attenuation applied</p>
+</li>
+<li>
+<p>Between <code>minDistance</code> and <code>maxDistance</code>: Attenuation interpolated by curve</p>
+</li>
+<li>
+<p>Above <code>maxDistance</code>: Full attenuation (<code>volumeAtMaxDistance</code>)</p>
+</li>
+<li>
+<p>Both <code>spread</code> and <code>lowpass</code> interpolate linearly between their min and max values</p>
+</li>
+</ul>
+<h3 id="falloff-presets">Falloff Presets</h3>
+<table>
+<thead>
+<tr>
+<th>Preset</th>
+<th>Value</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linear</td>
+<td>0</td>
+<td><code>1 - (distance - min) / (max - min)</code></td>
+</tr>
+<tr>
+<td>Logarithmic</td>
+<td>1</td>
+<td><code>1 / (1 + log(distance / min))</code></td>
+</tr>
+<tr>
+<td>Inverse</td>
+<td>2</td>
+<td><code>min / distance</code></td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>3</td>
+<td>Evaluate <code>curve</code> at normalized distance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="custom-curves">Custom Curves</h3>
+<p>Custom curves use Unity's AnimationCurve serialization format. For full details, see the <a href="https://docs.unity3d.com/ScriptReference/AnimationCurve.html">Unity AnimationCurve documentation</a>.</p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"keys"</span>: [
+    {<span class="hljs-attr">"time"</span>: <span class="hljs-number">0.0</span>, <span class="hljs-attr">"value"</span>: <span class="hljs-number">1.0</span>, <span class="hljs-attr">"inTangent"</span>: <span class="hljs-number">0.0</span>, <span class="hljs-attr">"outTangent"</span>: <span class="hljs-number">-1.0</span>, <span class="hljs-attr">"inWeight"</span>: <span class="hljs-number">0.33</span>, <span class="hljs-attr">"outWeight"</span>: <span class="hljs-number">0.33</span>, <span class="hljs-attr">"weightedMode"</span>: <span class="hljs-number">0</span>},
+    {<span class="hljs-attr">"time"</span>: <span class="hljs-number">1.0</span>, <span class="hljs-attr">"value"</span>: <span class="hljs-number">0.0</span>, <span class="hljs-attr">"inTangent"</span>: <span class="hljs-number">-1.0</span>, <span class="hljs-attr">"outTangent"</span>: <span class="hljs-number">0.0</span>, <span class="hljs-attr">"inWeight"</span>: <span class="hljs-number">0.33</span>, <span class="hljs-attr">"outWeight"</span>: <span class="hljs-number">0.33</span>, <span class="hljs-attr">"weightedMode"</span>: <span class="hljs-number">0</span>}
+  ],
+  <span class="hljs-attr">"length"</span>: <span class="hljs-number">2</span>,
+  <span class="hljs-attr">"preWrapMode"</span>: <span class="hljs-number">8</span>,
+  <span class="hljs-attr">"postWrapMode"</span>: <span class="hljs-number">8</span>
+}
+</div></code></pre>
+<p><strong>Top-level fields:</strong></p>
+<ul>
+<li><code>keys</code>: Array of keyframes</li>
+<li><code>length</code>: Number of keyframes (informational)</li>
+<li><code>preWrapMode</code> / <code>postWrapMode</code>: Behavior outside curve bounds (8 = ClampForever)</li>
+</ul>
+<p><strong>Keyframe fields:</strong></p>
+<ul>
+<li><code>time</code>: Normalized distance (0 = minDistance, 1 = maxDistance)</li>
+<li><code>value</code>: Attenuation multiplier (1 = full volume, 0 = silent)</li>
+<li><code>inTangent</code> / <code>outTangent</code>: Slope entering/exiting the keyframe (used for cubic Hermite interpolation)</li>
+<li><code>inWeight</code> / <code>outWeight</code>: Tangent weighting (0-1), typically 0.33 for standard curves</li>
+<li><code>weightedMode</code>: 0 = no weighting, 1 = in weighted, 2 = out weighted, 3 = both</li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> This is Unity-specific serialization. Non-Unity interpreters should implement cubic Hermite spline interpolation or use a simplified linear interpolation between keyframes.</p>
+</blockquote>
+<hr>
+<h2 id="7-runtime-parameters--modulation">7. Runtime Parameters &amp; Modulation</h2>
+<h3 id="switch-parameters">Switch Parameters</h3>
+<p>Switch containers query string-valued parameters at play time.</p>
+<p><strong>Runtime API requirement:</strong> Interpreters must provide a mechanism to set string parameters by name:</p>
+<pre class="hljs"><code><div>SetParameter(&quot;SurfaceType&quot;, &quot;Concrete&quot;)
+</div></code></pre>
+<h3 id="modulator-parameters">Modulator Parameters</h3>
+<p>Modulators bind to float parameters in the 0-1 range for control over audio at runtime.</p>
+<h3 id="modulator-structure">Modulator Structure</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Target</code></td>
+<td>string</td>
+<td>Parameter to modulate (<code>&quot;Volume&quot;</code>)</td>
+</tr>
+<tr>
+<td><code>ParameterName</code></td>
+<td>string</td>
+<td>Runtime parameter name</td>
+</tr>
+<tr>
+<td><code>Curve</code></td>
+<td>object</td>
+<td>Animation curve mapping input to output</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Currently supported targets:</strong></p>
+<ul>
+<li><code>&quot;Volume&quot;</code> - Multiplies output volume</li>
+</ul>
+<h3 id="curve-evaluation">Curve Evaluation</h3>
+<ol>
+<li>Query runtime parameter value (0-1 range)</li>
+<li>Evaluate curve at that input value</li>
+<li>Apply result as multiplier to target</li>
+</ol>
+<p><strong>Example:</strong> A curve that maps 0→0.5 and 1→1.0 would output half volume when the parameter is 0, full volume when 1.</p>
+<hr>
+<h2 id="8-playback-semantics">8. Playback Semantics</h2>
+<h3 id="event-instantiation">Event Instantiation</h3>
+<p>When an event is triggered:</p>
+<ol>
+<li>Create an event instance</li>
+<li>Instantiate the root container</li>
+<li>Begin traversal</li>
+</ol>
+<h3 id="container-traversal">Container Traversal</h3>
+<p>Traversal is recursive and depends on container type:</p>
+<p><strong>Simple:</strong></p>
+<ul>
+<li>Acquire a voice</li>
+<li>Apply accumulated parameters</li>
+<li>Begin playback</li>
+</ul>
+<p><strong>Random:</strong></p>
+<ul>
+<li>Run selection algorithm</li>
+<li>Instantiate and traverse selected child</li>
+</ul>
+<p><strong>Switch:</strong></p>
+<ul>
+<li>Evaluate parameter</li>
+<li>Find matching case</li>
+<li>Instantiate and traverse matched child's container</li>
+</ul>
+<p><strong>Blend:</strong></p>
+<ul>
+<li>Instantiate all children</li>
+<li>Traverse all children concurrently</li>
+</ul>
+<h3 id="voice-management">Voice Management</h3>
+<p>A &quot;voice&quot; represents a single audio playback instance. Interpreters should:</p>
+<ul>
+<li>Pool voices for efficiency</li>
+<li>Each Simple container at play time acquires one voice</li>
+<li>Apply all accumulated parameters (volume, pitch, lowpass, attenuation) to the voice</li>
+<li>Release voice when playback completes (or on stop)</li>
+</ul>
+<h3 id="parameter-inheritance">Parameter Inheritance</h3>
+<p>Parameters accumulate through the hierarchy:</p>
+<ul>
+<li><strong>Volume:</strong> Sum all dB values down the tree</li>
+<li><strong>Pitch:</strong> Sum all cent values down the tree</li>
+<li><strong>Lowpass:</strong> Take maximum value in the tree</li>
+<li><strong>Attenuation:</strong> Use nearest ancestor with <code>overrideParent: true</code></li>
+</ul>
+<hr>
+<h2 id="9-field-reference">9. Field Reference</h2>
+<h3 id="bank-fields">Bank Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>hideFlags</code></td>
+<td>int</td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td>string[]</td>
+<td>Yes</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="event-fields">Event Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>hideFlags</code></td>
+<td>int</td>
+<td>Yes</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>rootAudioObject</code></td>
+<td>object</td>
+<td>Yes</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-fields-all-types">Container Fields (All Types)</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Containers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>$type</code></td>
+<td>string</td>
+<td>-</td>
+<td>All (required)</td>
+</tr>
+<tr>
+<td><code>mute</code></td>
+<td>boolean</td>
+<td>false</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>volumeDB</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>pitchCents</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>lowpass</code></td>
+<td>object</td>
+<td>null (0)</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>attenuation</code></td>
+<td>object</td>
+<td>null (false)</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>playbackProbabilityPercent</code></td>
+<td>float</td>
+<td>100</td>
+<td>All</td>
+</tr>
+<tr>
+<td><code>modulators</code></td>
+<td>array</td>
+<td>[]</td>
+<td>All</td>
+</tr>
+</tbody>
+</table>
+<h3 id="simple-specific-fields">Simple-Specific Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>soundClip</code></td>
+<td>string</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>boolean</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<h3 id="random-specific-fields">Random-Specific Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>RandomPlaylist</code></td>
+<td>array</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>avoidLastPlayed</code></td>
+<td>int</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>boolean</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>transitionMode</code></td>
+<td>string</td>
+<td>null</td>
+</tr>
+<tr>
+<td><code>triggerRate</code></td>
+<td>float</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><code>crossfadeDuration</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="switch-specific-fields">Switch-Specific Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ParameterName</code></td>
+<td>string</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>DefaultValue</code></td>
+<td>string</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>SwitchCases</code></td>
+<td>array</td>
+<td>- (required)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="blend-specific-fields">Blend-Specific Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BlendPlaylist</code></td>
+<td>array</td>
+<td>- (required)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="randomizable-parameter-fields">Randomizable Parameter Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>randomize</code></td>
+<td>boolean</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>baseValue</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>minModifier</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>maxModifier</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attenuation-fields">Attenuation Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>overrideParent</code></td>
+<td>boolean</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>value.active</code></td>
+<td>boolean</td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>value.minDistance</code></td>
+<td>float</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><code>value.maxDistance</code></td>
+<td>float</td>
+<td>10.0</td>
+</tr>
+<tr>
+<td><code>value.preset</code></td>
+<td>int</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>value.curve</code></td>
+<td>object</td>
+<td>null</td>
+</tr>
+<tr>
+<td><code>value.volumeAtMaxDistance</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>value.spreadAtMinDistance</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>value.spreadAtMaxDistance</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>value.lowPassAtMinDistance</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+<tr>
+<td><code>value.lowPassAtMaxDistance</code></td>
+<td>float</td>
+<td>0.0</td>
+</tr>
+</tbody>
+</table>
+<h3 id="modulator-fields">Modulator Fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Target</code></td>
+<td>string</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>ParameterName</code></td>
+<td>string</td>
+<td>- (required)</td>
+</tr>
+<tr>
+<td><code>Curve</code></td>
+<td>object</td>
+<td>- (required)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-a-examples">Appendix A: Examples</h2>
+<h3 id="minimal-event">Minimal Event</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"UI_Click"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"rootAudioObject"</span>: {
+    <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>,
+    <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"click.ogg"</span>,
+    <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>
+  }
+}
+</div></code></pre>
+<h3 id="random-with-variation">Random with Variation</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Footstep"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"rootAudioObject"</span>: {
+    <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_RandomSound, Demute.GISB"</span>,
+    <span class="hljs-attr">"avoidLastPlayed"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-attr">"RandomPlaylist"</span>: [
+      {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"step_01.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>},
+      {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"step_02.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>},
+      {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"step_03.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>}
+    ],
+    <span class="hljs-attr">"volumeDB"</span>: {
+      <span class="hljs-attr">"randomize"</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">"baseValue"</span>: <span class="hljs-number">0.0</span>,
+      <span class="hljs-attr">"minModifier"</span>: <span class="hljs-number">-3.0</span>,
+      <span class="hljs-attr">"maxModifier"</span>: <span class="hljs-number">0.0</span>
+    },
+    <span class="hljs-attr">"pitchCents"</span>: {
+      <span class="hljs-attr">"randomize"</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">"baseValue"</span>: <span class="hljs-number">0.0</span>,
+      <span class="hljs-attr">"minModifier"</span>: <span class="hljs-number">-100.0</span>,
+      <span class="hljs-attr">"maxModifier"</span>: <span class="hljs-number">100.0</span>
+    }
+  }
+}
+</div></code></pre>
+<h3 id="switch-with-nested-random">Switch with Nested Random</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Footstep_Surface"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"rootAudioObject"</span>: {
+    <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SwitchSound, Demute.GISB"</span>,
+    <span class="hljs-attr">"ParameterName"</span>: <span class="hljs-string">"Surface"</span>,
+    <span class="hljs-attr">"DefaultValue"</span>: <span class="hljs-string">"Stone"</span>,
+    <span class="hljs-attr">"SwitchCases"</span>: [
+      {
+        <span class="hljs-attr">"parameterValue"</span>: <span class="hljs-string">"Stone"</span>,
+        <span class="hljs-attr">"audioObject"</span>: {
+          <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_RandomSound, Demute.GISB"</span>,
+          <span class="hljs-attr">"avoidLastPlayed"</span>: <span class="hljs-number">2</span>,
+          <span class="hljs-attr">"RandomPlaylist"</span>: [
+            {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"stone_01.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>},
+            {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"stone_02.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>}
+          ]
+        }
+      },
+      {
+        <span class="hljs-attr">"parameterValue"</span>: <span class="hljs-string">"Wood"</span>,
+        <span class="hljs-attr">"audioObject"</span>: {
+          <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_RandomSound, Demute.GISB"</span>,
+          <span class="hljs-attr">"avoidLastPlayed"</span>: <span class="hljs-number">2</span>,
+          <span class="hljs-attr">"RandomPlaylist"</span>: [
+            {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"wood_01.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>},
+            {<span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>, <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"wood_02.ogg"</span>, <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>}
+          ]
+        }
+      }
+    ]
+  }
+}
+</div></code></pre>
+<h3 id="blend-with-attenuation">Blend with Attenuation</h3>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"name"</span>: <span class="hljs-string">"Explosion"</span>,
+  <span class="hljs-attr">"hideFlags"</span>: <span class="hljs-number">0</span>,
+  <span class="hljs-attr">"rootAudioObject"</span>: {
+    <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_BlendSound, Demute.GISB"</span>,
+    <span class="hljs-attr">"BlendPlaylist"</span>: [
+      {
+        <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>,
+        <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"explosion_core.ogg"</span>,
+        <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>
+      },
+      {
+        <span class="hljs-attr">"$type"</span>: <span class="hljs-string">"GISB.Runtime.GISB_SingleSound, Demute.GISB"</span>,
+        <span class="hljs-attr">"soundClip"</span>: <span class="hljs-string">"explosion_debris.ogg"</span>,
+        <span class="hljs-attr">"loop"</span>: <span class="hljs-literal">false</span>,
+        <span class="hljs-attr">"volumeDB"</span>: {<span class="hljs-attr">"randomize"</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">"baseValue"</span>: <span class="hljs-number">-6.0</span>, <span class="hljs-attr">"minModifier"</span>: <span class="hljs-number">0.0</span>, <span class="hljs-attr">"maxModifier"</span>: <span class="hljs-number">0.0</span>}
+      }
+    ],
+    <span class="hljs-attr">"attenuation"</span>: {
+      <span class="hljs-attr">"overrideParent"</span>: <span class="hljs-literal">true</span>,
+      <span class="hljs-attr">"value"</span>: {
+        <span class="hljs-attr">"active"</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">"minDistance"</span>: <span class="hljs-number">5.0</span>,
+        <span class="hljs-attr">"maxDistance"</span>: <span class="hljs-number">100.0</span>,
+        <span class="hljs-attr">"preset"</span>: <span class="hljs-number">1</span>,
+        <span class="hljs-attr">"volumeAtMaxDistance"</span>: <span class="hljs-number">-40.0</span>,
+        <span class="hljs-attr">"spreadAtMinDistance"</span>: <span class="hljs-number">0.0</span>,
+        <span class="hljs-attr">"spreadAtMaxDistance"</span>: <span class="hljs-number">1.0</span>,
+        <span class="hljs-attr">"lowPassAtMinDistance"</span>: <span class="hljs-number">0.0</span>,
+        <span class="hljs-attr">"lowPassAtMaxDistance"</span>: <span class="hljs-number">0.5</span>
+      }
+    }
+  }
+}
+</div></code></pre>
+
+</body>
+</html>
