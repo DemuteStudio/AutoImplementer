@@ -28,3 +28,7 @@ GisbUnreal/UpgradeLog.htm
 **/DerivedDataCache
 **/Intermediate
 **/Saved
+
+# Claude Code
+CLAUDE.md
+.claude/
