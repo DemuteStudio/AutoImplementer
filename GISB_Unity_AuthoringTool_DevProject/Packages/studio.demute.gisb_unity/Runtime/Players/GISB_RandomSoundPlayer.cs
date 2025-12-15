@@ -38,12 +38,8 @@ namespace GISB.Runtime
                 return index;
             }
         }
-
         
-        private bool isLooping = false;
         private int currentIndex = -1;
-        private double lastChildTriggerTime = 0.0f;
-        private const double SCHEDULING_DELAY = 0.1f;
         
         private List<GISB_BaseAudioPlayer> instantiatedPlayers = new List<GISB_BaseAudioPlayer>();
         
@@ -78,9 +74,6 @@ namespace GISB.Runtime
                 currentIndex = GetRandomIndex();
                 instantiatedPlayers[currentIndex].Play(gisbEventInstance, 0.0f, scheduledTime);
             }
-
-            isLooping = audioObject.loop;
-            lastChildTriggerTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
         }
 
         public override void Stop()
@@ -89,8 +82,6 @@ namespace GISB.Runtime
             {
                 instantiatedPlayer.Stop();
             }
-            
-            isLooping = false;
         }
 
         public override void UpdateAudioThread(double dspTime)
@@ -100,51 +91,6 @@ namespace GISB.Runtime
             foreach (GISB_BaseAudioPlayer instantiatedPlayer in instantiatedPlayers)
             {
                 instantiatedPlayer.UpdateAudioThread(dspTime);
-            }
-
-            if (isLooping)
-            {
-                //So, the thing is that we need to schedule sounds to play later, but we don't want to schedule them
-                //too early in case parameters change in between
-                
-                switch (audioObject.transitionMode)
-                {
-                    case GISB_RandomSound.TransitionMode.TriggerRate:
-                        //This is play a sound every triggerRate seconds
-
-                        if (dspTime + SCHEDULING_DELAY > lastChildTriggerTime + audioObject.triggerRate)
-                        {
-                            double newScheduledTime = lastChildTriggerTime + audioObject.triggerRate;
-                            ownerInstance.scheduledActions.Enqueue(() =>
-                            {
-                                currentIndex = GetRandomIndex();
-                                instantiatedPlayers[currentIndex].Play(ownerInstance, 0.0f,
-                                    newScheduledTime);
-                            });
-                            lastChildTriggerTime = newScheduledTime;
-                            //Debug.LogFormat("[Audio] Scheduling sound {0} to play at {1}", audioObject, newScheduledTime);
-                        }
-                        break;
-                    case GISB_RandomSound.TransitionMode.Crossfade:
-                        //This is play a sound with a crossfade after the current sound finishes playing
-                        //We don't use scheduling delay here because it is less time critical
-                        if (dspTime > lastChildTriggerTime + instantiatedPlayers[currentIndex].GetDuration() - audioObject.crossfadeDuration)
-                        {
-                            ownerInstance.scheduledActions.Enqueue(() => 
-                                instantiatedPlayers[currentIndex].Stop(audioObject.crossfadeDuration));
-                            ownerInstance.scheduledActions.Enqueue(() =>
-                            {
-                                currentIndex = GetRandomIndex();
-                                instantiatedPlayers[currentIndex].Play(ownerInstance, audioObject.crossfadeDuration,
-                                    0.0f);
-                            });
-                            lastChildTriggerTime = dspTime;
-                            //Debug.LogFormat("[Audio] Starting crossfade {0}", audioObject);
-                        }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
             }
         }
 
@@ -175,7 +121,6 @@ namespace GISB.Runtime
         public override double GetDuration()
         {
             //Return duration of currently playing sound
-            if (isLooping) return -1;
             if (currentIndex < 0) return 0.0f; // No sound is currently playing
             return instantiatedPlayers[currentIndex].GetDuration();
         }
@@ -187,7 +132,6 @@ namespace GISB.Runtime
 
         public override bool IsPlaying()
         {
-            if (isLooping) return true;
             if (currentIndex < 0) return false; // No sound is currently playing
             return instantiatedPlayers[currentIndex].IsPlaying();
         }

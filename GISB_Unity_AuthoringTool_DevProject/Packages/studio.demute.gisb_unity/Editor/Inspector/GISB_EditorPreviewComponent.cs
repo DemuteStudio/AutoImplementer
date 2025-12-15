@@ -26,6 +26,7 @@ namespace GISB.Editor
             foreach (GISB_EventInstance eventInstance in activeEventInstances)
             {
                 eventInstance.UpdateGameThread(Time.deltaTime);
+                //Debug.Log("Updating GISB Editor Preview Component");
             }
         }
     }

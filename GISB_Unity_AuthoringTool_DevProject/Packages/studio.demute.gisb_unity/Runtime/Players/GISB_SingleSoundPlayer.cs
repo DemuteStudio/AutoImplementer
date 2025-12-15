@@ -26,7 +26,6 @@ namespace GISB.Runtime
             
             float pitch = GetPitch();
             float lowpass = GetLowpass();
-
             
             audioVoice.source.clip = audioObject.soundClip;
             audioVoice.source.loop = audioObject.loop;

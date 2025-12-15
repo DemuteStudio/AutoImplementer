@@ -55,6 +55,14 @@ public class GISB_EventInstance
             rootPlayerInstance.Stop(fadeOutTime);
         }
     }
+    
+    public void Break()
+    {
+        if(rootPlayerInstance != null)
+        {
+            rootPlayerInstance.Break();
+        }
+    }
 
     public void UpdateAudioThread(double dspTime)
     {

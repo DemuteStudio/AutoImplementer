@@ -14,6 +14,8 @@ namespace GISB.Runtime
         public abstract void Stop(double fadeOutTime);
 
         public abstract void Stop();
+        
+        public abstract void Break();
 
         public abstract void UpdateAudioThread(double dspTime);
 
@@ -45,6 +47,8 @@ namespace GISB.Runtime
         
         //Actual current volume in (this might be different from the target when fading)
         private float currentVolume;
+        
+        private float currentPitch;
 
         //The last time this player was triggered to play
         protected double playTime;
@@ -62,12 +66,13 @@ namespace GISB.Runtime
             
             targetVolume = GISB_VolumeParameter.decibelsToLinear(audioObject.volumeDB.GetValue());
             currentVolume = fadeInTime > 0 ? 0.0f : targetVolume; // Start with 0 volume if fading in, otherwise set to target volume immediately
+            currentPitch = audioObject.pitchCents.GetValue();
             playTime = scheduledTime == 0 ? AudioSettings.dspTime : scheduledTime;
             this.fadeInTime = fadeInTime;
             this.ownerInstance = gisbEventInstance;
             
-            // if(lastFadeInTime > 0) Debug.LogFormat("Starting fade-in for audio: {0}, Target Volume: {1}, Fade-in Time: {2}", 
-            //     audioObject, targetVolume, lastFadeInTime);
+            // if(fadeInTime > 0) Debug.LogFormat("Starting fade-in for audio: {0}, Target Volume: {1}, Fade-in Time: {2}", 
+            //     audioObject, targetVolume, fadeInTime);
             // else Debug.LogFormat("Playing audio: {0}, Target Volume: {1}", audioObject, targetVolume);
         }
 
@@ -79,11 +84,16 @@ namespace GISB.Runtime
             this.fadeOutTime = fadeOutTime;
             targetVolume = currentVolume; //Just in case our volume when stopping isn't at the target volume
             
-            // if (lastFadeOutTime > 0) Debug.LogFormat("Starting fade-out for audio: {0}, Current Volume: {1}, Fade-out Time: {2}", 
-            //     audioObject, currentVolume, lastFadeOutTime);
+            // if (fadeOutTime > 0) Debug.LogFormat("Starting fade-out for audio: {0}, Current Volume: {1}, Fade-out Time: {2}", 
+            //     audioObject, currentVolume, fadeOutTime);
             // else Debug.LogFormat("Stopping audio: {0}, Current Volume: {1}", audioObject, currentVolume);
         }
-        
+
+        public override void Break()
+        {
+            //Do nothing by default
+        }
+
         public override void UpdateAudioThread(double dspTime)
         {
             // This method can be overridden by subclasses to handle time updates
@@ -168,11 +178,11 @@ namespace GISB.Runtime
         {
             if (parent == null)
             {
-                return audioObject.pitchCents.GetValue();
+                return currentPitch;
             }
             else
             {
-                return parent.GetPitch() + audioObject.pitchCents.GetValue();
+                return parent.GetPitch() + currentPitch;
             }
         }
 

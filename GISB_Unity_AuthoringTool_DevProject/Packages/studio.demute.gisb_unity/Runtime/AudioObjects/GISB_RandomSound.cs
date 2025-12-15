@@ -13,19 +13,6 @@ namespace GISB.Runtime
     {
         public int avoidLastPlayed = 0;
         
-        public bool loop = false;
-
-        public enum TransitionMode
-        {
-            TriggerRate,
-            Crossfade
-        }
-        
-        public TransitionMode transitionMode = TransitionMode.TriggerRate;
-
-        public float triggerRate = 1.0f;
-        public float crossfadeDuration = 1.0f;
-        
 #if UNITY_EDITOR
         [GISB_AudioDrop("RandomPlaylist"), JsonIgnore] public Object dragAndDropAudioClips;
 #endif //UNITY_EDITOR   

@@ -79,6 +79,18 @@ namespace GISB.Runtime
             }
         }
         
+        
+        public void BreakEvent(GISB_Event gisbEvent)
+        {
+            foreach (GISB_EventInstance activeEventInstance in activeEventInstances)
+            {
+                if (activeEventInstance.eventDefinition == gisbEvent)
+                {
+                    activeEventInstance.Break();
+                }
+            }
+        }
+        
         public void StopEvent(string eventName)
         {
             GISB_Event eventToStop = associatedAsset.GetEvent(eventName);
@@ -128,6 +140,7 @@ namespace GISB.Runtime
                 }
             }
         }
+
     }
 }
 

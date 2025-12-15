@@ -80,6 +80,11 @@ namespace GISB.Editor
             {
                 editorAudioComponent.StopEvent(gisbEvent, fadeOutTime);
             }
+
+            if (GUILayout.Button("Break"))
+            {
+                editorAudioComponent.BreakEvent(gisbEvent);
+            }
             
             float maxDistance = gisbEvent.rootAudioObject?.ExtractMaxDistance() ?? 0f;
             if(maxDistance > 0f)
