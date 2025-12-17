@@ -54,7 +54,4 @@ private:
 	static void ConnectVolume(UMetaSoundSourceBuilder* builder, const FGisbVolume volume, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles);
 	static void ConnectPitch(UMetaSoundSourceBuilder* builder, const FGisbPitch pitch, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles);
 	static void ConnectLowpass(UMetaSoundSourceBuilder* builder, const FGisbLowPass lowpass, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, TArray<FMetaSoundBuilderNodeInputHandle>* audioHandles);
-
-	//New Multiple Node Implementation
-	static TScriptInterface<IMetaSoundDocumentInterface> BuildSimpleSoundNode(UGisbImportContainerSimpleSound* simpleSound, const FString& Name);
 };

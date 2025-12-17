@@ -12,6 +12,9 @@
 #include "MetasoundEditorSubsystem.h"
 #include <cmath>
 
+#include "GisbSoundBankDataAsset.h"
+#include "GisbContainerConverter.h"
+
 FMetasoundFrontendClassName* UGISB_MetasoundBuilder::WavePlayerMonoNode = nullptr;
 FMetasoundFrontendClassName* UGISB_MetasoundBuilder::WavePlayerStereoNode = nullptr;
 FMetasoundFrontendClassName* UGISB_MetasoundBuilder::ProbabilityNode = nullptr;
@@ -26,10 +29,6 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbVolume
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbPitchNode = nullptr;
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbLowpassNode = nullptr;
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::GisbAttenuationNode = nullptr;
-
-// --- new node based implementation --- //
-FString PathGlobal;
-UMetaSoundBuilderSubsystem* BuilderGlobal;
 
 UMetaSoundSource* UGISB_MetasoundBuilder::CreateMetasoundFromGISB(UGisbImportContainerBase* gisb, const FString& Name, const FString& path)
 {
@@ -727,91 +726,4 @@ void UGISB_MetasoundBuilder::ConnectLowpass(UMetaSoundSourceBuilder* builder, co
 		firstAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("OutL"), result);
 		if (isStereo) secondAudioHandle = builder->FindNodeOutputByName(lowpassHandle, TEXT("OutR"), result);
 	}
-}
-
-TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundBuilder::BuildSimpleSoundNode(UGisbImportContainerSimpleSound* simpleSound, const FString& Name)
-{
-	EMetaSoundBuilderResult result;
-
-	// Create Patch Builder (not Source Builder!)
-	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
-
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	  return nullptr;
-
-	// Determine if stereo
-	bool isStereo = simpleSound->SoundWave && simpleSound->SoundWave->NumChannels > 1;
-
-	// Add Graph INPUT nodes (these become the patch's inputs when used as a node)
-	FMetaSoundBuilderNodeOutputHandle triggerInputHandle = builder->AddGraphInputNode(
-	  FName("Play"),
-	  FName("Trigger"),
-	  FMetasoundFrontendLiteral(),
-	  result
-	);
-
-	// Add Wave Player node
-	FMetaSoundNodeHandle wavePlayerHandle = builder->AddNodeByClassName(
-	  isStereo ? *WavePlayerStereoNode : *WavePlayerMonoNode,
-	  result
-	);
-
-	// Set Wave Player parameters
-	FMetaSoundBuilderNodeInputHandle waveAssetHandle = builder->FindNodeInputByName(wavePlayerHandle, TEXT("Wave Asset"), result);
-	FMetaSoundBuilderNodeInputHandle playHandle = builder->FindNodeInputByName(wavePlayerHandle, TEXT("Play"), result);
-	FMetaSoundBuilderNodeInputHandle loopHandle = builder->FindNodeInputByName(wavePlayerHandle, TEXT("Loop"), result);
-
-	FAudioParameter waveParam = FAudioParameter(TEXT("Wave Asset"), simpleSound->SoundWave);
-	builder->SetNodeInputDefault(waveAssetHandle, FMetasoundFrontendLiteral(waveParam), result);
-
-	FAudioParameter loopParam = FAudioParameter(TEXT("Loop"), simpleSound->loop);
-	builder->SetNodeInputDefault(loopHandle, FMetasoundFrontendLiteral(loopParam), result);
-
-	// Connect trigger input to wave player
-	builder->ConnectNodes(triggerInputHandle, playHandle, result);
-
-	// Get Wave Player outputs
-	FMetaSoundBuilderNodeOutputHandle onFinishedHandle = builder->FindNodeOutputByName(wavePlayerHandle, TEXT("On Finished"), result);
-	FMetaSoundBuilderNodeOutputHandle audioLeftHandle = builder->FindNodeOutputByName(
-	  wavePlayerHandle,
-	  isStereo ? TEXT("Out Left") : TEXT("Out Mono"),
-	  result
-	);
-
-	// Add Graph OUTPUT nodes (these become the patch's outputs when used as a node)
-	FMetaSoundBuilderNodeInputHandle onFinishedOutputHandle = builder->AddGraphOutputNode(
-	  FName("On Finished"),
-	  FName("Trigger"),
-	  FMetasoundFrontendLiteral(),
-	  result
-	);
-
-	FMetaSoundBuilderNodeInputHandle audioLeftOutputHandle = builder->AddGraphOutputNode(
-	  FName("Audio Left"),
-	  FName("Audio"),
-	  FMetasoundFrontendLiteral(),
-	  result
-	);
-
-	// Connect to outputs
-	builder->ConnectNodes(onFinishedHandle, onFinishedOutputHandle, result);
-	builder->ConnectNodes(audioLeftHandle, audioLeftOutputHandle, result);
-
-	if (isStereo)
-	{
-	  FMetaSoundBuilderNodeOutputHandle audioRightHandle = builder->FindNodeOutputByName(wavePlayerHandle, TEXT("Out Right"), result);
-	  FMetaSoundBuilderNodeInputHandle audioRightOutputHandle = builder->AddGraphOutputNode(
-	      FName("Audio Right"),
-	      FName("Audio"),
-	      FMetasoundFrontendLiteral(),
-	      result
-	  );
-	  builder->ConnectNodes(audioRightHandle, audioRightOutputHandle, result);
-	}
-
-	// Build to asset and return
-	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
-	TScriptInterface<IMetaSoundDocumentInterface> patch = EditorSubsystem->BuildToAsset(builder, "ISX - Demute", Name, PathGlobal, result);
-
-	return patch;
 }
