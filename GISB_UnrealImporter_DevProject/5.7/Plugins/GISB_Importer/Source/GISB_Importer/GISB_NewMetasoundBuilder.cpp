@@ -60,20 +60,12 @@ void UGISB_NewMetasoundBuilder::TestBuilder(UGisbSoundBankDataAsset* dataAsset)
 		UE_LOG(LogTemp, Error, TEXT("Failed to convert runtime container to import container"));
 		return;
 	}
-
-	if (UGisbImportContainerSimpleSound* SimpleSound = Cast<UGisbImportContainerSimpleSound>(ImportContainer))
-	{
-		BuilderGlobal = GEngine->GetEngineSubsystem<UMetaSoundBuilderSubsystem>();
-		PathGlobal = "/Game/A_TESTING/Metasounds";
-		SetupNodes();
-
-		UGISB_NewMetasoundBuilder::BuildSimpleSoundNode(SimpleSound, dataAsset->EventName);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Container is not a SimpleSound type - type is: %s"),
-			   *ImportContainer->GetClass()->GetName());
-	}
+	
+	BuilderGlobal = GEngine->GetEngineSubsystem<UMetaSoundBuilderSubsystem>();
+	PathGlobal = "/Game/A_TESTING/Metasounds";
+	SetupNodes();
+	
+	UGISB_NewMetasoundBuilder::BuildChildNode(ImportContainer, "Testing", 0);
 
 }
 
@@ -149,6 +141,9 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	  return nullptr;
 
+	// Create layout manager for automatic node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
 	// Determine if stereo
 	bool isStereo = simpleSound->SoundWave && simpleSound->SoundWave->NumChannels > 1;
 
@@ -159,6 +154,8 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	  FMetasoundFrontendLiteral(),
 	  result
 	);
+	FMetaSoundNodeHandle triggerInputNode(triggerInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
 
 	// Add Graph OUTPUT nodes (these become the patch's outputs when used as a node)
 	FMetaSoundBuilderNodeInputHandle onFinishedOutputHandle = builder->AddGraphOutputNode(
@@ -167,8 +164,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	  FMetasoundFrontendLiteral(),
 	  result
 	);
-	
-	setupProbability(builder, simpleSound->PlaybackProbabilityPercent, triggerInputHandle, onFinishedOutputHandle);
+	FMetaSoundNodeHandle onFinishedOutputNode(onFinishedOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(onFinishedOutputNode, FName("On Finished"));
+
+	setupProbability(builder, simpleSound->PlaybackProbabilityPercent, triggerInputHandle, onFinishedOutputHandle, &Layout);
 
 	//ConnectProbabilityNode(builder, simpleSound->PlaybackProbabilityPercent, triggerInputHandle, onFinishedOutputHandle);
 
@@ -177,6 +176,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	  isStereo ? *WavePlayerStereoNode : *WavePlayerMonoNode,
 	  result
 	);
+	Layout.RegisterNode(wavePlayerHandle, EGisbNodeCategory::SignalSource, TEXT("WavePlayer"));
 
 	// Set Wave Player parameters
 	FMetaSoundBuilderNodeInputHandle waveAssetHandle = builder->FindNodeInputByName(wavePlayerHandle, TEXT("Wave Asset"), result);
@@ -191,6 +191,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 
 	// Connect trigger input to wave player
 	builder->ConnectNodes(triggerInputHandle, playHandle, result);
+	Layout.RegisterConnection(triggerInputNode, wavePlayerHandle);
 
 	// Get Wave Player outputs
 	FMetaSoundBuilderNodeOutputHandle onFinishedHandle = builder->FindNodeOutputByName(wavePlayerHandle, TEXT("On Finished"), result);
@@ -207,7 +208,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	}
 
 	// Apply audio effects chain (updates audio handles)
-	setupAttributes(builder, simpleSound, isStereo, &triggerInputHandle, audioLeftHandle, audioRightHandle);
+	setupAttributes(builder, simpleSound, isStereo, &triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
 
 	FMetaSoundBuilderNodeInputHandle audioLeftOutputHandle = builder->AddGraphOutputNode(
 	  isStereo ? FName("Audio Left") : FName("Audio Mono"),
@@ -215,10 +216,15 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	  FMetasoundFrontendLiteral(),
 	  result
 	);
+	FMetaSoundNodeHandle audioLeftOutputNode(audioLeftOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftOutputNode, isStereo ? FName("Audio Left") : FName("Audio Mono"));
 
 	// Connect to outputs
 	builder->ConnectNodes(onFinishedHandle, onFinishedOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), onFinishedOutputNode);
+
 	builder->ConnectNodes(audioLeftHandle, audioLeftOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(audioLeftHandle.NodeID), audioLeftOutputNode);
 
 	if (isStereo)
 	{
@@ -228,8 +234,16 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 	      FMetasoundFrontendLiteral(),
 	      result
 	  );
+	  FMetaSoundNodeHandle audioRightOutputNode(audioRightOutputHandle.NodeID);
+	  Layout.RegisterGraphOutputNode(audioRightOutputNode, FName("Audio Right"));
+
 	  builder->ConnectNodes(audioRightHandle, audioRightOutputHandle, result);
+	  Layout.RegisterConnection(FMetaSoundNodeHandle(audioRightHandle.NodeID), audioRightOutputNode);
 	}
+
+	// Compute and apply automatic node layout
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
 
 	// Build to asset and return
 	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
@@ -245,14 +259,14 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSi
 }
 
 
-void UGISB_NewMetasoundBuilder::setupProbability(UMetaSoundPatchBuilder* builder, float probability, FMetaSoundBuilderNodeOutputHandle& playTrigger, FMetaSoundBuilderNodeInputHandle& onFinished)
+void UGISB_NewMetasoundBuilder::setupProbability(UMetaSoundPatchBuilder* builder, float probability, FMetaSoundBuilderNodeOutputHandle& playTrigger, FMetaSoundBuilderNodeInputHandle& onFinished, GisbMetasoundLayoutManager* Layout)
 {
 	if (probability > 99.99f)
 	{
 		return;
 	}
 
-	ConnectProbabilityNode(builder, probability, playTrigger, onFinished);
+	ConnectProbabilityNode(builder, probability, playTrigger, onFinished, Layout);
 	
 	//CREATING VARIABLES CURRENTLY DOES NOT WORK, IT MAKES THE PATCH CRASH
 
@@ -347,7 +361,7 @@ void UGISB_NewMetasoundBuilder::setupProbability(UMetaSoundPatchBuilder* builder
 	}*/
 }
 
-void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* builder, float probability, FMetaSoundBuilderNodeOutputHandle& executionHandle, FMetaSoundBuilderNodeInputHandle& finishHandle)
+void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* builder, float probability, FMetaSoundBuilderNodeOutputHandle& executionHandle, FMetaSoundBuilderNodeInputHandle& finishHandle, GisbMetasoundLayoutManager* Layout)
 {
 	EMetaSoundBuilderResult result;
 
@@ -358,6 +372,11 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectProbabilityNode: FAILED to add Trigger Filter node"));
 		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(probabilityHandle, EGisbNodeCategory::TriggerFlow, TEXT("ProbabilityFilter"));
 	}
 
 	// Find input pins on probability node
@@ -393,6 +412,11 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(executionHandle.NodeID), probabilityHandle);
+	}
+
 	// Find output pins on probability node
 	FMetaSoundBuilderNodeOutputHandle headsHandle = builder->FindNodeOutputByName(probabilityHandle, TEXT("Heads"), result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
@@ -420,6 +444,11 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+	}
+
 	// Connect Tails (fail) to Trigger Any Input 1
 	FMetaSoundBuilderNodeInputHandle failHandle = builder->FindNodeInputByName(anyHandle, TEXT("In 1"), result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
@@ -433,6 +462,11 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectProbabilityNode: FAILED to connect Tails to Trigger Any"));
 		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(tailsHandle.NodeID), anyHandle);
 	}
 
 	// Connect Trigger Any output to original finish handle
@@ -450,6 +484,11 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterConnection(anyHandle, FMetaSoundNodeHandle(finishHandle.NodeID));
+	}
+
 	// Update finishHandle to point to Trigger Any Input 0 (for success path)
 	FMetaSoundBuilderNodeInputHandle succesHandle = builder->FindNodeInputByName(anyHandle, TEXT("In 0"), result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
@@ -461,7 +500,7 @@ void UGISB_NewMetasoundBuilder::ConnectProbabilityNode(UMetaSoundPatchBuilder* b
 	finishHandle = succesHandle;
 }
 
-void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, const FGisbVolume volume, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle)
+void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, const FGisbVolume volume, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, GisbMetasoundLayoutManager* Layout)
 {
 	EMetaSoundBuilderResult result;
 
@@ -471,6 +510,11 @@ void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, c
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectVolume: FAILED to add Volume node"));
 		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(volumeHandle, EGisbNodeCategory::ParameterProcessor, TEXT("Volume"));
 	}
 
 	// Find execution input handle
@@ -505,6 +549,11 @@ void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, c
 			UE_LOG(LogTemp, Error, TEXT("ConnectVolume: FAILED to connect execution"));
 			return;
 		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(executionHandle->NodeID), volumeHandle);
+		}
 	}
 
 	// Connect audio inputs
@@ -515,6 +564,11 @@ void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, c
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(firstAudioHandle.NodeID), volumeHandle);
+	}
+
 	if (isStereo)
 	{
 		builder->ConnectNodes(secondAudioHandle, inRightHandle, result);
@@ -522,6 +576,11 @@ void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, c
 		{
 			UE_LOG(LogTemp, Error, TEXT("ConnectVolume: FAILED to connect right audio input"));
 			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(secondAudioHandle.NodeID), volumeHandle);
 		}
 	}
 
@@ -608,7 +667,7 @@ void UGISB_NewMetasoundBuilder::ConnectVolume(UMetaSoundPatchBuilder* builder, c
 	}
 }
 
-void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, const FGisbPitch pitch, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle)
+void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, const FGisbPitch pitch, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, GisbMetasoundLayoutManager* Layout)
 {
 	EMetaSoundBuilderResult result;
 
@@ -618,6 +677,11 @@ void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, co
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectPitch: FAILED to add Pitch node"));
 		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(pitchHandle, EGisbNodeCategory::ParameterProcessor, TEXT("Pitch"));
 	}
 
 	// Find execution input handle
@@ -652,6 +716,11 @@ void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, co
 			UE_LOG(LogTemp, Error, TEXT("ConnectPitch: FAILED to connect execution"));
 			return;
 		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(executionHandle->NodeID), pitchHandle);
+		}
 	}
 
 	// Connect audio inputs
@@ -662,6 +731,11 @@ void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, co
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(firstAudioHandle.NodeID), pitchHandle);
+	}
+
 	if (isStereo)
 	{
 		builder->ConnectNodes(secondAudioHandle, inRightHandle, result);
@@ -669,6 +743,11 @@ void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, co
 		{
 			UE_LOG(LogTemp, Error, TEXT("ConnectPitch: FAILED to connect right audio input"));
 			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(secondAudioHandle.NodeID), pitchHandle);
 		}
 	}
 
@@ -755,7 +834,7 @@ void UGISB_NewMetasoundBuilder::ConnectPitch(UMetaSoundPatchBuilder* builder, co
 	}
 }
 
-void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, const FGisbLowPass lowpass, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle)
+void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, const FGisbLowPass lowpass, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, GisbMetasoundLayoutManager* Layout)
 {
 	EMetaSoundBuilderResult result;
 
@@ -765,6 +844,11 @@ void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, 
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectLowpass: FAILED to add Lowpass node"));
 		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(lowpassHandle, EGisbNodeCategory::ParameterProcessor, TEXT("Lowpass"));
 	}
 
 	// Find execution input handle
@@ -799,6 +883,11 @@ void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, 
 			UE_LOG(LogTemp, Error, TEXT("ConnectLowpass: FAILED to connect execution"));
 			return;
 		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(executionHandle->NodeID), lowpassHandle);
+		}
 	}
 
 	// Connect audio inputs
@@ -809,6 +898,11 @@ void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, 
 		return;
 	}
 
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(firstAudioHandle.NodeID), lowpassHandle);
+	}
+
 	if (isStereo)
 	{
 		builder->ConnectNodes(secondAudioHandle, inRightHandle, result);
@@ -816,6 +910,11 @@ void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, 
 		{
 			UE_LOG(LogTemp, Error, TEXT("ConnectLowpass: FAILED to connect right audio input"));
 			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(secondAudioHandle.NodeID), lowpassHandle);
 		}
 	}
 
@@ -903,23 +1002,1102 @@ void UGISB_NewMetasoundBuilder::ConnectLowpass(UMetaSoundPatchBuilder* builder, 
 	}
 }
 
-void UGISB_NewMetasoundBuilder::setupAttributes(UMetaSoundPatchBuilder* builder, UGisbImportContainerSimpleSound* simpleSound, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle)
+void UGISB_NewMetasoundBuilder::setupAttributes(UMetaSoundPatchBuilder* builder, UGisbImportContainerSimpleSound* simpleSound, const bool isStereo, FMetaSoundBuilderNodeOutputHandle* executionHandle, FMetaSoundBuilderNodeOutputHandle& firstAudioHandle, FMetaSoundBuilderNodeOutputHandle& secondAudioHandle, GisbMetasoundLayoutManager* Layout)
 {
 	// Apply Volume effect if configured
 	if (simpleSound->VolumeDB.randomize || simpleSound->VolumeDB.value != 0)
 	{
-		ConnectVolume(builder, simpleSound->VolumeDB, isStereo, executionHandle, firstAudioHandle, secondAudioHandle);
+		ConnectVolume(builder, simpleSound->VolumeDB, isStereo, executionHandle, firstAudioHandle, secondAudioHandle, Layout);
 	}
 
 	// Apply Pitch effect if configured
 	if (simpleSound->Pitch.randomize || simpleSound->Pitch.value != 0)
 	{
-		ConnectPitch(builder, simpleSound->Pitch, isStereo, executionHandle, firstAudioHandle, secondAudioHandle);
+		ConnectPitch(builder, simpleSound->Pitch, isStereo, executionHandle, firstAudioHandle, secondAudioHandle, Layout);
 	}
 
 	// Apply Lowpass effect if configured
 	if (simpleSound->Lowpass.randomize || simpleSound->Lowpass.value != 0)
 	{
-		ConnectLowpass(builder, simpleSound->Lowpass, isStereo, executionHandle, firstAudioHandle, secondAudioHandle);
+		ConnectLowpass(builder, simpleSound->Lowpass, isStereo, executionHandle, firstAudioHandle, secondAudioHandle, Layout);
 	}
+}
+
+// ============================================================================
+// BuildChildNode - Recursive child patch builder with stereo detection
+// ============================================================================
+
+FChildPatchResult UGISB_NewMetasoundBuilder::BuildChildNode(
+	UGisbImportContainerBase* container,
+	const FString& ParentName,
+	int32 ChildIndex
+)
+{
+	FChildPatchResult Result;
+
+	if (!container)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildChildNode: Container is null"));
+		return Result;
+	}
+
+	// Dispatch based on container type
+	if (UGisbImportContainerSimpleSound* SimpleSound = Cast<UGisbImportContainerSimpleSound>(container))
+	{
+		// Use wav file name for SimpleSound containers
+		FString WavName = SimpleSound->SoundWave ? SimpleSound->SoundWave->GetName() : FString::Printf(TEXT("SimpleSound%d"), ChildIndex);
+		FString ChildName = FString::Printf(TEXT("%s_%s"), *ParentName, *WavName);
+
+		// Determine stereo from sound wave
+		Result.bIsStereo = SimpleSound->SoundWave && SimpleSound->SoundWave->NumChannels > 1;
+		Result.Patch = BuildSimpleSoundNode(SimpleSound, ChildName);
+	}
+	else if (UGisbImportContainerRandom* Random = Cast<UGisbImportContainerRandom>(container))
+	{
+		// Generate name with container type
+		FString ChildName = FString::Printf(TEXT("%s_Random%d"), *ParentName, ChildIndex);
+
+		// Build Random patch (will recursively build children)
+		Result.Patch = BuildRandomNode(Random, ChildName);
+
+		// Determine stereo by checking any child
+		for (auto& Child : Random->SoundArray)
+		{
+			if (UGisbImportContainerSimpleSound* SimpleChild = Cast<UGisbImportContainerSimpleSound>(Child))
+			{
+				if (SimpleChild->SoundWave && SimpleChild->SoundWave->NumChannels > 1)
+				{
+					Result.bIsStereo = true;
+					break;
+				}
+			}
+			else
+			{
+				// Nested container - conservatively assume stereo
+				Result.bIsStereo = true;
+				break;
+			}
+		}
+	}
+	else if (UGisbImportContainerSwitch* Switch = Cast<UGisbImportContainerSwitch>(container))
+	{
+		// Generate name with container type
+		FString ChildName = FString::Printf(TEXT("%s_Switch%d"), *ParentName, ChildIndex);
+
+		Result.Patch = BuildSwitchNode(Switch, ChildName);
+
+		// Check any child in dictionary for stereo
+		for (auto& Pair : Switch->SoundDictionary)
+		{
+			if (UGisbImportContainerSimpleSound* SimpleChild = Cast<UGisbImportContainerSimpleSound>(Pair.Value))
+			{
+				if (SimpleChild->SoundWave && SimpleChild->SoundWave->NumChannels > 1)
+				{
+					Result.bIsStereo = true;
+					break;
+				}
+			}
+			else
+			{
+				Result.bIsStereo = true;
+				break;
+			}
+		}
+	}
+	else if (UGisbImportContainerBlend* Blend = Cast<UGisbImportContainerBlend>(container))
+	{
+		// Generate name with container type
+		FString ChildName = FString::Printf(TEXT("%s_Blend%d"), *ParentName, ChildIndex);
+
+		Result.Patch = BuildBlendNode(Blend, ChildName);
+
+		// Check any child for stereo
+		for (auto& Child : Blend->SoundArray)
+		{
+			if (UGisbImportContainerSimpleSound* SimpleChild = Cast<UGisbImportContainerSimpleSound>(Child))
+			{
+				if (SimpleChild->SoundWave && SimpleChild->SoundWave->NumChannels > 1)
+				{
+					Result.bIsStereo = true;
+					break;
+				}
+			}
+			else
+			{
+				Result.bIsStereo = true;
+				break;
+			}
+		}
+	}
+	else
+	{
+		FString ChildName = FString::Printf(TEXT("%s_Unknown%d"), *ParentName, ChildIndex);
+		UE_LOG(LogTemp, Error, TEXT("BuildChildNode: Unknown container type for %s"), *ChildName);
+	}
+
+	if (!Result.Patch)
+	{
+		// Note: ChildName is scoped to each case, so we recreate it for error log
+		FString ChildName = FString::Printf(TEXT("%s_Failed%d"), *ParentName, ChildIndex);
+		UE_LOG(LogTemp, Error, TEXT("BuildChildNode: Failed to build patch for %s"), *ChildName);
+	}
+
+	return Result;
+}
+
+// ============================================================================
+// BuildRandomNode - Build MetaSound patch for Random container
+// ============================================================================
+
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildRandomNode(
+	UGisbImportContainerRandom* randomContainer,
+	const FString& Name
+)
+{
+	if (!randomContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: Container is null"));
+		return nullptr;
+	}
+
+	EMetaSoundBuilderResult result;
+
+	// Stage 1: Create Patch Builder
+	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: Failed to create patch builder for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 2: Initialize Layout Manager
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Stage 3: Add Graph Inputs/Outputs
+	FMetaSoundBuilderNodeOutputHandle triggerInputHandle = builder->AddGraphInputNode(
+		FName("Play"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle triggerInputNode(triggerInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+
+	FMetaSoundBuilderNodeInputHandle onFinishedOutputHandle = builder->AddGraphOutputNode(
+		FName("On Finished"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle onFinishedOutputNode(onFinishedOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(onFinishedOutputNode, FName("On Finished"));
+
+	// Stage 4: Setup Probability
+	setupProbability(builder, randomContainer->PlaybackProbabilityPercent,
+		triggerInputHandle, onFinishedOutputHandle, &Layout);
+
+	// Stage 5: Add Core Processing
+	int32 numChildren = randomContainer->SoundArray.Num();
+
+	if (numChildren < 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: No children in random container %s"), *Name);
+		return nullptr;
+	}
+
+	// Build child patches recursively
+	TArray<FChildPatchResult> childResults;
+	bool bIsStereo = false;
+
+	for (int32 i = 0; i < numChildren; i++)
+	{
+		FChildPatchResult childResult = BuildChildNode(
+			randomContainer->SoundArray[i],
+			Name,
+			i
+		);
+
+		if (!childResult.Patch)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BuildRandomNode: Skipping failed child %d in %s"), i, *Name);
+			continue;
+		}
+
+		childResults.Add(childResult);
+		if (childResult.bIsStereo) bIsStereo = true;
+	}
+
+	if (childResults.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: No valid children built for %s"), *Name);
+		return nullptr;
+	}
+
+	// Declare audio output handles (populated below)
+	FMetaSoundBuilderNodeOutputHandle audioLeftHandle;
+	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
+	FMetaSoundBuilderNodeOutputHandle onFinishedHandle;
+
+	// CASE 1: Single child - use AudioReroute
+	if (childResults.Num() == 1)
+	{
+		FMetaSoundNodeHandle rerouteHandle = builder->AddNode(AudioRerouteNode, result);
+		Layout.RegisterNode(rerouteHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioReroute"));
+
+		// Instantiate child patch as node
+		FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[0].Patch, result);
+		Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, TEXT("ChildPatch0"));
+
+		// Connect trigger: Play -> Child Play
+		FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+		builder->ConnectNodes(triggerInputHandle, childPlayInput, result);
+		Layout.RegisterConnection(triggerInputNode, childPatchNode);
+
+		// Connect audio: Child -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+			childPatchNode,
+			bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+			result
+		);
+		FMetaSoundBuilderNodeInputHandle rerouteAudioInL = builder->FindNodeInputByName(rerouteHandle, TEXT("InL"), result);
+		builder->ConnectNodes(childAudioLeft, rerouteAudioInL, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		if (bIsStereo)
+		{
+			FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+			FMetaSoundBuilderNodeInputHandle rerouteAudioInR = builder->FindNodeInputByName(rerouteHandle, TEXT("InR"), result);
+			builder->ConnectNodes(childAudioRight, rerouteAudioInR, result);
+		}
+
+		// Connect finish trigger: Child OnFinished -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+		FMetaSoundBuilderNodeInputHandle rerouteExecIn = builder->FindNodeInputByName(rerouteHandle, TEXT("InExec"), result);
+		builder->ConnectNodes(childFinished, rerouteExecIn, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		// Get reroute outputs
+		audioLeftHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutL"), result);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutR"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutExec"), result);
+	}
+	// CASE 2: Multiple children (2-8) - use GisbRandomNode + Mixer + TriggerAny
+	else if (childResults.Num() <= 8)
+	{
+		// Add GisbRandomNode for selection
+		FMetaSoundNodeHandle randomHandle = builder->AddNode(GisbRandomNode, result);
+		Layout.RegisterNode(randomHandle, EGisbNodeCategory::SignalProcessor, TEXT("RandomSelector"));
+
+		// Configure GisbRandomNode
+		FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(randomHandle, TEXT("Exec"), result);
+		builder->ConnectNodes(triggerInputHandle, execHandle, result);
+		Layout.RegisterConnection(triggerInputNode, randomHandle);
+
+		FMetaSoundBuilderNodeInputHandle noRepeatHandle = builder->FindNodeInputByName(randomHandle, TEXT("No Repeats"), result);
+		FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), randomContainer->AvoidLastPlayed);
+		builder->SetNodeInputDefault(noRepeatHandle, FMetasoundFrontendLiteral(noRepeatParam), result);
+
+		TArray<int32> possibilities;
+		for (int32 i = 0; i < childResults.Num(); i++) possibilities.Add(i);
+		FMetaSoundBuilderNodeInputHandle possibilitiesHandle = builder->FindNodeInputByName(randomHandle, TEXT("Possibilities"), result);
+		FAudioParameter possibilitiesParam = FAudioParameter(TEXT("Possibilities"), possibilities);
+		builder->SetNodeInputDefault(possibilitiesHandle, FMetasoundFrontendLiteral(possibilitiesParam), result);
+
+		// Add mixer node (array indexed by numChildren-2)
+		FMetaSoundNodeHandle mixerHandle = builder->AddNodeByClassName(
+			bIsStereo ? *(*StereoMixerNodes)[childResults.Num() - 2] : *(*MonoMixerNodes)[childResults.Num() - 2],
+			result
+		);
+		Layout.RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
+
+		// Add TriggerAny node (first trigger wins)
+		FMetaSoundNodeHandle anyHandle = builder->AddNodeByClassName(
+			*((*TriggerAnyNodes)[childResults.Num() - 2]),
+			result
+		);
+		Layout.RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+
+		// Instantiate child patches and connect
+		for (int32 i = 0; i < childResults.Num(); i++)
+		{
+			FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[i].Patch, result);
+			FString childNodeName = FString::Printf(TEXT("ChildPatch%d"), i);
+			Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
+
+			// Connect Random output i -> Child Play
+			FMetaSoundBuilderNodeOutputHandle randomOut = builder->FindNodeOutputByName(
+				randomHandle,
+				*FString::Printf(TEXT("Out %d"), i),
+				result
+			);
+			FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+			builder->ConnectNodes(randomOut, childPlayInput, result);
+			Layout.RegisterConnection(randomHandle, childPatchNode);
+
+			// Connect Child audio -> Mixer input i
+			FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+				childPatchNode,
+				bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+				result
+			);
+			FMetaSoundBuilderNodeInputHandle mixerInLeft = builder->FindNodeInputByName(
+				mixerHandle,
+				bIsStereo ? *FString::Printf(TEXT("In %d L"), i) : *FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childAudioLeft, mixerInLeft, result);
+			Layout.RegisterConnection(childPatchNode, mixerHandle);
+
+			if (bIsStereo)
+			{
+				FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+				FMetaSoundBuilderNodeInputHandle mixerInRight = builder->FindNodeInputByName(
+					mixerHandle,
+					*FString::Printf(TEXT("In %d R"), i),
+					result
+				);
+				builder->ConnectNodes(childAudioRight, mixerInRight, result);
+			}
+
+			// Connect Child OnFinished -> TriggerAny input i
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
+				anyHandle,
+				*FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childFinished, anyIn, result);
+			Layout.RegisterConnection(childPatchNode, anyHandle);
+		}
+
+		// Get mixer/any outputs
+		audioLeftHandle = builder->FindNodeOutputByName(
+			mixerHandle,
+			bIsStereo ? TEXT("Out L") : TEXT("Out"),
+			result
+		);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+	}
+	else
+	{
+		// CASE 3: >8 children - hierarchical cascading (TODO)
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: >8 children not yet implemented for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 6: Apply Audio Effects Chain
+	if (randomContainer->VolumeDB.randomize || randomContainer->VolumeDB.value != 0)
+	{
+		ConnectVolume(builder, randomContainer->VolumeDB, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (randomContainer->Pitch.randomize || randomContainer->Pitch.value != 0)
+	{
+		ConnectPitch(builder, randomContainer->Pitch, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (randomContainer->Lowpass.randomize || randomContainer->Lowpass.value != 0)
+	{
+		ConnectLowpass(builder, randomContainer->Lowpass, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	// Stage 7: Connect Graph Outputs
+	FMetaSoundBuilderNodeInputHandle audioLeftOutputHandle = builder->AddGraphOutputNode(
+		bIsStereo ? FName("Audio Left") : FName("Audio Mono"),
+		FName("Audio"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle audioLeftOutputNode(audioLeftOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftOutputNode, bIsStereo ? FName("Audio Left") : FName("Audio Mono"));
+
+	builder->ConnectNodes(audioLeftHandle, audioLeftOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(audioLeftHandle.NodeID), audioLeftOutputNode);
+
+	if (bIsStereo)
+	{
+		FMetaSoundBuilderNodeInputHandle audioRightOutputHandle = builder->AddGraphOutputNode(
+			FName("Audio Right"),
+			FName("Audio"),
+			FMetasoundFrontendLiteral(),
+			result
+		);
+		FMetaSoundNodeHandle audioRightOutputNode(audioRightOutputHandle.NodeID);
+		Layout.RegisterGraphOutputNode(audioRightOutputNode, FName("Audio Right"));
+
+		builder->ConnectNodes(audioRightHandle, audioRightOutputHandle, result);
+		Layout.RegisterConnection(FMetaSoundNodeHandle(audioRightHandle.NodeID), audioRightOutputNode);
+	}
+
+	builder->ConnectNodes(onFinishedHandle, onFinishedOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), onFinishedOutputNode);
+
+	// Stage 8: Compute Layout & Build Asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
+
+	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
+	TScriptInterface<IMetaSoundDocumentInterface> patch = EditorSubsystem->BuildToAsset(
+		builder,
+		"ISX - Demute",
+		Name,
+		PathGlobal,
+		result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: BuildToAsset FAILED for: %s"), *Name);
+		return patch;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildRandomNode: Successfully built MetaSound for: %s"), *Name);
+	return patch;
+}
+
+// ============================================================================
+// BuildBlendNode - Build MetaSound patch for Blend container
+// ============================================================================
+
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildBlendNode(
+	UGisbImportContainerBlend* blendContainer,
+	const FString& Name
+)
+{
+	if (!blendContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: Container is null"));
+		return nullptr;
+	}
+
+	EMetaSoundBuilderResult result;
+
+	// Stage 1: Create Patch Builder
+	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: Failed to create patch builder for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 2: Initialize Layout Manager
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Stage 3: Add Graph Inputs/Outputs
+	FMetaSoundBuilderNodeOutputHandle triggerInputHandle = builder->AddGraphInputNode(
+		FName("Play"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle triggerInputNode(triggerInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+
+	FMetaSoundBuilderNodeInputHandle onFinishedOutputHandle = builder->AddGraphOutputNode(
+		FName("On Finished"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle onFinishedOutputNode(onFinishedOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(onFinishedOutputNode, FName("On Finished"));
+
+	// Stage 4: Setup Probability
+	setupProbability(builder, blendContainer->PlaybackProbabilityPercent,
+		triggerInputHandle, onFinishedOutputHandle, &Layout);
+
+	// Stage 5: Add Core Processing
+	int32 numChildren = blendContainer->SoundArray.Num();
+
+	if (numChildren < 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: No children in blend container %s"), *Name);
+		return nullptr;
+	}
+
+	// Build child patches recursively
+	TArray<FChildPatchResult> childResults;
+	bool bIsStereo = false;
+
+	for (int32 i = 0; i < numChildren; i++)
+	{
+		FChildPatchResult childResult = BuildChildNode(
+			blendContainer->SoundArray[i],
+			Name,
+			i
+		);
+
+		if (!childResult.Patch)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BuildBlendNode: Skipping failed child %d in %s"), i, *Name);
+			continue;
+		}
+
+		childResults.Add(childResult);
+		if (childResult.bIsStereo) bIsStereo = true;
+	}
+
+	if (childResults.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: No valid children built for %s"), *Name);
+		return nullptr;
+	}
+
+	// Declare audio output handles (populated below)
+	FMetaSoundBuilderNodeOutputHandle audioLeftHandle;
+	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
+	FMetaSoundBuilderNodeOutputHandle onFinishedHandle;
+
+	// CASE 1: Single child - use AudioReroute
+	if (childResults.Num() == 1)
+	{
+		FMetaSoundNodeHandle rerouteHandle = builder->AddNode(AudioRerouteNode, result);
+		Layout.RegisterNode(rerouteHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioReroute"));
+
+		// Instantiate child patch as node
+		FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[0].Patch, result);
+		Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, TEXT("ChildPatch0"));
+
+		// Connect trigger: Play -> Child Play
+		FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+		builder->ConnectNodes(triggerInputHandle, childPlayInput, result);
+		Layout.RegisterConnection(triggerInputNode, childPatchNode);
+
+		// Connect audio: Child -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+			childPatchNode,
+			bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+			result
+		);
+		FMetaSoundBuilderNodeInputHandle rerouteAudioInL = builder->FindNodeInputByName(rerouteHandle, TEXT("InL"), result);
+		builder->ConnectNodes(childAudioLeft, rerouteAudioInL, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		if (bIsStereo)
+		{
+			FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+			FMetaSoundBuilderNodeInputHandle rerouteAudioInR = builder->FindNodeInputByName(rerouteHandle, TEXT("InR"), result);
+			builder->ConnectNodes(childAudioRight, rerouteAudioInR, result);
+		}
+
+		// Connect finish trigger: Child OnFinished -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+		FMetaSoundBuilderNodeInputHandle rerouteExecIn = builder->FindNodeInputByName(rerouteHandle, TEXT("InExec"), result);
+		builder->ConnectNodes(childFinished, rerouteExecIn, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		// Get reroute outputs
+		audioLeftHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutL"), result);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutR"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutExec"), result);
+	}
+	// CASE 2: Multiple children (2-8) - use Mixer + TriggerAccumulate (wait for all)
+	else if (childResults.Num() <= 8)
+	{
+		// Add mixer node (array indexed by numChildren-2)
+		FMetaSoundNodeHandle mixerHandle = builder->AddNodeByClassName(
+			bIsStereo ? *(*StereoMixerNodes)[childResults.Num() - 2] : *(*MonoMixerNodes)[childResults.Num() - 2],
+			result
+		);
+		Layout.RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
+
+		// Add TriggerAccumulate node (wait for all children)
+		FMetaSoundNodeHandle accumulateHandle = builder->AddNodeByClassName(
+			*((*TriggerAccumulateNodes)[childResults.Num() - 1]), // -1 because array starts at 1 input
+			result
+		);
+		Layout.RegisterNode(accumulateHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAccumulate"));
+
+		// Instantiate child patches and connect
+		for (int32 i = 0; i < childResults.Num(); i++)
+		{
+			FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[i].Patch, result);
+			FString childNodeName = FString::Printf(TEXT("ChildPatch%d"), i);
+			Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
+
+			// Connect Play trigger -> Child Play (ALL children triggered simultaneously)
+			FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+			builder->ConnectNodes(triggerInputHandle, childPlayInput, result);
+			Layout.RegisterConnection(triggerInputNode, childPatchNode);
+
+			// Connect Child audio -> Mixer input i
+			FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+				childPatchNode,
+				bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+				result
+			);
+			FMetaSoundBuilderNodeInputHandle mixerInLeft = builder->FindNodeInputByName(
+				mixerHandle,
+				bIsStereo ? *FString::Printf(TEXT("In %d L"), i) : *FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childAudioLeft, mixerInLeft, result);
+			Layout.RegisterConnection(childPatchNode, mixerHandle);
+
+			if (bIsStereo)
+			{
+				FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+				FMetaSoundBuilderNodeInputHandle mixerInRight = builder->FindNodeInputByName(
+					mixerHandle,
+					*FString::Printf(TEXT("In %d R"), i),
+					result
+				);
+				builder->ConnectNodes(childAudioRight, mixerInRight, result);
+			}
+
+			// Connect Child OnFinished -> TriggerAccumulate input i
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			FMetaSoundBuilderNodeInputHandle accumulateIn = builder->FindNodeInputByName(
+				accumulateHandle,
+				*FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childFinished, accumulateIn, result);
+			Layout.RegisterConnection(childPatchNode, accumulateHandle);
+		}
+
+		// Get mixer/accumulate outputs
+		audioLeftHandle = builder->FindNodeOutputByName(
+			mixerHandle,
+			bIsStereo ? TEXT("Out L") : TEXT("Out"),
+			result
+		);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+	}
+	else
+	{
+		// CASE 3: >8 children - hierarchical cascading (TODO)
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: >8 children not yet implemented for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 6: Apply Audio Effects Chain
+	if (blendContainer->VolumeDB.randomize || blendContainer->VolumeDB.value != 0)
+	{
+		ConnectVolume(builder, blendContainer->VolumeDB, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (blendContainer->Pitch.randomize || blendContainer->Pitch.value != 0)
+	{
+		ConnectPitch(builder, blendContainer->Pitch, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (blendContainer->Lowpass.randomize || blendContainer->Lowpass.value != 0)
+	{
+		ConnectLowpass(builder, blendContainer->Lowpass, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	// Stage 7: Connect Graph Outputs
+	FMetaSoundBuilderNodeInputHandle audioLeftOutputHandle = builder->AddGraphOutputNode(
+		bIsStereo ? FName("Audio Left") : FName("Audio Mono"),
+		FName("Audio"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle audioLeftOutputNode(audioLeftOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftOutputNode, bIsStereo ? FName("Audio Left") : FName("Audio Mono"));
+
+	builder->ConnectNodes(audioLeftHandle, audioLeftOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(audioLeftHandle.NodeID), audioLeftOutputNode);
+
+	if (bIsStereo)
+	{
+		FMetaSoundBuilderNodeInputHandle audioRightOutputHandle = builder->AddGraphOutputNode(
+			FName("Audio Right"),
+			FName("Audio"),
+			FMetasoundFrontendLiteral(),
+			result
+		);
+		FMetaSoundNodeHandle audioRightOutputNode(audioRightOutputHandle.NodeID);
+		Layout.RegisterGraphOutputNode(audioRightOutputNode, FName("Audio Right"));
+
+		builder->ConnectNodes(audioRightHandle, audioRightOutputHandle, result);
+		Layout.RegisterConnection(FMetaSoundNodeHandle(audioRightHandle.NodeID), audioRightOutputNode);
+	}
+
+	builder->ConnectNodes(onFinishedHandle, onFinishedOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), onFinishedOutputNode);
+
+	// Stage 8: Compute Layout & Build Asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
+
+	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
+	TScriptInterface<IMetaSoundDocumentInterface> patch = EditorSubsystem->BuildToAsset(
+		builder,
+		"ISX - Demute",
+		Name,
+		PathGlobal,
+		result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildBlendNode: BuildToAsset FAILED for: %s"), *Name);
+		return patch;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildBlendNode: Successfully built MetaSound for: %s"), *Name);
+	return patch;
+}
+
+// ============================================================================
+// BuildSwitchNode - Build MetaSound patch for Switch container
+// ============================================================================
+
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_NewMetasoundBuilder::BuildSwitchNode(
+	UGisbImportContainerSwitch* switchContainer,
+	const FString& Name
+)
+{
+	if (!switchContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: Container is null"));
+		return nullptr;
+	}
+
+	EMetaSoundBuilderResult result;
+
+	// Stage 1: Create Patch Builder
+	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: Failed to create patch builder for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 2: Initialize Layout Manager
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Stage 3: Add Graph Inputs/Outputs (including Switch Parameter)
+	FMetaSoundBuilderNodeOutputHandle triggerInputHandle = builder->AddGraphInputNode(
+		FName("Play"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle triggerInputNode(triggerInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+
+	// Add Switch Parameter input (String type)
+	FMetaSoundBuilderNodeOutputHandle parameterInputHandle = builder->AddGraphInputNode(
+		FName("Switch Parameter"),
+		FName("String"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle parameterInputNode(parameterInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(parameterInputNode, FName("Switch Parameter"));
+
+	FMetaSoundBuilderNodeInputHandle onFinishedOutputHandle = builder->AddGraphOutputNode(
+		FName("On Finished"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle onFinishedOutputNode(onFinishedOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(onFinishedOutputNode, FName("On Finished"));
+
+	// Stage 4: Setup Probability
+	setupProbability(builder, switchContainer->PlaybackProbabilityPercent,
+		triggerInputHandle, onFinishedOutputHandle, &Layout);
+
+	// Stage 5: Add Core Processing
+	int32 numChildren = switchContainer->SoundDictionary.Num();
+
+	if (numChildren < 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: No children in switch container %s"), *Name);
+		return nullptr;
+	}
+
+	// Build child patches recursively and collect case names
+	TArray<FChildPatchResult> childResults;
+	TArray<FString> caseNames;
+	bool bIsStereo = false;
+
+	int32 childIndex = 0;
+	for (auto& Pair : switchContainer->SoundDictionary)
+	{
+		caseNames.Add(Pair.Key);
+
+		FChildPatchResult childResult = BuildChildNode(
+			Pair.Value,
+			Name,
+			childIndex
+		);
+
+		if (!childResult.Patch)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BuildSwitchNode: Skipping failed child %s in %s"), *Pair.Key, *Name);
+			childIndex++;
+			continue;
+		}
+
+		childResults.Add(childResult);
+		if (childResult.bIsStereo) bIsStereo = true;
+		childIndex++;
+	}
+
+	if (childResults.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: No valid children built for %s"), *Name);
+		return nullptr;
+	}
+
+	// Declare audio output handles (populated below)
+	FMetaSoundBuilderNodeOutputHandle audioLeftHandle;
+	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
+	FMetaSoundBuilderNodeOutputHandle onFinishedHandle;
+
+	// CASE 1: Single child - use AudioReroute
+	if (childResults.Num() == 1)
+	{
+		FMetaSoundNodeHandle rerouteHandle = builder->AddNode(AudioRerouteNode, result);
+		Layout.RegisterNode(rerouteHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioReroute"));
+
+		// Instantiate child patch as node
+		FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[0].Patch, result);
+		Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, TEXT("ChildPatch0"));
+
+		// Connect trigger: Play -> Child Play
+		FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+		builder->ConnectNodes(triggerInputHandle, childPlayInput, result);
+		Layout.RegisterConnection(triggerInputNode, childPatchNode);
+
+		// Connect audio: Child -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+			childPatchNode,
+			bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+			result
+		);
+		FMetaSoundBuilderNodeInputHandle rerouteAudioInL = builder->FindNodeInputByName(rerouteHandle, TEXT("InL"), result);
+		builder->ConnectNodes(childAudioLeft, rerouteAudioInL, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		if (bIsStereo)
+		{
+			FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+			FMetaSoundBuilderNodeInputHandle rerouteAudioInR = builder->FindNodeInputByName(rerouteHandle, TEXT("InR"), result);
+			builder->ConnectNodes(childAudioRight, rerouteAudioInR, result);
+		}
+
+		// Connect finish trigger: Child OnFinished -> Reroute
+		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+		FMetaSoundBuilderNodeInputHandle rerouteExecIn = builder->FindNodeInputByName(rerouteHandle, TEXT("InExec"), result);
+		builder->ConnectNodes(childFinished, rerouteExecIn, result);
+		Layout.RegisterConnection(childPatchNode, rerouteHandle);
+
+		// Get reroute outputs
+		audioLeftHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutL"), result);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutR"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(rerouteHandle, TEXT("OutExec"), result);
+	}
+	// CASE 2: Multiple children (2-8) - use GisbSwitchNode + Mixer + TriggerAny
+	else if (childResults.Num() <= 8)
+	{
+		// Add GisbSwitchNode for parameter-driven selection
+		FMetaSoundNodeHandle switchHandle = builder->AddNode(GisbSwitchNode, result);
+		Layout.RegisterNode(switchHandle, EGisbNodeCategory::SignalProcessor, TEXT("SwitchSelector"));
+
+		// Configure GisbSwitchNode
+		FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(switchHandle, TEXT("Exec"), result);
+		builder->ConnectNodes(triggerInputHandle, execHandle, result);
+		Layout.RegisterConnection(triggerInputNode, switchHandle);
+
+		// Connect parameter input to switch node
+		FMetaSoundBuilderNodeInputHandle parameterHandle = builder->FindNodeInputByName(switchHandle, TEXT("Parameter Value"), result);
+		builder->ConnectNodes(parameterInputHandle, parameterHandle, result);
+		Layout.RegisterConnection(parameterInputNode, switchHandle);
+
+		// Set case names (assuming GisbSwitchNode accepts string array)
+		FMetaSoundBuilderNodeInputHandle caseNamesHandle = builder->FindNodeInputByName(switchHandle, TEXT("Case Names"), result);
+		FAudioParameter caseNamesParam = FAudioParameter(TEXT("Case Names"), caseNames);
+		builder->SetNodeInputDefault(caseNamesHandle, FMetasoundFrontendLiteral(caseNamesParam), result);
+
+		// Set default case
+		FMetaSoundBuilderNodeInputHandle defaultCaseHandle = builder->FindNodeInputByName(switchHandle, TEXT("Default Case"), result);
+		FAudioParameter defaultCaseParam = FAudioParameter(TEXT("Default Case"), switchContainer->DefaultParameterValue.ToString());
+		builder->SetNodeInputDefault(defaultCaseHandle, FMetasoundFrontendLiteral(defaultCaseParam), result);
+
+		// Add mixer node (array indexed by numChildren-2)
+		FMetaSoundNodeHandle mixerHandle = builder->AddNodeByClassName(
+			bIsStereo ? *(*StereoMixerNodes)[childResults.Num() - 2] : *(*MonoMixerNodes)[childResults.Num() - 2],
+			result
+		);
+		Layout.RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
+
+		// Add TriggerAny node (first trigger wins)
+		FMetaSoundNodeHandle anyHandle = builder->AddNodeByClassName(
+			*((*TriggerAnyNodes)[childResults.Num() - 2]),
+			result
+		);
+		Layout.RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+
+		// Instantiate child patches and connect
+		for (int32 i = 0; i < childResults.Num(); i++)
+		{
+			FMetaSoundNodeHandle childPatchNode = builder->AddNode(childResults[i].Patch, result);
+			FString childNodeName = FString::Printf(TEXT("ChildPatch%d_%s"), i, *caseNames[i]);
+			Layout.RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
+
+			// Connect Switch output i -> Child Play
+			FMetaSoundBuilderNodeOutputHandle switchOut = builder->FindNodeOutputByName(
+				switchHandle,
+				*FString::Printf(TEXT("Out %d"), i),
+				result
+			);
+			FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
+			builder->ConnectNodes(switchOut, childPlayInput, result);
+			Layout.RegisterConnection(switchHandle, childPatchNode);
+
+			// Connect Child audio -> Mixer input i
+			FMetaSoundBuilderNodeOutputHandle childAudioLeft = builder->FindNodeOutputByName(
+				childPatchNode,
+				bIsStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+				result
+			);
+			FMetaSoundBuilderNodeInputHandle mixerInLeft = builder->FindNodeInputByName(
+				mixerHandle,
+				bIsStereo ? *FString::Printf(TEXT("In %d L"), i) : *FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childAudioLeft, mixerInLeft, result);
+			Layout.RegisterConnection(childPatchNode, mixerHandle);
+
+			if (bIsStereo)
+			{
+				FMetaSoundBuilderNodeOutputHandle childAudioRight = builder->FindNodeOutputByName(childPatchNode, TEXT("Audio Right"), result);
+				FMetaSoundBuilderNodeInputHandle mixerInRight = builder->FindNodeInputByName(
+					mixerHandle,
+					*FString::Printf(TEXT("In %d R"), i),
+					result
+				);
+				builder->ConnectNodes(childAudioRight, mixerInRight, result);
+			}
+
+			// Connect Child OnFinished -> TriggerAny input i
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
+				anyHandle,
+				*FString::Printf(TEXT("In %d"), i),
+				result
+			);
+			builder->ConnectNodes(childFinished, anyIn, result);
+			Layout.RegisterConnection(childPatchNode, anyHandle);
+		}
+
+		// Get mixer/any outputs
+		audioLeftHandle = builder->FindNodeOutputByName(
+			mixerHandle,
+			bIsStereo ? TEXT("Out L") : TEXT("Out"),
+			result
+		);
+		if (bIsStereo)
+		{
+			audioRightHandle = builder->FindNodeOutputByName(mixerHandle, TEXT("Out R"), result);
+		}
+		onFinishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+	}
+	else
+	{
+		// CASE 3: >8 children - hierarchical cascading (TODO)
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: >8 children not yet implemented for %s"), *Name);
+		return nullptr;
+	}
+
+	// Stage 6: Apply Audio Effects Chain
+	if (switchContainer->VolumeDB.randomize || switchContainer->VolumeDB.value != 0)
+	{
+		ConnectVolume(builder, switchContainer->VolumeDB, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (switchContainer->Pitch.randomize || switchContainer->Pitch.value != 0)
+	{
+		ConnectPitch(builder, switchContainer->Pitch, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	if (switchContainer->Lowpass.randomize || switchContainer->Lowpass.value != 0)
+	{
+		ConnectLowpass(builder, switchContainer->Lowpass, bIsStereo,
+			&triggerInputHandle, audioLeftHandle, audioRightHandle, &Layout);
+	}
+
+	// Stage 7: Connect Graph Outputs
+	FMetaSoundBuilderNodeInputHandle audioLeftOutputHandle = builder->AddGraphOutputNode(
+		bIsStereo ? FName("Audio Left") : FName("Audio Mono"),
+		FName("Audio"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+	FMetaSoundNodeHandle audioLeftOutputNode(audioLeftOutputHandle.NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftOutputNode, bIsStereo ? FName("Audio Left") : FName("Audio Mono"));
+
+	builder->ConnectNodes(audioLeftHandle, audioLeftOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(audioLeftHandle.NodeID), audioLeftOutputNode);
+
+	if (bIsStereo)
+	{
+		FMetaSoundBuilderNodeInputHandle audioRightOutputHandle = builder->AddGraphOutputNode(
+			FName("Audio Right"),
+			FName("Audio"),
+			FMetasoundFrontendLiteral(),
+			result
+		);
+		FMetaSoundNodeHandle audioRightOutputNode(audioRightOutputHandle.NodeID);
+		Layout.RegisterGraphOutputNode(audioRightOutputNode, FName("Audio Right"));
+
+		builder->ConnectNodes(audioRightHandle, audioRightOutputHandle, result);
+		Layout.RegisterConnection(FMetaSoundNodeHandle(audioRightHandle.NodeID), audioRightOutputNode);
+	}
+
+	builder->ConnectNodes(onFinishedHandle, onFinishedOutputHandle, result);
+	Layout.RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), onFinishedOutputNode);
+
+	// Stage 8: Compute Layout & Build Asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
+
+	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
+	TScriptInterface<IMetaSoundDocumentInterface> patch = EditorSubsystem->BuildToAsset(
+		builder,
+		"ISX - Demute",
+		Name,
+		PathGlobal,
+		result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchNode: BuildToAsset FAILED for: %s"), *Name);
+		return patch;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchNode: Successfully built MetaSound for: %s"), *Name);
+	return patch;
 }

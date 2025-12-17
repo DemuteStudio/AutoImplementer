@@ -6,15 +6,28 @@
 #include "MetasoundSource.h"
 #include "GisbImportContainerBase.h"
 #include "GisbImportContainerSimpleSound.h"
+#include "GisbImportContainerRandom.h"
+#include "GisbImportContainerSwitch.h"
+#include "GisbImportContainerBlend.h"
 #include "MetasoundFrontend.h"
 #include "MetasoundFrontendDocument.h"
 #include "MetasoundDocumentInterface.h"
 #include "MetasoundBuilderSubsystem.h"
 #include "MetasoundBuilderBase.h"
 #include "MetasoundEditorSubsystem.h"
+#include "GisbMetasoundLayoutManager.h"
 #include "GISB_NewMetasoundBuilder.generated.h"
 
 class UGisbSoundBankDataAsset;
+
+// Result struct for recursive child patch building
+struct FChildPatchResult
+{
+	TScriptInterface<IMetaSoundDocumentInterface> Patch;
+	bool bIsStereo;
+
+	FChildPatchResult() : Patch(nullptr), bIsStereo(false) {}
+};
 
 UCLASS()
 class GISB_IMPORTER_API UGISB_NewMetasoundBuilder : public UObject
@@ -49,12 +62,38 @@ private:
 		const FString& Name
 	);
 
+	// Build random container node patch
+	static TScriptInterface<IMetaSoundDocumentInterface> BuildRandomNode(
+		UGisbImportContainerRandom* randomContainer,
+		const FString& Name
+	);
+
+	// Build switch container node patch
+	static TScriptInterface<IMetaSoundDocumentInterface> BuildSwitchNode(
+		UGisbImportContainerSwitch* switchContainer,
+		const FString& Name
+	);
+
+	// Build blend container node patch
+	static TScriptInterface<IMetaSoundDocumentInterface> BuildBlendNode(
+		UGisbImportContainerBlend* blendContainer,
+		const FString& Name
+	);
+
+	// Recursive child builder with stereo detection
+	static FChildPatchResult BuildChildNode(
+		UGisbImportContainerBase* container,
+		const FString& ParentName,
+		int32 ChildIndex
+	);
+
 	// Setup probability variables for patch builder
 	static void setupProbability(
 		UMetaSoundPatchBuilder* builder,
 		float probability,
 		FMetaSoundBuilderNodeOutputHandle& playTrigger,
-		FMetaSoundBuilderNodeInputHandle& onFinished
+		FMetaSoundBuilderNodeInputHandle& onFinished,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Connect probability node to graph
@@ -62,7 +101,8 @@ private:
 		UMetaSoundPatchBuilder* builder,
 		float probability,
 		FMetaSoundBuilderNodeOutputHandle& executionHandle,
-		FMetaSoundBuilderNodeInputHandle& finishHandle
+		FMetaSoundBuilderNodeInputHandle& finishHandle,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Connect volume effect to graph
@@ -72,7 +112,8 @@ private:
 		const bool isStereo,
 		FMetaSoundBuilderNodeOutputHandle* executionHandle,
 		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
-		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle
+		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Connect pitch effect to graph
@@ -82,7 +123,8 @@ private:
 		const bool isStereo,
 		FMetaSoundBuilderNodeOutputHandle* executionHandle,
 		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
-		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle
+		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Connect lowpass effect to graph
@@ -92,7 +134,8 @@ private:
 		const bool isStereo,
 		FMetaSoundBuilderNodeOutputHandle* executionHandle,
 		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
-		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle
+		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Setup audio effect chain (Volume, Pitch, Lowpass)
@@ -102,7 +145,8 @@ private:
 		const bool isStereo,
 		FMetaSoundBuilderNodeOutputHandle* executionHandle,
 		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
-		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle
+		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
+		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
 	// Setup all node references
