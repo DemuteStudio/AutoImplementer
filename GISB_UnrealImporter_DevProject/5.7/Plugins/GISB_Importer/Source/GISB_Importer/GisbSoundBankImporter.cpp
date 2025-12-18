@@ -13,7 +13,7 @@
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
 #include "AssetRegistry/AssetRegistryModule.h"
-#include "GISB_MetasoundBuilder.h"
+#include "GISB_MetasoundSourceBuilder.h"
 #include "MetasoundSource.h"
 #include "EditorAssetLibrary.h"
 
@@ -104,7 +104,7 @@ void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString Full
     NewAsset->RootContainer = RootContainer->ToRuntimeContainer(NewAsset);
     RootContainer->MarkPackageDirty();
 
-    UMetaSoundSource* GeneratedMS = UGISB_MetasoundBuilder::CreateMetasoundFromGISB(RootContainer, EventName, MSPackagePath);
+    UMetaSoundSource* GeneratedMS = UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(RootContainer, EventName, MSPackagePath);
 
     if (!GeneratedMS)
     {

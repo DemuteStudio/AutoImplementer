@@ -10,7 +10,7 @@
 /**
  * Static library for shared MetaSound node references.
  * Provides centralized access to commonly used MetaSound node class names and patches.
- * Eliminates code duplication between GISB_MetasoundPatchBuilder and GISB_MetasoundBuilder.
+ * Eliminates code duplication between GISB_MetasoundPatchBuilder and GISB_MetasoundSourceBuilder.
  */
 UCLASS()
 class GISB_IMPORTER_API UGISB_MetasoundNodeLibrary : public UObject
