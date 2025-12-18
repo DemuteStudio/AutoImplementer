@@ -16,7 +16,8 @@
 #include "MetasoundBuilderBase.h"
 #include "MetasoundEditorSubsystem.h"
 #include "GisbMetasoundLayoutManager.h"
-#include "GISB_NewMetasoundBuilder.generated.h"
+#include "GISB_MetasoundNodeLibrary.h"
+#include "GISB_MetasoundPatchBuilder.generated.h"
 
 class UGisbSoundBankDataAsset;
 
@@ -30,7 +31,7 @@ struct FChildPatchResult
 };
 
 UCLASS()
-class GISB_IMPORTER_API UGISB_NewMetasoundBuilder : public UObject
+class GISB_IMPORTER_API UGISB_MetasoundPatchBuilder : public UObject
 {
 	GENERATED_BODY()
 
@@ -40,26 +41,17 @@ public:
 	static void TestBuilder(UGisbSoundBankDataAsset* dataAsset);
 
 private:
-	// Static node references (copied from original)
-	static FMetasoundFrontendClassName* WavePlayerMonoNode;
-	static FMetasoundFrontendClassName* WavePlayerStereoNode;
-	static FMetasoundFrontendClassName* ProbabilityNode;
-	static TArray<FMetasoundFrontendClassName*>* MonoMixerNodes;
-	static TArray<FMetasoundFrontendClassName*>* StereoMixerNodes;
-	static TArray<FMetasoundFrontendClassName*>* TriggerAnyNodes;
-	static TArray<FMetasoundFrontendClassName*>* TriggerAccumulateNodes;
-	static TScriptInterface<IMetaSoundDocumentInterface> AudioRerouteNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbRandomNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbSwitchNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbVolumeNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbPitchNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbLowpassNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbAttenuationNode;
-	
 	// Build simple sound node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildSimpleSoundNode(
 		UGisbImportContainerSimpleSound* simpleSound,
 		const FString& Name
+	);
+
+	// Recursive child builder with stereo detection
+	static FChildPatchResult BuildChildNode(
+		UGisbImportContainerBase* container,
+		const FString& ParentName,
+		int32 ChildIndex
 	);
 
 	// Build random container node patch
@@ -80,19 +72,23 @@ private:
 		const FString& Name
 	);
 
-	// Recursive child builder with stereo detection
-	static FChildPatchResult BuildChildNode(
-		UGisbImportContainerBase* container,
-		const FString& ParentName,
-		int32 ChildIndex
-	);
-
 	// Setup probability variables for patch builder
 	static void setupProbability(
 		UMetaSoundPatchBuilder* builder,
 		float probability,
 		FMetaSoundBuilderNodeOutputHandle& playTrigger,
 		FMetaSoundBuilderNodeInputHandle& onFinished,
+		GisbMetasoundLayoutManager* Layout = nullptr
+	);
+
+	// Setup audio effect chain (Volume, Pitch, Lowpass)
+	static void setupAttributes(
+		UMetaSoundPatchBuilder* builder,
+		UGisbImportContainerBase* container,
+		const bool isStereo,
+		FMetaSoundBuilderNodeOutputHandle* executionHandle,
+		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
+		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
 		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
@@ -138,19 +134,8 @@ private:
 		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 
-	// Setup audio effect chain (Volume, Pitch, Lowpass)
-	static void setupAttributes(
-		UMetaSoundPatchBuilder* builder,
-		UGisbImportContainerSimpleSound* simpleSound,
-		const bool isStereo,
-		FMetaSoundBuilderNodeOutputHandle* executionHandle,
-		FMetaSoundBuilderNodeOutputHandle& firstAudioHandle,
-		FMetaSoundBuilderNodeOutputHandle& secondAudioHandle,
-		GisbMetasoundLayoutManager* Layout = nullptr
-	);
+	static bool isStereo(UGisbImportContainerBase* container);
 
-	// Setup all node references
-	static void SetupNodes();
 };
 
 // Global variables
