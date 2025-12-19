@@ -15,10 +15,61 @@
 #include "GisbSoundBankDataAsset.h"
 #include "GisbContainerConverter.h"
 #include "GISB_MetasoundPatchBuilder.h"
+#include "GisbMetasoundLayoutManager.h"
 
 // Global variables for source builder
 FString PathGlobal_Source;
 UMetaSoundBuilderSubsystem* BuilderGlobal_Source;
+
+// External references to PatchBuilder globals (defined in GISB_MetasoundPatchBuilder.cpp)
+extern FString PathGlobal;
+extern UMetaSoundBuilderSubsystem* BuilderGlobal;
+
+UMetaSoundSource* UGISB_MetasoundSourceBuilder::TestBuilder(UGisbSoundBankDataAsset* dataAsset)
+{
+	if (!dataAsset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TestBuilder: DataAsset is null!"));
+		return nullptr;
+	}
+
+	UGisbContainerBase* RootContainer = dataAsset->RootContainer;
+	if (!RootContainer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TestBuilder: RootContainer is null!"));
+		return nullptr;
+	}
+
+	// Convert runtime container to import container using the converter
+	UGisbImportContainerBase* ImportContainer = UGisbContainerConverter::RuntimeToImportContainer(
+		RootContainer,
+		GetTransientPackage()
+	);
+
+	if (!ImportContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TestBuilder: Failed to convert runtime container to import container"));
+		return nullptr;
+	}
+
+	// Build MetaSound source (CreateMetasoundFromGISB handles all initialization)
+	UMetaSoundSource* source = CreateMetasoundFromGISB(
+		ImportContainer,
+		TEXT("TestSource"),
+		TEXT("/Game/A_TESTING/Metasounds")
+	);
+
+	if (source)
+	{
+		UE_LOG(LogTemp, Log, TEXT("TestBuilder: Successfully created MetaSound Source!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("TestBuilder: Failed to create MetaSound Source"));
+	}
+
+	return source;
+}
 
 UMetaSoundSource* UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(UGisbImportContainerBase* gisb, const FString& Name, const FString& path)
 {
@@ -31,6 +82,12 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(UGisbImp
 	// Initialize global subsystems
 	BuilderGlobal_Source = GEngine->GetEngineSubsystem<UMetaSoundBuilderSubsystem>();
 	PathGlobal_Source = path;
+
+	// Initialize PatchBuilder globals for child patches
+	// Child patches will be created in a "Patches" subfolder
+	BuilderGlobal = BuilderGlobal_Source;  // Use same builder subsystem
+	PathGlobal = path + "/Patches";        // Child patches go in subfolder
+
 	UGISB_MetasoundNodeLibrary::SetupNodes();
 
 	// Detect stereo and looping requirements
@@ -39,7 +96,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(UGisbImp
 	DetectLoopAndMono(gisb, shouldLoop, shouldStereo);
 
 	// Dispatch to appropriate Build method based on container type
-	UMetaSoundSource* source = nullptr;
+	UMetaSoundSource* source;
 
 	if (UGisbImportContainerSimpleSound* SimpleSound = Cast<UGisbImportContainerSimpleSound>(gisb))
 	{
@@ -160,6 +217,28 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSimpleSource(
 
 	builder->SetAuthor("ISX - Demute");
 
+	// Create layout manager for node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Extract node handles from builder handles
+	FMetaSoundNodeHandle onPlayNodeHandle(OnPlayNode.NodeID);
+	FMetaSoundNodeHandle onFinishedNodeHandle(OnFinishedNode.NodeID);
+
+	// Register graph I/O nodes with layout
+	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+
+	// Register audio output(s)
+	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftNodeHandle,
+		FName(bisStereo ? "Audio Left" : "Audio Mono"));
+
+	if (bisStereo && outAudioHandles.Num() > 1)
+	{
+		FMetaSoundNodeHandle audioRightNodeHandle(outAudioHandles[1].NodeID);
+		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
+	}
+
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class - builder-agnostic!)
 	// BuildCore connects directly to graph outputs (Pattern A)
@@ -178,12 +257,16 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSimpleSource(
 		OnFinishedNode,       // On finished input (auto-created)
 		outAudioHandles[0],   // Graph output left/mono (BuildCore connects automatically)
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,  // Graph output right (nullable)
-		nullptr               // No layout for sources
+		&Layout               // Pass layout manager instead of nullptr
 	);
 
 	// ========================================================================
-	// PHASE 3: Build to Asset (no layout needed for sources)
+	// PHASE 3: Apply Layout and Build to Asset
 	// ========================================================================
+
+	// Compute and apply layout before building asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
 
 	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
 	TScriptInterface<IMetaSoundDocumentInterface> document = EditorSubsystem->BuildToAsset(
@@ -249,6 +332,28 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildRandomSource(
 
 	builder->SetAuthor("ISX - Demute");
 
+	// Create layout manager for node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Extract node handles from builder handles
+	FMetaSoundNodeHandle onPlayNodeHandle(OnPlayNode.NodeID);
+	FMetaSoundNodeHandle onFinishedNodeHandle(OnFinishedNode.NodeID);
+
+	// Register graph I/O nodes with layout
+	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+
+	// Register audio output(s)
+	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftNodeHandle,
+		FName(bisStereo ? "Audio Left" : "Audio Mono"));
+
+	if (bisStereo && outAudioHandles.Num() > 1)
+	{
+		FMetaSoundNodeHandle audioRightNodeHandle(outAudioHandles[1].NodeID);
+		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
+	}
+
 	// Build child patches (reuse PatchBuilder's BuildChildNode!)
 	TArray<FChildPatchResult> childResults;
 	for (int32 i = 0; i < randomContainer->SoundArray.Num(); i++)
@@ -287,12 +392,16 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildRandomSource(
 		OnFinishedNode,                               // On finished (auto-created)
 		outAudioHandles[0],                           // Graph output left/mono (BuildCore connects automatically)
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,  // Graph output right (nullable)
-		nullptr                                       // No layout
+		&Layout                                       // Pass layout manager instead of nullptr
 	);
 
 	// ========================================================================
-	// PHASE 3: Build to Asset
+	// PHASE 3: Apply Layout and Build to Asset
 	// ========================================================================
+
+	// Compute and apply layout before building asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
 
 	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
 	TScriptInterface<IMetaSoundDocumentInterface> document = EditorSubsystem->BuildToAsset(
@@ -354,6 +463,28 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildBlendSource(
 
 	builder->SetAuthor("ISX - Demute");
 
+	// Create layout manager for node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Extract node handles from builder handles
+	FMetaSoundNodeHandle onPlayNodeHandle(OnPlayNode.NodeID);
+	FMetaSoundNodeHandle onFinishedNodeHandle(OnFinishedNode.NodeID);
+
+	// Register graph I/O nodes with layout
+	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+
+	// Register audio output(s)
+	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftNodeHandle,
+		FName(bisStereo ? "Audio Left" : "Audio Mono"));
+
+	if (bisStereo && outAudioHandles.Num() > 1)
+	{
+		FMetaSoundNodeHandle audioRightNodeHandle(outAudioHandles[1].NodeID);
+		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
+	}
+
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class)
 	// BuildCore connects directly to graph outputs (Pattern A)
@@ -367,12 +498,16 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildBlendSource(
 		OnFinishedNode,
 		outAudioHandles[0],
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,
-		nullptr
+		&Layout
 	);
 
 	// ========================================================================
-	// PHASE 3: Build to Asset
+	// PHASE 3: Apply Layout and Build to Asset
 	// ========================================================================
+
+	// Compute and apply layout before building asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
 
 	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
 	TScriptInterface<IMetaSoundDocumentInterface> document = EditorSubsystem->BuildToAsset(
@@ -434,6 +569,28 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 
 	builder->SetAuthor("ISX - Demute");
 
+	// Create layout manager for node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Extract node handles from builder handles
+	FMetaSoundNodeHandle onPlayNodeHandle(OnPlayNode.NodeID);
+	FMetaSoundNodeHandle onFinishedNodeHandle(OnFinishedNode.NodeID);
+
+	// Register graph I/O nodes with layout
+	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+
+	// Register audio output(s)
+	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftNodeHandle,
+		FName(bisStereo ? "Audio Left" : "Audio Mono"));
+
+	if (bisStereo && outAudioHandles.Num() > 1)
+	{
+		FMetaSoundNodeHandle audioRightNodeHandle(outAudioHandles[1].NodeID);
+		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
+	}
+
 	// Create graph input for switch parameter
 	FMetaSoundBuilderNodeOutputHandle parameterInputHandle = builder->AddGraphInputNode(
 		FName("Switch Parameter"),
@@ -448,6 +605,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 		return nullptr;
 	}
 
+	// Register switch parameter with layout
+	FMetaSoundNodeHandle switchParamNodeHandle(parameterInputHandle.NodeID);
+	Layout.RegisterGraphInputNode(switchParamNodeHandle, FName("Switch Parameter"));
+
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class)
 	// ========================================================================
@@ -461,12 +622,16 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 		OnFinishedNode,
 		outAudioHandles[0],
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,
-		nullptr
+		&Layout
 	);
 
 	// ========================================================================
-	// PHASE 3: Build to Asset
+	// PHASE 3: Apply Layout and Build to Asset
 	// ========================================================================
+
+	// Compute and apply layout before building asset
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
 
 	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
 	TScriptInterface<IMetaSoundDocumentInterface> document = EditorSubsystem->BuildToAsset(

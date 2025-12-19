@@ -28,7 +28,11 @@ class UGISB_MetasoundSourceBuilder : public UGISB_MetasoundBuilderCore
 {
 	GENERATED_BODY()
 public:
-	
+
+	// Test function for source builder - converts and builds from data asset
+	UFUNCTION(BlueprintCallable, Category = "ISX")
+	static UMetaSoundSource* TestBuilder(UGisbSoundBankDataAsset* dataAsset);
+
 	UFUNCTION(BlueprintCallable, Category = "Metasound")
 	static UMetaSoundSource* CreateMetasoundFromGISB(UGisbImportContainerBase* gisb, const FString& Name, const FString& path);
 

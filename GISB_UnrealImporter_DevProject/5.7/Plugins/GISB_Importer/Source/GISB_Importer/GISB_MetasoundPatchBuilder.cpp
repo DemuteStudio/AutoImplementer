@@ -146,26 +146,40 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Create graph input for OnPlay trigger
 	FMetaSoundBuilderNodeOutputHandle PlayTrigger = builder->AddGraphInputNode(
-		FName("On Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
 	// Create graph output for OnFinished trigger
 	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
 		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
-		FName(isStereo ? "Out Left" : "Out Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
 
 	// Create graph output for audio right (if stereo)
 	FMetaSoundBuilderNodeInputHandle AudioRight;
+	FMetaSoundNodeHandle audioRightNode;
 	if (isStereo)
 	{
 		AudioRight = builder->AddGraphOutputNode(
-			FName("Out Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+			FName("Audio Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
 	// Create layout manager
 	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Register graph I/O nodes with layout manager
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
+	if (isStereo)
+	{
+		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
+	}
 
 	// Call core method (does all the work!)
 	BuildSimpleSoundCore(
@@ -212,9 +226,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(randomContainer);
 
 	// Create patch builder
-	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(
-		FName(Name), result);
-
+	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomNode: Failed to create patch builder for %s"), *Name);
@@ -223,26 +235,40 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Create graph input for OnPlay trigger
 	FMetaSoundBuilderNodeOutputHandle PlayTrigger = builder->AddGraphInputNode(
-		FName("On Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
 	// Create graph output for OnFinished trigger
 	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
 		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
-		FName(isStereo ? "Out Left" : "Out Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
 
 	// Create graph output for audio right (if stereo)
 	FMetaSoundBuilderNodeInputHandle AudioRight;
+	FMetaSoundNodeHandle audioRightNode;
 	if (isStereo)
 	{
 		AudioRight = builder->AddGraphOutputNode(
-			FName("Out Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+			FName("Audio Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
 	// Create layout manager
 	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Register graph I/O nodes with layout manager
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
+	if (isStereo)
+	{
+		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
+	}
 
 	// Call core method (does all the work!)
 	BuildRandomCore(
@@ -306,25 +332,39 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Create graph input for OnPlay trigger
 	PlayTrigger = builder->AddGraphInputNode(
-		FName("On Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
 	// Create graph output for OnFinished trigger
 	OnFinished = builder->AddGraphOutputNode(
 		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
 
 	// Create graph output for audio left/mono
 	AudioLeft = builder->AddGraphOutputNode(
-		FName(isStereo ? "Out Left" : "Out Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
 
 	// Create graph output for audio right (if stereo)
+	FMetaSoundNodeHandle audioRightNode;
 	if (isStereo)
 	{
 		AudioRight = builder->AddGraphOutputNode(
-			FName("Out Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+			FName("Audio Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
 	// Create layout manager
 	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Register graph I/O nodes with layout manager
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
+	if (isStereo)
+	{
+		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
+	}
 
 	// Call core method (does all the work!)
 	BuildBlendCore(
@@ -383,22 +423,27 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Create graph input for OnPlay trigger
 	FMetaSoundBuilderNodeOutputHandle PlayTrigger = builder->AddGraphInputNode(
-		FName("On Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
 	// Create graph output for OnFinished trigger
 	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
 		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
-		FName(isStereo ? "Out Left" : "Out Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
 
 	// Create graph output for audio right (if stereo)
 	FMetaSoundBuilderNodeInputHandle AudioRight;
+	FMetaSoundNodeHandle audioRightNode;
 	if (isStereo)
 	{
 		AudioRight = builder->AddGraphOutputNode(
-			FName("Out Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+			FName("Audio Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
 	// Add Switch Parameter input (String type) - unique to switch containers
@@ -408,10 +453,20 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FMetasoundFrontendLiteral(),
 		result
 	);
+	FMetaSoundNodeHandle parameterInputNode(ParameterInput.NodeID);
 
 	// Create layout manager
 	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
-	Layout.RegisterGraphInputNode(FMetaSoundNodeHandle(ParameterInput.NodeID), FName("Switch Parameter"));
+
+	// Register graph I/O nodes with layout manager
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+	Layout.RegisterGraphInputNode(parameterInputNode, FName("Switch Parameter"));
+	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
+	if (isStereo)
+	{
+		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
+	}
 
 	// Call core method (does all the work!)
 	BuildSwitchCore(
