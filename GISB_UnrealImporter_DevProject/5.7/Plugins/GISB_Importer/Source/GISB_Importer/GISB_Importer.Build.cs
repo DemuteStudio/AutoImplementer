@@ -26,13 +26,21 @@ public class GISB_Importer : ModuleRules
 			new string[]
 			{
 				"Core",
-				"Json", 
+				"Json",
 				"JsonUtilities",
 				"DesktopPlatform",
-				"EditorScriptingUtilities", 
-				"AssetTools", 
+				"EditorScriptingUtilities",
+				"AssetTools",
 				"UnrealEd",
 				"AudioEditor",
+				"AudioMixer",
+				"MetasoundFrontend",
+				"AudioExperimentalRuntime",
+				"MetasoundExperimentalRuntime",
+				"MetasoundStandardNodes",
+				"SignalProcessing",
+				"MetasoundGenerator",
+				"MetasoundGraphCore",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -53,7 +61,12 @@ public class GISB_Importer : ModuleRules
 				"MetasoundEngine",
 				"MetasoundFrontend",
 				"MetasoundGraphCore",
-				"MetasoundEditor"
+				"MetasoundEditor", 
+				"MetasoundExperimentalRuntime",
+				"MetasoundGenerator",
+				"MetasoundStandardNodes",
+				"SignalProcessing",
+				"AudioExperimentalRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

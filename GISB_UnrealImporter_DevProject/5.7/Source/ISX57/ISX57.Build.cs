@@ -18,10 +18,14 @@ public class ISX57 : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"MetasoundExperimentalRuntime",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"MetasoundExperimentalRuntime",
+		});
 
 		PublicIncludePaths.AddRange(new string[] {
 			"ISX57",

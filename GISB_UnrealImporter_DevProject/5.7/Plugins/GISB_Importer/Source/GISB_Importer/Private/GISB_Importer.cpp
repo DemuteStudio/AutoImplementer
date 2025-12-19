@@ -3,6 +3,7 @@
 #include "GISB_Importer.h"
 #include "GISB_ImporterStyle.h"
 #include "GISB_ImporterCommands.h"
+#include "MetasoundFrontendModuleRegistrationMacros.h"
 #include "Misc/MessageDialog.h"
 #include "ToolMenus.h"
 
@@ -27,6 +28,7 @@ void FGISB_ImporterModule::StartupModule()
 		FCanExecuteAction());
 
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FGISB_ImporterModule::RegisterMenus));
+	METASOUND_REGISTER_ITEMS_IN_MODULE
 }
 
 void FGISB_ImporterModule::ShutdownModule()
@@ -41,6 +43,8 @@ void FGISB_ImporterModule::ShutdownModule()
 	FGISB_ImporterStyle::Shutdown();
 
 	FGISB_ImporterCommands::Unregister();
+
+	METASOUND_UNREGISTER_ITEMS_IN_MODULE
 }
 
 void FGISB_ImporterModule::PluginButtonClicked()
@@ -80,5 +84,5 @@ void FGISB_ImporterModule::RegisterMenus()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+METASOUND_IMPLEMENT_MODULE_REGISTRATION_LIST
 IMPLEMENT_MODULE(FGISB_ImporterModule, GISB_Importer)
