@@ -35,11 +35,12 @@ public:
 	static TArray<FMetasoundFrontendClassName*>* StereoMixerNodes;
 
 	// Custom GISB Patch Nodes
-	static TScriptInterface<IMetaSoundDocumentInterface> AudioRerouteNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbRandomNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbSwitchNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbVolumeNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbPitchNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbLowpassNode;
-	static TScriptInterface<IMetaSoundDocumentInterface> GisbAttenuationNode;
+	
+	//Custom Configurable Nodes
+	static FMetasoundFrontendClassName* GisbSwitchNode;
+	static FMetasoundFrontendClassName* GisbAttenuationNode;
 };

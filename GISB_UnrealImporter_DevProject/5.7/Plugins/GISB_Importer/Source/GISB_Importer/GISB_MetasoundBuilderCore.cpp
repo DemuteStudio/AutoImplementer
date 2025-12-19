@@ -1391,7 +1391,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	}
 
 	// Add Switch Selector node (similar to random but parameter-driven)
-	FMetaSoundNodeHandle switchHandle = builder->AddNode(UGISB_MetasoundNodeLibrary::GisbSwitchNode, result);
+	FMetaSoundNodeHandle switchHandle = builder->AddNodeByClassName(*UGISB_MetasoundNodeLibrary::GisbSwitchNode, result);
 	if (result != EMetaSoundBuilderResult::Succeeded || !switchHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add Switch node"));
