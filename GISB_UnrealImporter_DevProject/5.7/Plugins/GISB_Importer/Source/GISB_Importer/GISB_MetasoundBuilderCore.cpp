@@ -1102,6 +1102,9 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
 	}
 
+	// Track instantiated nodes for parameter propagation
+	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
 	// Instantiate child patches and connect
 	for (int32 i = 0; i < childResults.Num(); i++)
 	{
@@ -1111,6 +1114,9 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to instantiate child patch %d"), i);
 			continue;
 		}
+
+		// Track node for parameter propagation
+		instantiatedNodes.Add(childPatchNode);
 
 		if (Layout)
 		{
@@ -1242,6 +1248,57 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		{
 			Layout->RegisterConnection(childPatchNode, anyHandle);
 		}
+	}
+
+	// ============================================================================
+	// Parameter Propagation: Merge required inputs from children and propagate to parent
+	// ============================================================================
+
+	// Collect all unique required inputs from children
+	TMap<FName, FName> UniqueInputs;  // Name -> Type
+	for (const FChildPatchResult& ChildResult : childResults)
+	{
+		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		{
+			if (UniqueInputs.Contains(RequiredInput.PinName))
+			{
+				// Check for type mismatch
+				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: Parameter '%s' has conflicting types: %s vs %s"),
+						*RequiredInput.PinName.ToString(),
+						*UniqueInputs[RequiredInput.PinName].ToString(),
+						*RequiredInput.PinType.ToString());
+				}
+			}
+			else
+			{
+				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
+				UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Child needs parameter '%s' (type: %s)"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+			}
+		}
+	}
+
+	// Convert to array
+	TArray<FGisbPinInfo> InputsToPropagate;
+	for (const auto& Pair : UniqueInputs)
+	{
+		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
+	}
+
+	// Create parent graph inputs and connect to children
+	if (InputsToPropagate.Num() > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Propagating %d input parameters to parent"),
+			InputsToPropagate.Num());
+
+		CreateAndConnectPropagatedInputs(
+			InputsToPropagate,
+			instantiatedNodes,
+			builder,
+			Layout
+		);
 	}
 
 	// Get mixer and TriggerAny outputs
@@ -1613,6 +1670,9 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		return;
 	}
 
+	// Track instantiated nodes for parameter propagation
+	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
 	// Instantiate child patches and connect (same pattern as Random)
 	for (int32 i = 0; i < childResults.Num(); i++)
 	{
@@ -1622,6 +1682,9 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to instantiate child patch %d"), i);
 			continue;
 		}
+
+		// Track node for parameter propagation
+		instantiatedNodes.Add(childPatchNode);
 
 		if (Layout)
 		{
@@ -1745,6 +1808,57 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		{
 			Layout->RegisterConnection(childPatchNode, anyHandle);
 		}
+	}
+
+	// ============================================================================
+	// Parameter Propagation: Merge required inputs from children and propagate to parent
+	// ============================================================================
+
+	// Collect all unique required inputs from children
+	TMap<FName, FName> UniqueInputs;  // Name -> Type
+	for (const FChildPatchResult& ChildResult : childResults)
+	{
+		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		{
+			if (UniqueInputs.Contains(RequiredInput.PinName))
+			{
+				// Check for type mismatch
+				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Parameter '%s' has conflicting types: %s vs %s"),
+						*RequiredInput.PinName.ToString(),
+						*UniqueInputs[RequiredInput.PinName].ToString(),
+						*RequiredInput.PinType.ToString());
+				}
+			}
+			else
+			{
+				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
+				UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Child needs parameter '%s' (type: %s)"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+			}
+		}
+	}
+
+	// Convert to array
+	TArray<FGisbPinInfo> InputsToPropagate;
+	for (const auto& Pair : UniqueInputs)
+	{
+		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
+	}
+
+	// Create parent graph inputs and connect to children
+	if (InputsToPropagate.Num() > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Propagating %d input parameters to parent"),
+			InputsToPropagate.Num());
+
+		CreateAndConnectPropagatedInputs(
+			InputsToPropagate,
+			instantiatedNodes,
+			builder,
+			Layout
+		);
 	}
 
 	// Get outputs (same as Random)
@@ -1921,6 +2035,9 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		Layout->RegisterNode(accumulateHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAccumulate"));
 	}
 
+	// Track instantiated nodes for parameter propagation
+	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
 	// Instantiate child patches and connect
 	for (int32 i = 0; i < childResults.Num(); i++)
 	{
@@ -1930,6 +2047,9 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to instantiate child patch %d"), i);
 			continue;
 		}
+
+		// Track node for parameter propagation
+		instantiatedNodes.Add(childPatchNode);
 
 		if (Layout)
 		{
@@ -2052,6 +2172,57 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		}
 	}
 
+	// ============================================================================
+	// Parameter Propagation: Merge required inputs from children and propagate to parent
+	// ============================================================================
+
+	// Collect all unique required inputs from children
+	TMap<FName, FName> UniqueInputs;  // Name -> Type
+	for (const FChildPatchResult& ChildResult : childResults)
+	{
+		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		{
+			if (UniqueInputs.Contains(RequiredInput.PinName))
+			{
+				// Check for type mismatch
+				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: Parameter '%s' has conflicting types: %s vs %s"),
+						*RequiredInput.PinName.ToString(),
+						*UniqueInputs[RequiredInput.PinName].ToString(),
+						*RequiredInput.PinType.ToString());
+				}
+			}
+			else
+			{
+				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
+				UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Child needs parameter '%s' (type: %s)"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+			}
+		}
+	}
+
+	// Convert to array
+	TArray<FGisbPinInfo> InputsToPropagate;
+	for (const auto& Pair : UniqueInputs)
+	{
+		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
+	}
+
+	// Create parent graph inputs and connect to children
+	if (InputsToPropagate.Num() > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Propagating %d input parameters to parent"),
+			InputsToPropagate.Num());
+
+		CreateAndConnectPropagatedInputs(
+			InputsToPropagate,
+			instantiatedNodes,
+			builder,
+			Layout
+		);
+	}
+
 	// Get mixer and TriggerAccumulate outputs
 	FMetaSoundBuilderNodeOutputHandle audioLeftHandle = builder->FindNodeOutputByName(
 		mixerHandle,
@@ -2131,4 +2302,228 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 			);
 		}
 	}
+}
+
+// ============================================================================
+// Parameter Propagation Helper Methods
+// ============================================================================
+
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::DetectUnconnectedInputs(
+	const FMetaSoundNodeHandle& nodeHandle,
+	UMetaSoundBuilderBase* builder,
+	const TSet<FName>& standardInputsToFilter
+)
+{
+	TArray<FGisbPinInfo> Result;
+	EMetaSoundBuilderResult OpResult;
+
+	// WORKAROUND: MetaSound builder API doesn't provide a way to enumerate ALL inputs with their names
+	// or check if inputs are connected. We use a heuristic approach:
+	// 1. Try common parameter names
+	// 2. Assume if they exist, they're unconnected (since we only connected Play/Audio/OnFinished)
+
+	// Expanded list of common parameter names
+	TArray<FName> CommonParameterNames = {
+		// Generic switch parameters (try both generic and likely custom names)
+		FName("Switch Parameter"),
+		FName("Material"),
+		FName("Surface"),
+		FName("Intensity"),
+		FName("Distance"),
+		FName("Speed"),
+		FName("Layer"),
+		FName("State"),
+		FName("Terrain"),
+		FName("Weapon"),
+		FName("Action"),
+		FName("Environment"),
+		FName("Category"),
+		FName("Type"),
+		FName("Mode"),
+		FName("Variation"),
+		FName("Context"),
+		// Add more as needed
+	};
+
+	UE_LOG(LogTemp, Log, TEXT("DetectUnconnectedInputs: Checking node for unconnected inputs"));
+
+	// For each common parameter name, try to find it on this node
+	for (const FName& ParamName : CommonParameterNames)
+	{
+		// Skip if in the filter list (standard inputs we already connected)
+		if (standardInputsToFilter.Contains(ParamName))
+		{
+			continue;
+		}
+
+		// Try to find this input by name
+		FMetaSoundBuilderNodeInputHandle InputHandle = builder->FindNodeInputByName(
+			nodeHandle,
+			*ParamName.ToString(),
+			OpResult
+		);
+
+		if (OpResult == EMetaSoundBuilderResult::Succeeded && InputHandle.IsSet())
+		{
+			// Found an input with this name - assume it's unconnected since we only connected standard pins
+			// Type detection: For simplicity, assume String for most switch/parameter types
+			FName PinType = FName("String");
+
+			Result.Add(FGisbPinInfo(ParamName, PinType));
+			UE_LOG(LogTemp, Log, TEXT("DetectUnconnectedInputs: Found unconnected input '%s' (type: %s)"),
+				*ParamName.ToString(), *PinType.ToString());
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("DetectUnconnectedInputs: Found %d unconnected inputs total"), Result.Num());
+	return Result;
+}
+
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::MergeChildInputs(
+	const TArray<FMetaSoundNodeHandle>& childNodes,
+	UMetaSoundBuilderBase* builder,
+	const TSet<FName>& standardInputsToFilter
+)
+{
+	TMap<FName, FGisbPinInfo> UniquePins;  // Key = PinName
+	TMap<FName, FName> PinTypeMap;         // Track expected type for collision detection
+
+	// Collect unconnected inputs from all children
+	for (int32 i = 0; i < childNodes.Num(); i++)
+	{
+		if (!childNodes[i].IsSet())
+		{
+			continue;
+		}
+
+		// Detect unconnected inputs on this child
+		TArray<FGisbPinInfo> ChildInputs = DetectUnconnectedInputs(
+			childNodes[i],
+			builder,
+			standardInputsToFilter
+		);
+
+		// Merge with existing pins
+		for (const FGisbPinInfo& Pin : ChildInputs)
+		{
+			if (UniquePins.Contains(Pin.PinName))
+			{
+				// Name collision - check type
+				if (PinTypeMap[Pin.PinName] != Pin.PinType)
+				{
+					UE_LOG(LogTemp, Error,
+						TEXT("MergeChildInputs: Type mismatch for parameter '%s' (expected %s, got %s). Skipping."),
+						*Pin.PinName.ToString(), *PinTypeMap[Pin.PinName].ToString(), *Pin.PinType.ToString());
+					continue;
+				}
+				// Same name + same type = already added, skip
+			}
+			else
+			{
+				// New parameter - add it
+				UniquePins.Add(Pin.PinName, Pin);
+				PinTypeMap.Add(Pin.PinName, Pin.PinType);
+
+				UE_LOG(LogTemp, Log, TEXT("MergeChildInputs: Added parameter '%s' (type: %s)"),
+					*Pin.PinName.ToString(), *Pin.PinType.ToString());
+			}
+		}
+	}
+
+	// Convert map to array
+	TArray<FGisbPinInfo> Result;
+	UniquePins.GenerateValueArray(Result);
+
+	UE_LOG(LogTemp, Log, TEXT("MergeChildInputs: Merged %d unique parameters from %d children"),
+		Result.Num(), childNodes.Num());
+
+	return Result;
+}
+
+TMap<FName, FMetaSoundBuilderNodeOutputHandle> UGISB_MetasoundBuilderCore::CreateAndConnectPropagatedInputs(
+	const TArray<FGisbPinInfo>& inputsToPropagate,
+	const TArray<FMetaSoundNodeHandle>& childNodes,
+	UMetaSoundBuilderBase* builder,
+	GisbMetasoundLayoutManager* Layout
+)
+{
+	TMap<FName, FMetaSoundBuilderNodeOutputHandle> CreatedInputs;
+	EMetaSoundBuilderResult result;
+
+	for (const FGisbPinInfo& Pin : inputsToPropagate)
+	{
+		// Create graph input node for this parameter
+		FMetaSoundBuilderNodeOutputHandle GraphInput = builder->AddGraphInputNode(
+			Pin.PinName,
+			Pin.PinType,
+			FMetasoundFrontendLiteral(),  // Default value (empty)
+			result
+		);
+
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("CreatePropagatedInputs: FAILED to create graph input '%s'"),
+				*Pin.PinName.ToString());
+			continue;
+		}
+
+		CreatedInputs.Add(Pin.PinName, GraphInput);
+
+		// Register with layout manager if provided
+		if (Layout)
+		{
+			FMetaSoundNodeHandle inputNode(GraphInput.NodeID);
+			Layout->RegisterGraphInputNode(inputNode, Pin.PinName);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("CreatePropagatedInputs: Created parent graph input '%s'"),
+			*Pin.PinName.ToString());
+
+		// Connect to all children that have this input
+		int32 ConnectionCount = 0;
+		for (const FMetaSoundNodeHandle& ChildNode : childNodes)
+		{
+			if (!ChildNode.IsSet())
+			{
+				continue;
+			}
+
+			// Try to find this input on the child
+			FMetaSoundBuilderNodeInputHandle ChildInput = builder->FindNodeInputByName(
+				ChildNode,
+				*Pin.PinName.ToString(),
+				result
+			);
+
+			if (result == EMetaSoundBuilderResult::Succeeded)
+			{
+				// Connect parent input to child input
+				builder->ConnectNodes(GraphInput, ChildInput, result);
+
+				if (result == EMetaSoundBuilderResult::Succeeded)
+				{
+					ConnectionCount++;
+
+					if (Layout)
+					{
+						Layout->RegisterConnection(
+							FMetaSoundNodeHandle(GraphInput.NodeID),
+							ChildNode
+						);
+					}
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning,
+						TEXT("CreatePropagatedInputs: Failed to connect '%s' to child"),
+						*Pin.PinName.ToString());
+				}
+			}
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("CreatePropagatedInputs: Connected '%s' to %d children"),
+			*Pin.PinName.ToString(), ConnectionCount);
+	}
+
+	return CreatedInputs;
 }

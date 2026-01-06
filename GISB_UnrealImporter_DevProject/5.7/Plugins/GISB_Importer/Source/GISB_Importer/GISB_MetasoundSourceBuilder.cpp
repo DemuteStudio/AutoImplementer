@@ -591,9 +591,13 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
 	}
 
+	// Extract parameter name from container (use custom name from JSON, fallback to "Switch Parameter")
+	FName SwitchParameterName = switchContainer->ParameterID.IsNone() ?
+		FName("Switch Parameter") : switchContainer->ParameterID;
+
 	// Create graph input for switch parameter
 	FMetaSoundBuilderNodeOutputHandle parameterInputHandle = builder->AddGraphInputNode(
-		FName("Switch Parameter"),
+		SwitchParameterName,  // Use container's parameter name instead of hardcoded
 		FName("String"),
 		FMetasoundFrontendLiteral(switchContainer->DefaultParameterValue),
 		result
@@ -601,13 +605,13 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchSource: Failed to add Switch Parameter input"));
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchSource: Failed to add Switch Parameter input for '%s'"), *SwitchParameterName.ToString());
 		return nullptr;
 	}
 
 	// Register switch parameter with layout
 	FMetaSoundNodeHandle switchParamNodeHandle(parameterInputHandle.NodeID);
-	Layout.RegisterGraphInputNode(switchParamNodeHandle, FName("Switch Parameter"));
+	Layout.RegisterGraphInputNode(switchParamNodeHandle, SwitchParameterName);
 
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class)

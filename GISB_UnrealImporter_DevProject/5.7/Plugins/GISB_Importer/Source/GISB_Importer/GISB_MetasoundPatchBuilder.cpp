@@ -97,6 +97,11 @@ FChildPatchResult UGISB_MetasoundPatchBuilder::BuildChildNode(
 		FString ChildName = FString::Printf(TEXT("%s_Switch%d"), *ParentName, ChildIndex);
 
 		Result.Patch = BuildSwitchNode(Switch, ChildName);
+
+		// Track the switch parameter this child needs
+		FName SwitchParameterName = Switch->ParameterID.IsNone() ?
+			FName("Switch Parameter") : Switch->ParameterID;
+		Result.RequiredInputs.Add(FGisbPinInfo(SwitchParameterName, FName("String")));
 	}
 	else if (UGisbImportContainerBlend* Blend = Cast<UGisbImportContainerBlend>(container))
 	{
@@ -446,9 +451,13 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
+	// Extract parameter name from container (use custom name from JSON, fallback to "Switch Parameter")
+	FName SwitchParameterName = switchContainer->ParameterID.IsNone() ?
+		FName("Switch Parameter") : switchContainer->ParameterID;
+
 	// Add Switch Parameter input (String type) - unique to switch containers
 	FMetaSoundBuilderNodeOutputHandle ParameterInput = builder->AddGraphInputNode(
-		FName("Switch Parameter"),
+		SwitchParameterName,  // Use container's parameter name instead of hardcoded
 		FName("String"),
 		FMetasoundFrontendLiteral(),
 		result
@@ -460,7 +469,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
-	Layout.RegisterGraphInputNode(parameterInputNode, FName("Switch Parameter"));
+	Layout.RegisterGraphInputNode(parameterInputNode, SwitchParameterName);
 	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)

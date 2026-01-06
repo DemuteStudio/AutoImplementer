@@ -22,11 +22,22 @@
 
 class UGisbSoundBankDataAsset;
 
+// Pin metadata for parameter propagation
+struct FGisbPinInfo
+{
+	FName PinName;
+	FName PinType;  // "Float", "String", "Bool", "Int32", "Trigger", "Audio"
+
+	FGisbPinInfo() : PinName(NAME_None), PinType(NAME_None) {}
+	FGisbPinInfo(FName InName, FName InType) : PinName(InName), PinType(InType) {}
+};
+
 // Result struct for recursive child patch building
 struct FChildPatchResult
 {
 	TScriptInterface<IMetaSoundDocumentInterface> Patch;
 	bool bIsStereo;
+	TArray<FGisbPinInfo> RequiredInputs;  // Parameters this child needs (e.g., switch parameter)
 
 	FChildPatchResult() : Patch(nullptr), bIsStereo(false) {}
 };

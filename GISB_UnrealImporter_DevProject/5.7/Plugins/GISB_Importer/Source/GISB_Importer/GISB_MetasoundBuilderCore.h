@@ -16,6 +16,7 @@
 // Forward declarations
 class GisbMetasoundLayoutManager;
 struct FChildPatchResult;
+struct FGisbPinInfo;
 
 /**
  * Base class for MetaSound builders (Patch and Source).
@@ -224,5 +225,58 @@ protected:
 		FMetaSoundBuilderNodeInputHandle& audioLeftOutput,
 		FMetaSoundBuilderNodeInputHandle* audioRightOutput,
 		GisbMetasoundLayoutManager* Layout = nullptr
+	);
+
+	// ============================================================================
+	// Parameter Propagation Helpers
+	// ============================================================================
+
+	/**
+	 * Detect unconnected INPUT pins on an instantiated patch node.
+	 * Call this AFTER making standard connections (Play, Audio, On Finished).
+	 * Returns only unconnected inputs (skips outputs).
+	 *
+	 * @param nodeHandle The instantiated child patch node
+	 * @param builder The MetaSound builder
+	 * @param standardInputsToFilter Names of inputs to skip (e.g., "Play")
+	 * @return Array of unconnected input pin metadata
+	 */
+	static TArray<FGisbPinInfo> DetectUnconnectedInputs(
+		const FMetaSoundNodeHandle& nodeHandle,
+		UMetaSoundBuilderBase* builder,
+		const TSet<FName>& standardInputsToFilter
+	);
+
+	/**
+	 * Merge unconnected inputs from multiple children.
+	 * If multiple children have same parameter name+type, returns single entry.
+	 * If same name but different types, logs error and skips.
+	 *
+	 * @param childNodes Array of instantiated child node handles
+	 * @param builder The MetaSound builder
+	 * @param standardInputsToFilter Names of inputs to skip
+	 * @return Deduplicated array of inputs to propagate to parent
+	 */
+	static TArray<FGisbPinInfo> MergeChildInputs(
+		const TArray<FMetaSoundNodeHandle>& childNodes,
+		UMetaSoundBuilderBase* builder,
+		const TSet<FName>& standardInputsToFilter
+	);
+
+	/**
+	 * Create parent graph inputs for propagated pins and connect to children.
+	 * For each pin, creates ONE parent input and connects to all children that have it.
+	 *
+	 * @param inputsToPropagate Deduplicated inputs from MergeChildInputs
+	 * @param childNodes Array of instantiated child patch nodes
+	 * @param builder The MetaSound builder (patch or source)
+	 * @param Layout Optional layout manager
+	 * @return Map of pin name -> parent graph input handle
+	 */
+	static TMap<FName, FMetaSoundBuilderNodeOutputHandle> CreateAndConnectPropagatedInputs(
+		const TArray<FGisbPinInfo>& inputsToPropagate,
+		const TArray<FMetaSoundNodeHandle>& childNodes,
+		UMetaSoundBuilderBase* builder,
+		GisbMetasoundLayoutManager* Layout
 	);
 };
