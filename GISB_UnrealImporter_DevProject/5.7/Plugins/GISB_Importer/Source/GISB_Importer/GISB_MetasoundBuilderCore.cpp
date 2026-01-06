@@ -3,9 +3,11 @@
 #include "GISB_MetasoundBuilderCore.h"
 #include "MetasoundBuilderBase.h"
 #include "MetasoundFrontendDocument.h"
+#include "MetasoundFrontendDocumentBuilder.h"
 #include "GisbMetasoundLayoutManager.h"
 #include "GISB_MetasoundNodeLibrary.h"
 #include "GISB_MetasoundPatchBuilder.h"
+#include "MetasoundStringSwitchNode.h"
 #include <cmath>
 
 // ============================================================================
@@ -1354,11 +1356,16 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	// Build child patches recursively and collect case names
 	TArray<FChildPatchResult> childResults;
 	TArray<FString> caseNames;
+	uint32 defaultOutIndex = 0;
 
 	int32 childIndex = 0;
 	for (auto& Pair : switchContainer->SoundDictionary)
 	{
 		caseNames.Add(Pair.Key);
+		if (Pair.Key == defaultCase) // Calculate default output index
+		{
+			defaultOutIndex = static_cast<uint32>(childIndex);
+		}
 
 		FChildPatchResult childResult = UGISB_MetasoundPatchBuilder::BuildChildNode(
 			Pair.Value,
@@ -1374,7 +1381,6 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		}
 
 		childResults.Add(childResult);
-		if (childResult.bIsStereo) bisStereo = true;
 		childIndex++;
 	}
 
@@ -1389,8 +1395,13 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: >8 children not yet supported for %s"), *Name);
 		return;
 	}
+	
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: %s - %d cases, default case '%s' at index %d"),
+	       *Name, caseNames.Num(), *defaultCase, defaultOutIndex);
 
-	// Add Switch Selector node (similar to random but parameter-driven)
+	// ============================================================================
+	// Add Switch Selector node
+	// ============================================================================
 	FMetaSoundNodeHandle switchHandle = builder->AddNodeByClassName(*UGISB_MetasoundNodeLibrary::GisbSwitchNode, result);
 	if (result != EMetaSoundBuilderResult::Succeeded || !switchHandle.IsSet())
 	{
@@ -1403,18 +1414,115 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		Layout->RegisterNode(switchHandle, EGisbNodeCategory::SignalProcessor, TEXT("SwitchSelector"));
 	}
 
-	// Connect parameter and trigger inputs
-	FMetaSoundBuilderNodeInputHandle paramHandle = builder->FindNodeInputByName(switchHandle, TEXT("Switch Value"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
+	// ============================================================================
+	// Configure the StringSwitch node with case names and default output
+	// ============================================================================
+
+	// Access the underlying document builder
+	FMetaSoundFrontendDocumentBuilder& docBuilder = builder->GetBuilder();
+
+	// Create configuration struct for the StringSwitch node
+	TInstancedStruct<FMetaSoundFrontendNodeConfiguration> switchConfig;
+	switchConfig.InitializeAs<FMetaSoundStringSwitchNodeConfiguration>();
+
+	// Get mutable pointer to configuration and populate data
+	FMetaSoundStringSwitchNodeConfiguration* config = switchConfig.GetMutablePtr<FMetaSoundStringSwitchNodeConfiguration>();
+
+	if (!config)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find Switch Value input"));
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to get configuration pointer for %s"), *Name);
 		return;
 	}
 
-	builder->ConnectNodes(parameterInput, paramHandle, result);
+	// Set configuration data
+	config->SwitchValues = caseNames;      // Array of case names (e.g., ["Walk", "Run", "Crouch"])
+	config->DefaultOut = defaultOutIndex;  // Index of default output (0-based)
+
+	// Apply configuration to the node in the document
+	bool bConfigSet = docBuilder.SetNodeConfiguration(switchHandle.NodeID, switchConfig);
+
+	if (!bConfigSet)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to set node configuration for %s"), *Name);
+		return;
+	}
+
+	// CRITICAL: Update node interface to reflect configuration
+	// This regenerates the node's input/output pins based on the configuration
+	bool bInterfaceUpdated = docBuilder.UpdateNodeInterfaceFromConfiguration(switchHandle.NodeID);
+
+	if (!bInterfaceUpdated)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to update node interface for %s"), *Name);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Successfully configured switch node '%s' with %d cases"),
+	       *Name, caseNames.Num());
+
+	// ============================================================================
+	// DIAGNOSTIC: Try multiple output naming conventions
+	// ============================================================================
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Attempting to find switch outputs with different naming conventions..."));
+
+	// Try pattern 1: "Out 0", "Out 1", etc. (Expected pattern)
+	bool foundPattern1 = false;
+	for (int32 i = 0; i < childResults.Num(); i++)
+	{
+		FMetaSoundBuilderNodeOutputHandle testOut = builder->FindNodeOutputByName(
+			switchHandle,
+			*FString::Printf(TEXT("Out %d"), i),
+			result
+		);
+		if (result == EMetaSoundBuilderResult::Succeeded)
+		{
+			foundPattern1 = true;
+			UE_LOG(LogTemp, Log, TEXT("  Found output: 'Out %d'"), i);
+			break;
+		}
+	}
+
+	// Try pattern 2: "Switch Out 0", "Switch Out 1", etc.
+	if (!foundPattern1)
+	{
+		UE_LOG(LogTemp, Log, TEXT("  Pattern 'Out %%d' not found, trying 'Switch Out %%d'..."));
+		for (int32 i = 0; i < childResults.Num(); i++)
+		{
+			FMetaSoundBuilderNodeOutputHandle testOut = builder->FindNodeOutputByName(
+				switchHandle,
+				*FString::Printf(TEXT("Switch Out %d"), i),
+				result
+			);
+			if (result == EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Log, TEXT("  Found output: 'Switch Out %d'"), i);
+				break;
+			}
+		}
+	}
+
+	// ============================================================================
+	// Connect inputs to the configured StringSwitch node
+	// ============================================================================
+
+	// Connect parameter input to 'String Switch' input (NOT "Switch Value")
+	FMetaSoundBuilderNodeInputHandle stringParamHandle = builder->FindNodeInputByName(
+		switchHandle,
+		TEXT("String Switch"),  // Correct input name from MetasoundStringSwitchNode.cpp:26
+		result
+	);
+
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect parameter to switch"));
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find 'String Switch' input on switch node"));
+		return;
+	}
+
+	builder->ConnectNodes(parameterInput, stringParamHandle, result);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect parameter to switch node"));
 		return;
 	}
 
@@ -1423,49 +1531,30 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		Layout->RegisterConnection(FMetaSoundNodeHandle(parameterInput.NodeID), switchHandle);
 	}
 
-	FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(switchHandle, TEXT("Exec"), result);
+	// Connect trigger input to 'In' input (NOT "Exec")
+	FMetaSoundBuilderNodeInputHandle execHandle = builder->FindNodeInputByName(
+		switchHandle,
+		TEXT("In"),  // Correct input name from MetasoundStringSwitchNode.cpp:25
+		result
+	);
+
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find Exec input"));
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find 'In' (trigger) input on switch node"));
 		return;
 	}
 
 	builder->ConnectNodes(triggerInput, execHandle, result);
+
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect trigger to switch"));
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect trigger to switch node"));
 		return;
 	}
 
 	if (Layout)
 	{
 		Layout->RegisterConnection(FMetaSoundNodeHandle(triggerInput.NodeID), switchHandle);
-	}
-
-	// Configure Cases parameter
-	FMetaSoundBuilderNodeInputHandle casesHandle = builder->FindNodeInputByName(switchHandle, TEXT("Cases"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find Cases input"));
-		return;
-	}
-
-	FAudioParameter casesParam = FAudioParameter(TEXT("Cases"), caseNames);
-	FMetasoundFrontendLiteral casesValue = FMetasoundFrontendLiteral(casesParam);
-	builder->SetNodeInputDefault(casesHandle, casesValue, result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to set Cases"));
-		return;
-	}
-
-	// Configure Default Case parameter
-	FMetaSoundBuilderNodeInputHandle defaultCaseHandle = builder->FindNodeInputByName(switchHandle, TEXT("Default Case"), result);
-	if (result == EMetaSoundBuilderResult::Succeeded)
-	{
-		FAudioParameter defaultParam = FAudioParameter(TEXT("Default Case"), defaultCase);
-		FMetasoundFrontendLiteral defaultValue = FMetasoundFrontendLiteral(defaultParam);
-		builder->SetNodeInputDefault(defaultCaseHandle, defaultValue, result);
 	}
 
 	// Add Mixer and TriggerAny nodes (same as Random)
@@ -1501,6 +1590,29 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
 	}
 
+	// ============================================================================
+	// WORKAROUND: Get all outputs and match by index since FindNodeOutputByName
+	// doesn't see dynamically configured outputs immediately after UpdateNodeInterfaceFromConfiguration
+	// ============================================================================
+	TArray<FMetaSoundBuilderNodeOutputHandle> allSwitchOutputs = builder->FindNodeOutputs(switchHandle, result);
+	if (result != EMetaSoundBuilderResult::Succeeded || allSwitchOutputs.Num() == 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to get switch outputs - no outputs found after configuration"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Found %d outputs on switch node (expected %d + default out)"),
+	       allSwitchOutputs.Num(), childResults.Num());
+
+	// The StringSwitch node has outputs in order: first N are the case outputs, last one is the default out
+	// We need the first childResults.Num() outputs (indices 0 to childResults.Num()-1)
+	if (allSwitchOutputs.Num() < childResults.Num())
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Not enough outputs - expected at least %d, got %d"),
+		       childResults.Num(), allSwitchOutputs.Num());
+		return;
+	}
+
 	// Instantiate child patches and connect (same pattern as Random)
 	for (int32 i = 0; i < childResults.Num(); i++)
 	{
@@ -1519,17 +1631,10 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 
 		bool bIsChildStereo = childResults[i].bIsStereo;
 
-		// Connect Switch output i -> Child Play
-		FMetaSoundBuilderNodeOutputHandle switchOut = builder->FindNodeOutputByName(
-			switchHandle,
-			*FString::Printf(TEXT("Out %d"), i),
-			result
-		);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find Switch Out %d"), i);
-			continue;
-		}
+		// Use the pre-fetched output handle by index instead of FindNodeOutputByName
+		FMetaSoundBuilderNodeOutputHandle switchOut = allSwitchOutputs[i];
+
+		UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Connecting switch output %d to child patch %d"), i, i);
 
 		FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
 		if (result != EMetaSoundBuilderResult::Succeeded)
