@@ -114,6 +114,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(UGisbImp
 	{
 		source = BuildSwitchSource(Switch, Name, shouldLoop);
 	}
+	else if (UGisbImportContainerTrigger* Trigger = Cast<UGisbImportContainerTrigger>(gisb))
+	{
+		source = BuildTriggerSource(Trigger, Name, shouldLoop);
+	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Unknown container type"));
@@ -650,6 +654,107 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 
 	UMetaSoundSource* source = Cast<UMetaSoundSource>(document.GetObject());
 	UE_LOG(LogTemp, Log, TEXT("BuildSwitchSource: Successfully built for: %s"), *Name);
+
+	return source;
+}
+
+// ============================================================================
+// BuildTriggerSource - Build MetaSound source for Trigger container
+// ============================================================================
+
+UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildTriggerSource(
+	UGisbImportContainerTrigger* triggerContainer,
+	const FString& Name,
+	bool canLoop
+)
+{
+	if (!triggerContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerSource: Invalid container"));
+		return nullptr;
+	}
+
+	EMetaSoundBuilderResult result;
+
+	// Determine output format (mono or stereo)
+	bool bisStereo = isStereo(triggerContainer->TriggeredSoundImport);
+
+	EMetaSoundOutputAudioFormat format = bisStereo ?
+		EMetaSoundOutputAudioFormat::Stereo : EMetaSoundOutputAudioFormat::Mono;
+
+	// ========================================================================
+	// Create OnPlay and OnFinished nodes as references (filled by CreateSourceBuilder)
+	// ========================================================================
+
+	FMetaSoundBuilderNodeOutputHandle OnPlayNode;
+	FMetaSoundBuilderNodeInputHandle OnFinishedNode;
+	TArray<FMetaSoundBuilderNodeInputHandle> outAudioHandles;
+
+	UMetaSoundSourceBuilder* builder = BuilderGlobal_Source->CreateSourceBuilder(
+		FName(Name), OnPlayNode, OnFinishedNode, outAudioHandles, result, format, !canLoop
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerSource: Failed to create source builder"));
+		return nullptr;
+	}
+
+	builder->SetAuthor("ISX - Demute");
+
+	// Create layout manager for node positioning
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Extract node handles from builder handles
+	FMetaSoundNodeHandle onPlayNodeHandle(OnPlayNode.NodeID);
+	FMetaSoundNodeHandle onFinishedNodeHandle(OnFinishedNode.NodeID);
+
+	// Register graph I/O nodes with layout
+	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+
+	// Register audio output(s)
+	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
+	Layout.RegisterGraphOutputNode(audioLeftNodeHandle,
+		FName(bisStereo ? "Audio Left" : "Audio Mono"));
+
+	if (bisStereo && outAudioHandles.Num() > 1)
+	{
+		FMetaSoundNodeHandle audioRightNodeHandle(outAudioHandles[1].NodeID);
+		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
+	}
+
+	// ========================================================================
+	// Call core build method
+	// ========================================================================
+
+	BuildTriggerCore(
+		builder, triggerContainer, Name,
+		OnPlayNode, OnFinishedNode,
+		outAudioHandles[0], (bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,
+		&Layout
+	);
+
+	// ========================================================================
+	// Apply layout and build source asset
+	// ========================================================================
+
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
+
+	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
+	TScriptInterface<IMetaSoundDocumentInterface> document = EditorSubsystem->BuildToAsset(
+		builder, "ISX - Demute", Name, PathGlobal_Source, result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerSource: BuildToAsset FAILED"));
+		return nullptr;
+	}
+
+	UMetaSoundSource* source = Cast<UMetaSoundSource>(document.GetObject());
+	UE_LOG(LogTemp, Log, TEXT("BuildTriggerSource: Successfully built for: %s"), *Name);
 
 	return source;
 }

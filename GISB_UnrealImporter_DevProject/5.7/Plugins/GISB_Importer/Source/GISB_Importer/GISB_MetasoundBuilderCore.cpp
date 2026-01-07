@@ -763,6 +763,11 @@ bool UGISB_MetasoundBuilderCore::isStereo(UGisbImportContainerBase* container)
 		}
 		return false;
 	}
+	else if (UGisbImportContainerTrigger* Trigger = Cast<UGisbImportContainerTrigger>(container))
+	{
+		// Check triggered child for stereo
+		return Trigger->TriggeredSoundImport ? isStereo(Trigger->TriggeredSoundImport) : false;
+	}
 	else
 	{
 		return true;
@@ -2526,4 +2531,224 @@ TMap<FName, FMetaSoundBuilderNodeOutputHandle> UGISB_MetasoundBuilderCore::Creat
 	}
 
 	return CreatedInputs;
+}
+
+// ============================================================================
+// BuildTriggerCore - Barebones implementation using TriggerRepeat
+// ============================================================================
+
+void UGISB_MetasoundBuilderCore::BuildTriggerCore(
+	UMetaSoundBuilderBase* builder,
+	UGisbImportContainerTrigger* triggerContainer,
+	const FString& Name,
+	FMetaSoundBuilderNodeOutputHandle& triggerInput,
+	FMetaSoundBuilderNodeInputHandle& onFinishedInput,
+	FMetaSoundBuilderNodeInputHandle& audioLeftOutput,
+	FMetaSoundBuilderNodeInputHandle* audioRightOutput,
+	GisbMetasoundLayoutManager* Layout
+)
+{
+	EMetaSoundBuilderResult result;
+
+	// Setup probability filtering (modifies triggerInput and onFinishedInput)
+	setupProbability(builder, triggerContainer->PlaybackProbabilityPercent, triggerInput, onFinishedInput, Layout);
+
+	// ========================================================================
+	// Add TriggerRepeat node to repeatedly trigger at fixed rate
+	// ========================================================================
+	FMetaSoundNodeHandle triggerRepeatHandle = builder->AddNodeByClassName(
+		*UGISB_MetasoundNodeLibrary::TriggerRepeatNode,
+		result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded || !triggerRepeatHandle.IsSet())
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add TriggerRepeat node"));
+		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(triggerRepeatHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerRepeat"));
+	}
+
+	// Find TriggerRepeat input pins
+	FMetaSoundBuilderNodeInputHandle triggerRepeatStartHandle = builder->FindNodeInputByName(triggerRepeatHandle, TEXT("Start"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Start input"));
+		return;
+	}
+
+	FMetaSoundBuilderNodeInputHandle triggerRepeatPeriodHandle = builder->FindNodeInputByName(triggerRepeatHandle, TEXT("Period"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Period input"));
+		return;
+	}
+
+	// Set trigger rate period (seconds between triggers)
+	FAudioParameter periodParam = FAudioParameter(TEXT("Period"), triggerContainer->TriggerRate);
+	FMetasoundFrontendLiteral periodValue = FMetasoundFrontendLiteral(periodParam);
+	builder->SetNodeInputDefault(triggerRepeatPeriodHandle, periodValue, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerRepeat Period"));
+		return;
+	}
+
+	// Connect input trigger to TriggerRepeat Start (begins repeat cycle)
+	builder->ConnectNodes(triggerInput, triggerRepeatStartHandle, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect trigger to TriggerRepeat Start"));
+		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(FMetaSoundNodeHandle(triggerInput.NodeID), triggerRepeatHandle);
+	}
+
+	// Get TriggerRepeat output (RepeatOut fires repeatedly at Period interval)
+	FMetaSoundBuilderNodeOutputHandle triggerRepeatOnTriggerHandle = builder->FindNodeOutputByName(triggerRepeatHandle, TEXT("RepeatOut"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat RepeatOut output"));
+		return;
+	}
+
+	// TODO: Implement trigger amount limiting using TriggerCounter node
+	// TODO: Implement crossfade mode support
+
+	// ========================================================================
+	// Build triggered child patch/source recursively
+	// ========================================================================
+	FChildPatchResult childResult = UGISB_MetasoundPatchBuilder::BuildChildNode(
+		triggerContainer->TriggeredSoundImport,
+		Name,
+		0  // ChildIndex (only one child for trigger)
+	);
+
+	if (!childResult.Patch)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to build triggered child patch"));
+		return;
+	}
+
+	// Determine stereo from built child (like blend/switch do)
+	bool bisStereo = childResult.bIsStereo;
+
+	// Add instantiated child patch node to graph
+	FMetaSoundNodeHandle childPatchHandle = builder->AddNode(childResult.Patch, result);
+
+	if (result != EMetaSoundBuilderResult::Succeeded || !childPatchHandle.IsSet())
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add triggered child patch node"));
+		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterNode(childPatchHandle, EGisbNodeCategory::SignalSource, TEXT("TriggeredChild"));
+	}
+
+	// Find child patch pins
+	FMetaSoundBuilderNodeInputHandle childPlayHandle = builder->FindNodeInputByName(childPatchHandle, TEXT("Play"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child Play input"));
+		return;
+	}
+
+	FMetaSoundBuilderNodeOutputHandle childOnFinishedHandle = builder->FindNodeOutputByName(childPatchHandle, TEXT("On Finished"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child On Finished output"));
+		return;
+	}
+
+	FMetaSoundBuilderNodeOutputHandle childAudioLeftHandle = builder->FindNodeOutputByName(
+		childPatchHandle,
+		bisStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
+		result
+	);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child audio left/mono output"));
+		return;
+	}
+
+	FMetaSoundBuilderNodeOutputHandle childAudioRightHandle;
+	if (bisStereo)
+	{
+		childAudioRightHandle = builder->FindNodeOutputByName(childPatchHandle, TEXT("Audio Right"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child audio right output"));
+			return;
+		}
+	}
+
+	// Connect TriggerRepeat Out to child Play (repeated triggering)
+	builder->ConnectNodes(triggerRepeatOnTriggerHandle, childPlayHandle, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerRepeat to child Play"));
+		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(triggerRepeatHandle, childPatchHandle);
+	}
+
+	// ========================================================================
+	// Apply audio effects (Volume, Pitch, Lowpass) to child audio output
+	// ========================================================================
+	setupAttributes(builder, triggerContainer, bisStereo, &triggerRepeatOnTriggerHandle, childAudioLeftHandle, childAudioRightHandle, Layout);
+
+	// ========================================================================
+	// Connect outputs
+	// ========================================================================
+
+	// NOTE: TriggerRepeat runs indefinitely (no "On Finished" output)
+	// In barebones mode, the parent "On Finished" will never fire
+	// TODO: Add trigger amount limiting with TriggerCounter to fire "On Finished" when done
+
+	// Connect processed audio to graph outputs
+	builder->ConnectNodes(childAudioLeftHandle, audioLeftOutput, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect audio left output"));
+		return;
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(
+			FMetaSoundNodeHandle(childAudioLeftHandle.NodeID),
+			FMetaSoundNodeHandle(audioLeftOutput.NodeID)
+		);
+	}
+
+	if (bisStereo && audioRightOutput)
+	{
+		builder->ConnectNodes(childAudioRightHandle, *audioRightOutput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect audio right output"));
+			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(
+				FMetaSoundNodeHandle(childAudioRightHandle.NodeID),
+				FMetaSoundNodeHandle(audioRightOutput->NodeID)
+			);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Successfully built trigger container"));
 }

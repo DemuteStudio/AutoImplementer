@@ -8,11 +8,13 @@
 #include "GisbContainerRandom.h"
 #include "GisbContainerBlend.h"
 #include "GisbContainerSwitch.h"
+#include "GisbContainerTrigger.h"
 #include "GisbImportContainerBase.h"
 #include "GisbImportContainerSimpleSound.h"
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSwitch.h"
+#include "GisbImportContainerTrigger.h"
 #include "GisbContainerConverter.generated.h"
 
 /**
@@ -77,6 +79,15 @@ public:
 	 */
 	static UGisbImportContainerSwitch* SwitchSoundToImport(
 		UGisbContainerSwitch* RuntimeContainer,
+		UObject* Outer
+	);
+
+	/**
+	 * Converts UGisbContainerTrigger to UGisbImportContainerTrigger.
+	 * Recursively converts the triggered child container.
+	 */
+	static UGisbImportContainerTrigger* TriggerSoundToImport(
+		UGisbContainerTrigger* RuntimeContainer,
 		UObject* Outer
 	);
 

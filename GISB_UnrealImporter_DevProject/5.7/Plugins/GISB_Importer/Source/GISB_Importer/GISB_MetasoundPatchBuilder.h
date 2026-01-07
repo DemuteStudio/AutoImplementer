@@ -10,6 +10,7 @@
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerSwitch.h"
 #include "GisbImportContainerBlend.h"
+#include "GisbImportContainerTrigger.h"
 #include "MetasoundFrontend.h"
 #include "MetasoundFrontendDocument.h"
 #include "MetasoundDocumentInterface.h"
@@ -82,6 +83,12 @@ private:
 	// Build blend container node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildBlendNode(
 		UGisbImportContainerBlend* blendContainer,
+		const FString& Name
+	);
+
+	// Build trigger container node patch
+	static TScriptInterface<IMetaSoundDocumentInterface> BuildTriggerNode(
+		UGisbImportContainerTrigger* triggerContainer,
 		const FString& Name
 	);
 

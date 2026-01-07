@@ -10,6 +10,7 @@
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerSwitch.h"
+#include "GisbImportContainerTrigger.h"
 #include "MetasoundFrontend.h"
 #include "MetasoundFrontendDocument.h"
 #include "MetasoundDocumentInterface.h"
@@ -58,6 +59,12 @@ private:
 
 	static UMetaSoundSource* BuildSwitchSource(
 		UGisbImportContainerSwitch* switchContainer,
+		const FString& Name,
+		bool canLoop
+	);
+
+	static UMetaSoundSource* BuildTriggerSource(
+		UGisbImportContainerTrigger* triggerContainer,
 		const FString& Name,
 		bool canLoop
 	);

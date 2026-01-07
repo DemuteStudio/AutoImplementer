@@ -31,6 +31,10 @@ UGisbImportContainerBase* UGisbContainerConverter::RuntimeToImportContainer(
 	{
 		return SwitchSoundToImport(SwitchSound, Outer);
 	}
+	else if (UGisbContainerTrigger* TriggerSound = Cast<UGisbContainerTrigger>(RuntimeContainer))
+	{
+		return TriggerSoundToImport(TriggerSound, Outer);
+	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("RuntimeToImportContainer: Unknown container type: %s"),
@@ -205,6 +209,51 @@ UGisbImportContainerSwitch* UGisbContainerConverter::SwitchSoundToImport(
 	return ImportContainer;
 }
 
+UGisbImportContainerTrigger* UGisbContainerConverter::TriggerSoundToImport(
+	UGisbContainerTrigger* RuntimeContainer,
+	UObject* Outer)
+{
+	if (!RuntimeContainer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TriggerSoundToImport: RuntimeContainer is null"));
+		return nullptr;
+	}
+
+	UGisbImportContainerTrigger* ImportContainer = NewObject<UGisbImportContainerTrigger>(
+		Outer,
+		UGisbImportContainerTrigger::StaticClass(),
+		NAME_None,
+		RF_Public | RF_Transient
+	);
+
+	// Copy base properties (attenuation, volume, pitch, lowpass, probability)
+	CopyBaseProperties(RuntimeContainer, ImportContainer);
+
+	// Copy trigger-specific properties
+	ImportContainer->TransitionMode = RuntimeContainer->TransitionMode;
+	ImportContainer->TriggerRate = RuntimeContainer->TriggerRate;
+	ImportContainer->TriggerAmount = RuntimeContainer->TriggerAmount;
+	ImportContainer->CrossfadeDuration = RuntimeContainer->CrossfadeDuration;
+
+	// Recursively convert the triggered child sound
+	if (RuntimeContainer->TriggeredSound)
+	{
+		UGisbImportContainerBase* ImportChild = RuntimeToImportContainer(
+			RuntimeContainer->TriggeredSound,
+			ImportContainer
+		);
+		if (ImportChild)
+		{
+			ImportContainer->TriggeredSoundImport = ImportChild;
+		}
+	}
+
+	// Set Type field
+	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
+
+	return ImportContainer;
+}
+
 void UGisbContainerConverter::CopyBaseProperties(
 	UGisbContainerBase* RuntimeContainer,
 	UGisbImportContainerBase* ImportContainer)
@@ -246,6 +295,10 @@ FString UGisbContainerConverter::GetTypeStringForRuntimeContainer(UGisbContainer
 	else if (RuntimeContainer->IsA<UGisbContainerBlend>())
 	{
 		return TEXT("GISB.Runtime.GISB_BlendSound, Demute.GISB");
+	}
+	else if (RuntimeContainer->IsA<UGisbContainerTrigger>())
+	{
+		return TEXT("GISB.Runtime.GISB_TriggerSound, Demute.GISB");
 	}
 	else
 	{

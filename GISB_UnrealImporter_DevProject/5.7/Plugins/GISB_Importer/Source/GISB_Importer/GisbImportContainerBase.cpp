@@ -5,6 +5,7 @@
 #include "GisbImportContainerBlend.h"
 #include "GisbImportContainerSimpleSound.h"
 #include "GisbImportContainerSwitch.h"
+#include "GisbImportContainerTrigger.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 
 UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject,
@@ -29,6 +30,10 @@ UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TShared
 	else if (Type == "GISB.Runtime.GISB_BlendSound, Demute.GISB")
 	{
 		Container = NewObject<UGisbImportContainerBlend>(Outer);
+	}
+	else if (Type == "GISB.Runtime.GISB_TriggerSound, Demute.GISB")
+	{
+		Container = NewObject<UGisbImportContainerTrigger>(Outer);
 	}
 	else
 	{

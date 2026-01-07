@@ -110,6 +110,13 @@ FChildPatchResult UGISB_MetasoundPatchBuilder::BuildChildNode(
 
 		Result.Patch = BuildBlendNode(Blend, ChildName);
 	}
+	else if (UGisbImportContainerTrigger* Trigger = Cast<UGisbImportContainerTrigger>(container))
+	{
+		// Generate name with container type
+		FString ChildName = FString::Printf(TEXT("%s_Trigger%d"), *ParentName, ChildIndex);
+
+		Result.Patch = BuildTriggerNode(Trigger, ChildName);
+	}
 	else
 	{
 		FString ChildName = FString::Printf(TEXT("%s_Unknown%d"), *ParentName, ChildIndex);
@@ -499,6 +506,98 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("BuildSwitchNode: Successfully built MetaSound for: %s"), *Name);
+	return patch;
+}
+
+// ============================================================================
+// BuildTriggerNode - Build MetaSound patch for Trigger container
+// ============================================================================
+
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::BuildTriggerNode(
+	UGisbImportContainerTrigger* triggerContainer,
+	const FString& Name
+)
+{
+	if (!triggerContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerNode: Container is null"));
+		return nullptr;
+	}
+
+	EMetaSoundBuilderResult result;
+
+	// Determine if stereo
+	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(triggerContainer->TriggeredSoundImport);
+
+	// Create patch builder
+	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(
+		FName(Name), result);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerNode: Failed to create patch builder for %s"), *Name);
+		return nullptr;
+	}
+
+	// Create graph input for OnPlay trigger
+	FMetaSoundBuilderNodeOutputHandle PlayTrigger = builder->AddGraphInputNode(
+		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
+
+	// Create graph output for OnFinished trigger
+	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
+		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+
+	// Create graph output for audio left/mono
+	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
+		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
+
+	// Create graph output for audio right (if stereo)
+	FMetaSoundBuilderNodeInputHandle AudioRight;
+	FMetaSoundNodeHandle audioRightNode;
+	if (isStereo)
+	{
+		AudioRight = builder->AddGraphOutputNode(
+			FName("Audio Right"), FName("Audio"), FMetasoundFrontendLiteral(), result);
+		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
+	}
+
+	// Create layout manager
+	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
+
+	// Register graph I/O nodes with layout manager
+	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
+	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
+	if (isStereo)
+	{
+		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
+	}
+
+	// Call core method (does all the work!)
+	BuildTriggerCore(
+		builder, triggerContainer, Name,
+		PlayTrigger, OnFinished,
+		AudioLeft, isStereo ? &AudioRight : nullptr,
+		&Layout
+	);
+
+	// Apply layout and build
+	Layout.ComputeLayout();
+	Layout.ApplyLayout();
+
+	UMetaSoundEditorSubsystem* EditorSubsystem = GEditor->GetEditorSubsystem<UMetaSoundEditorSubsystem>();
+	TScriptInterface<IMetaSoundDocumentInterface> patch = EditorSubsystem->BuildToAsset(builder, "ISX - Demute", Name, PathGlobal, result);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerNode: BuildToAsset FAILED for: %s"), *Name);
+		return patch;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildTriggerNode: Successfully built MetaSound for: %s"), *Name);
 	return patch;
 }
 

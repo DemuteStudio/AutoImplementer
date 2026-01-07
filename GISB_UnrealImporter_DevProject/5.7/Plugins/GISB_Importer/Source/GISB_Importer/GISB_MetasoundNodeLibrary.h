@@ -27,6 +27,8 @@ public:
 
 	// Trigger/Control Flow Nodes
 	static FMetasoundFrontendClassName* ProbabilityNode;
+	static FMetasoundFrontendClassName* TriggerRepeatNode;
+	static FMetasoundFrontendClassName* TriggerCounterNode;
 	static TArray<FMetasoundFrontendClassName*>* TriggerAnyNodes;
 	static TArray<FMetasoundFrontendClassName*>* TriggerAccumulateNodes;
 
@@ -39,6 +41,14 @@ public:
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbVolumeNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbPitchNode;
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbLowpassNode;
+	
+	//Custom GISB Crossfade Nodes
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbTimedCrossfadeMono;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbTimedCrossfadeStereo;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbCrossfadeTimer;
+	
+	//Custom GISB Nodes
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbTriggerStopper;
 	
 	//Custom Configurable Nodes
 	static FMetasoundFrontendClassName* GisbSwitchNode;

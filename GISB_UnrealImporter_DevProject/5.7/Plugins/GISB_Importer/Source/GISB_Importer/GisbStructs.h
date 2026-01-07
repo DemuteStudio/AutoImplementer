@@ -6,6 +6,14 @@
 #include "Curves/CurveFloat.h"
 #include "GisbStructs.generated.h"
 
+// Trigger container transition mode
+UENUM(BlueprintType)
+enum class EGisbTriggerTransitionMode : uint8
+{
+	TriggerRate = 0   UMETA(DisplayName = "Trigger Rate"),
+	Crossfade = 1     UMETA(DisplayName = "Crossfade")
+};
+
 USTRUCT(BlueprintType)
 struct FGisbAttenuation
 {

@@ -9,6 +9,7 @@
 #include "GisbImportContainerRandom.h"
 #include "GisbImportContainerSwitch.h"
 #include "GisbImportContainerBlend.h"
+#include "GisbImportContainerTrigger.h"
 #include "GisbStructs.h"
 #include "MetasoundFrontendDocument.h"
 #include "GISB_MetasoundBuilderCore.generated.h"
@@ -219,6 +220,31 @@ protected:
 	static void BuildBlendCore(
 		UMetaSoundBuilderBase* builder,
 		UGisbImportContainerBlend* blendContainer,
+		const FString& Name,
+		FMetaSoundBuilderNodeOutputHandle& triggerInput,
+		FMetaSoundBuilderNodeInputHandle& onFinishedInput,
+		FMetaSoundBuilderNodeInputHandle& audioLeftOutput,
+		FMetaSoundBuilderNodeInputHandle* audioRightOutput,
+		GisbMetasoundLayoutManager* Layout = nullptr
+	);
+
+	/**
+	 * Core logic for building trigger container nodes.
+	 * Uses TriggerRepeat node to repeatedly trigger child sound at fixed rate.
+	 * Barebones implementation - TODO: Add crossfade support, trigger amount limiting.
+	 *
+	 * @param builder The MetaSound builder (patch or source)
+	 * @param triggerContainer Trigger container with child and settings
+	 * @param Name Base name for child asset generation
+	 * @param triggerInput Input trigger handle
+	 * @param onFinishedInput Output trigger handle
+	 * @param audioLeftOutput Graph audio left/mono output node (connected automatically)
+	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
+	 * @param Layout Optional layout manager
+	 */
+	static void BuildTriggerCore(
+		UMetaSoundBuilderBase* builder,
+		UGisbImportContainerTrigger* triggerContainer,
 		const FString& Name,
 		FMetaSoundBuilderNodeOutputHandle& triggerInput,
 		FMetaSoundBuilderNodeInputHandle& onFinishedInput,
