@@ -31,12 +31,29 @@ namespace GISB.Runtime
 
         public override Dictionary<string, List<string>> ExtractParameters()
         {
-            return TriggeredSound.ExtractParameters();;
+            if(TriggeredSound == null)
+            {
+                return new Dictionary<string, List<string>>();
+            }
+            return TriggeredSound.ExtractParameters();
         }
 
         public override List<string> ExtractFloatParameters()
         {
-            return TriggeredSound.ExtractFloatParameters();
+            List<string> floatParameters = new List<string>();
+            if(TriggeredSound != null)
+            {
+                floatParameters = TriggeredSound.ExtractFloatParameters();
+            }
+
+            foreach (GISB_Modulator modulator in modulators)
+            {
+                if (!floatParameters.Contains(modulator.ParameterName))
+                {
+                    floatParameters.Add(modulator.ParameterName);
+                }
+            }
+            return floatParameters;
         }
 
         public override float ExtractMaxDistance()
