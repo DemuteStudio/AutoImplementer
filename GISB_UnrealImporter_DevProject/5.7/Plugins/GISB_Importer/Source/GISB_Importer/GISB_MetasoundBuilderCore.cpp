@@ -2716,13 +2716,6 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		return;
 	}
 
-	FMetaSoundBuilderNodeOutputHandle childOnFinishedHandle = builder->FindNodeOutputByName(childPatchHandle, TEXT("On Finished"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child On Finished output"));
-		return;
-	}
-
 	FMetaSoundBuilderNodeOutputHandle childAudioLeftHandle = builder->FindNodeOutputByName(
 		childPatchHandle,
 		bisStereo ? TEXT("Audio Left") : TEXT("Audio Mono"),
@@ -2767,9 +2760,30 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	// Connect outputs
 	// ========================================================================
 
-	// NOTE: TriggerRepeat runs indefinitely (no "On Finished" output)
-	// In barebones mode, the parent "On Finished" will never fire
-	// TODO: Add trigger amount limiting with TriggerCounter to fire "On Finished" when done
+	// Connect child On Finished to parent On Finished (only if parent is non-looping)
+	if (onFinishedInput.IsSet())
+	{
+		FMetaSoundBuilderNodeOutputHandle childOnFinishedHandle = builder->FindNodeOutputByName(childPatchHandle, TEXT("On Finished"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BuildTriggerCore: Child has no On Finished output (might be looping)"));
+		}
+		else
+		{
+			// Connect child On Finished to parent On Finished
+			builder->ConnectNodes(childOnFinishedHandle, onFinishedInput, result);
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to parent"));
+				return;
+			}
+
+			if (Layout)
+			{
+				Layout->RegisterConnection(childPatchHandle, FMetaSoundNodeHandle(onFinishedInput.NodeID));
+			}
+		}
+	}
 
 	// Connect processed audio to graph outputs
 	builder->ConnectNodes(childAudioLeftHandle, audioLeftOutput, result);
