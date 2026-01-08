@@ -233,7 +233,8 @@ protected:
 	/**
 	 * Core logic for building trigger container nodes.
 	 * Uses TriggerRepeat node to repeatedly trigger child sound at fixed rate.
-	 * Barebones implementation - TODO: Add crossfade support, trigger amount limiting.
+	 * Uses TriggerStopper node to limit On Finished signal based on TriggerAmount (when != -1).
+	 * TODO: Add crossfade mode support.
 	 *
 	 * @param builder The MetaSound builder (patch or source)
 	 * @param triggerContainer Trigger container with child and settings

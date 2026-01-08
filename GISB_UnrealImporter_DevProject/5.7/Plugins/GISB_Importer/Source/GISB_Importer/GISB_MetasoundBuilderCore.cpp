@@ -2673,7 +2673,74 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		return;
 	}
 
-	// TODO: Implement trigger amount limiting using TriggerCounter node
+	// ========================================================================
+	// Add TriggerStopper node to limit trigger count (only if TriggerAmount != -1)
+	// ========================================================================
+	FMetaSoundNodeHandle triggerStopperHandle;
+
+	if (triggerContainer->TriggerAmount != -1)
+	{
+		// Add TriggerStopper node
+		triggerStopperHandle = builder->AddNode(UGISB_MetasoundNodeLibrary::GisbTriggerStopper, result);
+		if (result != EMetaSoundBuilderResult::Succeeded || !triggerStopperHandle.IsSet())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add TriggerStopper node"));
+			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterNode(triggerStopperHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerStopper"));
+		}
+
+		// Set Trigger Amount input
+		FMetaSoundBuilderNodeInputHandle triggerAmountHandle = builder->FindNodeInputByName(
+			triggerStopperHandle,
+			TEXT("Trigger Amount"),
+			result
+		);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Trigger Amount input"));
+			return;
+		}
+
+		FAudioParameter triggerAmountParam = FAudioParameter(TEXT("Trigger Amount"), triggerContainer->TriggerAmount);
+		FMetasoundFrontendLiteral triggerAmountValue = FMetasoundFrontendLiteral(triggerAmountParam);
+		builder->SetNodeInputDefault(triggerAmountHandle, triggerAmountValue, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerStopper Trigger Amount"));
+			return;
+		}
+
+		// Connect TriggerRepeat RepeatOut to TriggerStopper Trigger In
+		FMetaSoundBuilderNodeInputHandle triggerStopperTriggerInHandle = builder->FindNodeInputByName(
+			triggerStopperHandle,
+			TEXT("Trigger In"),
+			result
+		);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Trigger In input"));
+			return;
+		}
+
+		builder->ConnectNodes(triggerRepeatOnTriggerHandle, triggerStopperTriggerInHandle, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerRepeat to TriggerStopper"));
+			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(triggerRepeatHandle, triggerStopperHandle);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Added TriggerStopper with TriggerAmount=%d"), triggerContainer->TriggerAmount);
+	}
+
 	// TODO: Implement crossfade mode support
 
 	// ========================================================================
@@ -2770,17 +2837,76 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		}
 		else
 		{
-			// Connect child On Finished to parent On Finished
-			builder->ConnectNodes(childOnFinishedHandle, onFinishedInput, result);
-			if (result != EMetaSoundBuilderResult::Succeeded)
+			if (triggerContainer->TriggerAmount != -1)
 			{
-				UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to parent"));
-				return;
-			}
+				// Use TriggerStopper to filter On Finished based on trigger count
+				// Connect child On Finished to TriggerStopper Child On Finished input
+				FMetaSoundBuilderNodeInputHandle triggerStopperChildOnFinishedHandle = builder->FindNodeInputByName(
+					triggerStopperHandle,
+					TEXT("Child On Finished"),
+					result
+				);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Child On Finished input"));
+					return;
+				}
 
-			if (Layout)
+				builder->ConnectNodes(childOnFinishedHandle, triggerStopperChildOnFinishedHandle, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to TriggerStopper"));
+					return;
+				}
+
+				if (Layout)
+				{
+					Layout->RegisterConnection(childPatchHandle, triggerStopperHandle);
+				}
+
+				// Get TriggerStopper Filtered On Finished output
+				FMetaSoundBuilderNodeOutputHandle triggerStopperOnFinishedHandle = builder->FindNodeOutputByName(
+					triggerStopperHandle,
+					TEXT("Filtered On Finished"),
+					result
+				);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Filtered On Finished output"));
+					return;
+				}
+
+				// Connect TriggerStopper Filtered On Finished to parent On Finished
+				builder->ConnectNodes(triggerStopperOnFinishedHandle, onFinishedInput, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerStopper to parent On Finished"));
+					return;
+				}
+
+				if (Layout)
+				{
+					Layout->RegisterConnection(triggerStopperHandle, FMetaSoundNodeHandle(onFinishedInput.NodeID));
+				}
+
+				UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Connected TriggerStopper to filter On Finished signal"));
+			}
+			else
 			{
-				Layout->RegisterConnection(childPatchHandle, FMetaSoundNodeHandle(onFinishedInput.NodeID));
+				// Infinite trigger mode: Connect child On Finished directly to parent On Finished
+				builder->ConnectNodes(childOnFinishedHandle, onFinishedInput, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to parent"));
+					return;
+				}
+
+				if (Layout)
+				{
+					Layout->RegisterConnection(childPatchHandle, FMetaSoundNodeHandle(onFinishedInput.NodeID));
+				}
+
+				UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Infinite trigger mode, connected child On Finished directly"));
 			}
 		}
 	}
