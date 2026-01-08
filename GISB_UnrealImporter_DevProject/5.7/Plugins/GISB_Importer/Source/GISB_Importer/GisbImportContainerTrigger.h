@@ -37,4 +37,5 @@ public:
 
 	// Convert import container to runtime container
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) override;
+	virtual void ComputeCachedProperties() override;
 };

@@ -22,6 +22,9 @@ void UGisbImportContainerBlend::ParseJson(const TSharedPtr<FJsonObject>& JsonObj
 			}
 		}
 	}
+
+	// Compute cached properties after all children are created
+	ComputeCachedProperties();
 }
 
 UGisbContainerBase* UGisbImportContainerBlend::ToRuntimeContainer(UObject* Outer)
@@ -39,4 +42,23 @@ UGisbContainerBase* UGisbImportContainerBlend::ToRuntimeContainer(UObject* Outer
 	}
 
 	return RuntimeContainer;
+}
+
+void UGisbImportContainerBlend::ComputeCachedProperties()
+{
+	// Composite node: check if ANY child is stereo or looping
+	bIsStereo = false;
+	bIsLooping = false;
+
+	for (UGisbImportContainerBase* Child : SoundArray)
+	{
+		if (Child)
+		{
+			if (Child->bIsStereo) bIsStereo = true;
+			if (Child->bIsLooping) bIsLooping = true;
+
+			// Early exit if both are true
+			if (bIsStereo && bIsLooping) break;
+		}
+	}
 }

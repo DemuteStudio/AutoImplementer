@@ -84,6 +84,9 @@ void UGisbImportContainerSimpleSound::ParseJson(const TSharedPtr<FJsonObject>& J
     {
         UE_LOG(LogTemp, Warning, TEXT("Sound file not found at path: %s"), *AbsoluteAudioFilePath);
     }
+
+    // Compute cached properties after all data is loaded
+    ComputeCachedProperties();
 }
 
 UGisbContainerBase* UGisbImportContainerSimpleSound::ToRuntimeContainer(UObject* Outer)
@@ -94,4 +97,11 @@ UGisbContainerBase* UGisbImportContainerSimpleSound::ToRuntimeContainer(UObject*
     RuntimeContainer->loop = loop;
     RuntimeContainer->MarkPackageDirty();
     return RuntimeContainer;
+}
+
+void UGisbImportContainerSimpleSound::ComputeCachedProperties()
+{
+    // Leaf node: directly check properties
+    bIsLooping = loop;
+    bIsStereo = SoundWave && SoundWave->NumChannels > 1;
 }

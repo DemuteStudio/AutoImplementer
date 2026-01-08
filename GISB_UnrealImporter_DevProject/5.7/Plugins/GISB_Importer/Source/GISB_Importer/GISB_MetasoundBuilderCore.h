@@ -118,7 +118,9 @@ protected:
 
 	/**
 	 * Recursively check if container or any of its children contain stereo audio.
+	 * @deprecated Use container->bIsStereo cached property instead.
 	 */
+	UE_DEPRECATED(5.7, "Use container->bIsStereo cached property instead")
 	static bool isStereo(UGisbImportContainerBase* container);
 
 	// ============================================================================

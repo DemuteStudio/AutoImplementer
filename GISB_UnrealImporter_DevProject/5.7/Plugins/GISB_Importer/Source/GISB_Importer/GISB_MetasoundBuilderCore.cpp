@@ -790,8 +790,8 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 {
 	EMetaSoundBuilderResult result;
 
-	bool bisStereo = isStereo(simpleSound);
-	
+	bool bisStereo = simpleSound->bIsStereo;
+
 	// Setup probability filtering (modifies triggerInput and onFinishedInput)
 	setupProbability(builder, simpleSound->PlaybackProbabilityPercent, triggerInput, onFinishedInput, Layout);
 
@@ -866,14 +866,7 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 		Layout->RegisterConnection(FMetaSoundNodeHandle(triggerInput.NodeID), wavePlayerHandle);
 	}
 
-	// Get Wave Player outputs
-	FMetaSoundBuilderNodeOutputHandle onFinishedHandle = builder->FindNodeOutputByName(wavePlayerHandle, TEXT("On Finished"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSimpleSoundCore: FAILED to find On Finished output"));
-		return;
-	}
-
+	// Get Wave Player audio outputs
 	FMetaSoundBuilderNodeOutputHandle audioLeftHandle = builder->FindNodeOutputByName(
 		wavePlayerHandle,
 		bisStereo ? TEXT("Out Left") : TEXT("Out Mono"),
@@ -900,17 +893,27 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 	// This modifies audioLeftHandle and audioRightHandle to point to processed outputs
 	setupAttributes(builder, simpleSound, bisStereo, &triggerInput, audioLeftHandle, audioRightHandle, Layout);
 
-	// Connect wave player's On Finished to the output finish handle
-	builder->ConnectNodes(onFinishedHandle, onFinishedInput, result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
+	// Connect wave player's On Finished to the output finish handle (only if output exists)
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSimpleSoundCore: FAILED to connect On Finished"));
-		return;
-	}
+		FMetaSoundBuilderNodeOutputHandle onFinishedHandle = builder->FindNodeOutputByName(wavePlayerHandle, TEXT("On Finished"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSimpleSoundCore: FAILED to find On Finished output"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		builder->ConnectNodes(onFinishedHandle, onFinishedInput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSimpleSoundCore: FAILED to connect On Finished"));
+			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		}
 	}
 
 	// Connect final audio outputs to graph outputs (automatic connection)
@@ -964,7 +967,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	// Extract parameters from container (eliminates redundant params)
 	int32 avoidLastPlayed = randomContainer->AvoidLastPlayed;
 	float playbackProbability = randomContainer->PlaybackProbabilityPercent;
-	bool bisStereo = isStereo(randomContainer);
+	bool bisStereo = randomContainer->bIsStereo;
 
 	// Setup probability filtering at container level
 	setupProbability(builder, playbackProbability, triggerInput, onFinishedInput, Layout);
@@ -1091,20 +1094,24 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		Layout->RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
 	}
 
-	// Add TriggerAny node
-	FMetaSoundNodeHandle anyHandle = builder->AddNodeByClassName(
-		*((*UGISB_MetasoundNodeLibrary::TriggerAnyNodes)[adjustedIndex]),
-		result
-	);
-	if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
+	// Add TriggerAny node (only if On Finished output exists)
+	FMetaSoundNodeHandle anyHandle;
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to add TriggerAny node"));
-		return;
-	}
+		anyHandle = builder->AddNodeByClassName(
+			*((*UGISB_MetasoundNodeLibrary::TriggerAnyNodes)[adjustedIndex]),
+			result
+		);
+		if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to add TriggerAny node"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+		if (Layout)
+		{
+			Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+		}
 	}
 
 	// Track instantiated nodes for parameter propagation
@@ -1129,7 +1136,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 			Layout->RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
 		}
 
-		bool bIsChildStereo = childResults[i].bIsStereo;
+		bool bIsChildStereo = childResults[i].Container->bIsStereo;
 
 		// Connect Random output i -> Child Play input
 		FMetaSoundBuilderNodeOutputHandle randomOut = builder->FindNodeOutputByName(
@@ -1223,35 +1230,39 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 			}
 		}
 
-		// Connect Child OnFinished -> TriggerAny input i
-		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
+		// Connect Child OnFinished -> TriggerAny input i (only if parent has OnFinished)
+		if (onFinishedInput.IsSet())
 		{
-			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find child On Finished %d"), i);
-			continue;
-		}
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildRandomCore: Child %d has no On Finished output (might be looping)"), i);
+			}
+			else
+			{
+				FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
+					anyHandle,
+					*FString::Printf(TEXT("In %d"), i),
+					result
+				);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find TriggerAny input %d"), i);
+					continue;
+				}
 
-		FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
-			anyHandle,
-			*FString::Printf(TEXT("In %d"), i),
-			result
-		);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find TriggerAny input %d"), i);
-			continue;
-		}
+				builder->ConnectNodes(childFinished, anyIn, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect child finished to any %d"), i);
+					continue;
+				}
 
-		builder->ConnectNodes(childFinished, anyIn, result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect child finished to any %d"), i);
-			continue;
-		}
-
-		if (Layout)
-		{
-			Layout->RegisterConnection(childPatchNode, anyHandle);
+				if (Layout)
+				{
+					Layout->RegisterConnection(childPatchNode, anyHandle);
+				}
+			}
 		}
 	}
 
@@ -1329,27 +1340,30 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		}
 	}
 
-	FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find TriggerAny output"));
-		return;
-	}
-
 	// Apply audio effects chain to mixed output
 	setupAttributes(builder, randomContainer, bisStereo, &triggerInput, audioLeftHandle, audioRightHandle, Layout);
 
-	// Connect finished to output
-	builder->ConnectNodes(finishedHandle, onFinishedInput, result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
+	// Connect TriggerAny output to parent's On Finished (only if parent has OnFinished)
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect finished to output"));
-		return;
-	}
+		FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find TriggerAny output"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		builder->ConnectNodes(finishedHandle, onFinishedInput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect finished to output"));
+			return;
+		}
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		}
 	}
 
 	// Connect final audio outputs to graph outputs (automatic connection)
@@ -1409,7 +1423,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 
 	// Extract parameters from container
 	float playbackProbability = switchContainer->PlaybackProbabilityPercent;
-	bool bisStereo = isStereo(switchContainer);
+	bool bisStereo = switchContainer->bIsStereo;
 	FString defaultCase = switchContainer->DefaultParameterValue.ToString();
 
 	// Apply probability filtering
@@ -1637,19 +1651,24 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		Layout->RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
 	}
 
-	FMetaSoundNodeHandle anyHandle = builder->AddNodeByClassName(
-		*((*UGISB_MetasoundNodeLibrary::TriggerAnyNodes)[adjustedIndex]),
-		result
-	);
-	if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
+	// Add TriggerAny node (only if On Finished output exists)
+	FMetaSoundNodeHandle anyHandle;
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add TriggerAny node"));
-		return;
-	}
+		anyHandle = builder->AddNodeByClassName(
+			*((*UGISB_MetasoundNodeLibrary::TriggerAnyNodes)[adjustedIndex]),
+			result
+		);
+		if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add TriggerAny node"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+		if (Layout)
+		{
+			Layout->RegisterNode(anyHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAny"));
+		}
 	}
 
 	// ============================================================================
@@ -1697,7 +1716,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 			Layout->RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
 		}
 
-		bool bIsChildStereo = childResults[i].bIsStereo;
+		bool bIsChildStereo = childResults[i].Container->bIsStereo;
 
 		// Use the pre-fetched output handle by index instead of FindNodeOutputByName
 		FMetaSoundBuilderNodeOutputHandle switchOut = allSwitchOutputs[i];
@@ -1783,35 +1802,39 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 			}
 		}
 
-		// Connect Child OnFinished -> TriggerAny
-		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
+		// Connect Child OnFinished -> TriggerAny input i (only if parent has OnFinished)
+		if (onFinishedInput.IsSet())
 		{
-			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find child On Finished %d"), i);
-			continue;
-		}
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildSwitchCore: Child %d has no On Finished output (might be looping)"), i);
+			}
+			else
+			{
+				FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
+					anyHandle,
+					*FString::Printf(TEXT("In %d"), i),
+					result
+				);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find TriggerAny input %d"), i);
+					continue;
+				}
 
-		FMetaSoundBuilderNodeInputHandle anyIn = builder->FindNodeInputByName(
-			anyHandle,
-			*FString::Printf(TEXT("In %d"), i),
-			result
-		);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find TriggerAny input %d"), i);
-			continue;
-		}
+				builder->ConnectNodes(childFinished, anyIn, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect child finished to any %d"), i);
+					continue;
+				}
 
-		builder->ConnectNodes(childFinished, anyIn, result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect child finished to any %d"), i);
-			continue;
-		}
-
-		if (Layout)
-		{
-			Layout->RegisterConnection(childPatchNode, anyHandle);
+				if (Layout)
+				{
+					Layout->RegisterConnection(childPatchNode, anyHandle);
+				}
+			}
 		}
 	}
 
@@ -1889,24 +1912,28 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		}
 	}
 
-	FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
+	// Connect TriggerAny output to parent's On Finished (only if parent has OnFinished)
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find TriggerAny output"));
-		return;
-	}
+		FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(anyHandle, TEXT("Out"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find TriggerAny output"));
+			return;
+		}
 
-	// Connect finished to output
-	builder->ConnectNodes(finishedHandle, onFinishedInput, result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect finished to output"));
-		return;
-	}
+		// Connect finished to output
+		builder->ConnectNodes(finishedHandle, onFinishedInput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect finished to output"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		}
 	}
 
 	// Apply audio effects chain (Volume, Pitch, Lowpass)
@@ -1968,7 +1995,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 
 	// Extract parameters from container
 	float playbackProbability = blendContainer->PlaybackProbabilityPercent;
-	bool bisStereo = isStereo(blendContainer);
+	bool bisStereo = blendContainer->bIsStereo;
 
 	// Apply probability filtering
 	setupProbability(builder, playbackProbability, triggerInput, onFinishedInput, Layout);
@@ -1991,7 +2018,6 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		}
 
 		childResults.Add(childResult);
-		if (childResult.bIsStereo) bisStereo = true;
 	}
 
 	if (childResults.Num() == 0)
@@ -2024,20 +2050,24 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		Layout->RegisterNode(mixerHandle, EGisbNodeCategory::SignalProcessor, TEXT("AudioMixer"));
 	}
 
-	// Add TriggerAccumulate node (waits for all triggers)
-	FMetaSoundNodeHandle accumulateHandle = builder->AddNodeByClassName(
-		*((*UGISB_MetasoundNodeLibrary::TriggerAccumulateNodes)[childResults.Num() - 1]),
-		result
-	);
-	if (result != EMetaSoundBuilderResult::Succeeded || !accumulateHandle.IsSet())
+	// Add TriggerAccumulate node (only if On Finished output exists)
+	FMetaSoundNodeHandle accumulateHandle;
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to add TriggerAccumulate node"));
-		return;
-	}
+		accumulateHandle = builder->AddNodeByClassName(
+			*((*UGISB_MetasoundNodeLibrary::TriggerAccumulateNodes)[childResults.Num() - 1]),
+			result
+		);
+		if (result != EMetaSoundBuilderResult::Succeeded || !accumulateHandle.IsSet())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to add TriggerAccumulate node"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterNode(accumulateHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAccumulate"));
+		if (Layout)
+		{
+			Layout->RegisterNode(accumulateHandle, EGisbNodeCategory::TriggerFlow, TEXT("TriggerAccumulate"));
+		}
 	}
 
 	// Track instantiated nodes for parameter propagation
@@ -2062,7 +2092,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 			Layout->RegisterNode(childPatchNode, EGisbNodeCategory::SignalSource, childNodeName);
 		}
 
-		bool bIsChildStereo = childResults[i].bIsStereo;
+		bool bIsChildStereo = childResults[i].Container->bIsStereo;
 
 		// Connect trigger input -> Child Play input (all children play simultaneously)
 		FMetaSoundBuilderNodeInputHandle childPlayInput = builder->FindNodeInputByName(childPatchNode, TEXT("Play"), result);
@@ -2145,35 +2175,39 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 			}
 		}
 
-		// Connect Child OnFinished -> TriggerAccumulate input i
-		FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
+		// Connect Child OnFinished -> TriggerAccumulate input i (only if parent has OnFinished)
+		if (onFinishedInput.IsSet())
 		{
-			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find child On Finished %d"), i);
-			continue;
-		}
+			FMetaSoundBuilderNodeOutputHandle childFinished = builder->FindNodeOutputByName(childPatchNode, TEXT("On Finished"), result);
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildBlendCore: Child %d has no On Finished output (might be looping)"), i);
+			}
+			else
+			{
+				FMetaSoundBuilderNodeInputHandle accumulateIn = builder->FindNodeInputByName(
+					accumulateHandle,
+					*FString::Printf(TEXT("In %d"), i),
+					result
+				);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find TriggerAccumulate input %d"), i);
+					continue;
+				}
 
-		FMetaSoundBuilderNodeInputHandle accumulateIn = builder->FindNodeInputByName(
-			accumulateHandle,
-			*FString::Printf(TEXT("In %d"), i),
-			result
-		);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find TriggerAccumulate input %d"), i);
-			continue;
-		}
+				builder->ConnectNodes(childFinished, accumulateIn, result);
+				if (result != EMetaSoundBuilderResult::Succeeded)
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect child finished to accumulate %d"), i);
+					continue;
+				}
 
-		builder->ConnectNodes(childFinished, accumulateIn, result);
-		if (result != EMetaSoundBuilderResult::Succeeded)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect child finished to accumulate %d"), i);
-			continue;
-		}
-
-		if (Layout)
-		{
-			Layout->RegisterConnection(childPatchNode, accumulateHandle);
+				if (Layout)
+				{
+					Layout->RegisterConnection(childPatchNode, accumulateHandle);
+				}
+			}
 		}
 	}
 
@@ -2251,24 +2285,28 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		}
 	}
 
-	FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
+	// Connect TriggerAccumulate output to parent's On Finished (only if parent has OnFinished)
+	if (onFinishedInput.IsSet())
 	{
-		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find TriggerAccumulate output"));
-		return;
-	}
+		FMetaSoundBuilderNodeOutputHandle finishedHandle = builder->FindNodeOutputByName(accumulateHandle, TEXT("Out"), result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find TriggerAccumulate output"));
+			return;
+		}
 
-	// Connect finished to output
-	builder->ConnectNodes(finishedHandle, onFinishedInput, result);
-	if (result != EMetaSoundBuilderResult::Succeeded)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect finished to output"));
-		return;
-	}
+		// Connect finished to output
+		builder->ConnectNodes(finishedHandle, onFinishedInput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect finished to output"));
+			return;
+		}
 
-	if (Layout)
-	{
-		Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		if (Layout)
+		{
+			Layout->RegisterConnection(FMetaSoundNodeHandle(finishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
+		}
 	}
 
 	// Apply audio effects chain (Volume, Pitch, Lowpass)
@@ -2580,20 +2618,37 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		return;
 	}
 
+	// Set trigger rate period (seconds between triggers)
 	FMetaSoundBuilderNodeInputHandle triggerRepeatPeriodHandle = builder->FindNodeInputByName(triggerRepeatHandle, TEXT("Period"), result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Period input"));
 		return;
 	}
-
-	// Set trigger rate period (seconds between triggers)
+	
 	FAudioParameter periodParam = FAudioParameter(TEXT("Period"), triggerContainer->TriggerRate);
 	FMetasoundFrontendLiteral periodValue = FMetasoundFrontendLiteral(periodParam);
 	builder->SetNodeInputDefault(triggerRepeatPeriodHandle, periodValue, result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerRepeat Period"));
+		return;
+	}
+	
+	// Set trigger amount (seconds between triggers)
+	FMetaSoundBuilderNodeInputHandle triggerRepeatAmountHandle = builder->FindNodeInputByName(triggerRepeatHandle, TEXT("Num Repeats"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Num Repeats input"));
+		return;
+	}
+	
+	FAudioParameter amountParam = FAudioParameter(TEXT("Num Repeats"), triggerContainer->TriggerAmount == -1 ? 0 : triggerContainer->TriggerAmount);
+	FMetasoundFrontendLiteral amountValue = FMetasoundFrontendLiteral(amountParam);
+	builder->SetNodeInputDefault(triggerRepeatAmountHandle, amountValue, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerRepeat Amount"));
 		return;
 	}
 
@@ -2636,8 +2691,8 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		return;
 	}
 
-	// Determine stereo from built child (like blend/switch do)
-	bool bisStereo = childResult.bIsStereo;
+	// Use parent container's cached stereo property (already computed from child during import)
+	bool bisStereo = triggerContainer->bIsStereo;
 
 	// Add instantiated child patch node to graph
 	FMetaSoundNodeHandle childPatchHandle = builder->AddNode(childResult.Patch, result);

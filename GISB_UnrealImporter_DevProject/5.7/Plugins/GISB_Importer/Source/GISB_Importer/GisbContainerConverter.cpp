@@ -87,6 +87,9 @@ UGisbImportContainerSimpleSound* UGisbContainerConverter::SimpleSoundToImport(
 	// Set Type field
 	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
 
+	// Compute cached properties now that all data is populated
+	ImportContainer->ComputeCachedProperties();
+
 	return ImportContainer;
 }
 
@@ -128,6 +131,9 @@ UGisbImportContainerRandom* UGisbContainerConverter::RandomSoundToImport(
 
 	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
 
+	// Compute cached properties - aggregates from converted children
+	ImportContainer->ComputeCachedProperties();
+
 	return ImportContainer;
 }
 
@@ -164,6 +170,9 @@ UGisbImportContainerBlend* UGisbContainerConverter::BlendSoundToImport(
 	}
 
 	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
+
+	// Compute cached properties - aggregates from converted children
+	ImportContainer->ComputeCachedProperties();
 
 	return ImportContainer;
 }
@@ -205,6 +214,9 @@ UGisbImportContainerSwitch* UGisbContainerConverter::SwitchSoundToImport(
 	}
 
 	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
+
+	// Compute cached properties - aggregates from converted children
+	ImportContainer->ComputeCachedProperties();
 
 	return ImportContainer;
 }
@@ -250,6 +262,9 @@ UGisbImportContainerTrigger* UGisbContainerConverter::TriggerSoundToImport(
 
 	// Set Type field
 	ImportContainer->Type = GetTypeStringForRuntimeContainer(RuntimeContainer);
+
+	// Compute cached properties - inherits from converted child
+	ImportContainer->ComputeCachedProperties();
 
 	return ImportContainer;
 }

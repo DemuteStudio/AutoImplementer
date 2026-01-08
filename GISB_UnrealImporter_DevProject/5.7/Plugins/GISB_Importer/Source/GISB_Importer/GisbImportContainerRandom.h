@@ -20,7 +20,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GISB")
 	int AvoidLastPlayed = 0;
-	
+
 	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) override;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) override;
+	virtual void ComputeCachedProperties() override;
 };

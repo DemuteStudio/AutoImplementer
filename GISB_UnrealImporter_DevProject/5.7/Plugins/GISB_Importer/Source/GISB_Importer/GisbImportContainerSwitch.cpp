@@ -29,6 +29,9 @@ void UGisbImportContainerSwitch::ParseJson(const TSharedPtr<FJsonObject>& JsonOb
 			}
 		}
 	}
+
+	// Compute cached properties after all children are created
+	ComputeCachedProperties();
 }
 
 UGisbContainerBase* UGisbImportContainerSwitch::ToRuntimeContainer(UObject* Outer)
@@ -47,4 +50,23 @@ UGisbContainerBase* UGisbImportContainerSwitch::ToRuntimeContainer(UObject* Oute
 		}
 	}
 	return RuntimeContainer;
+}
+
+void UGisbImportContainerSwitch::ComputeCachedProperties()
+{
+	// Composite node: check if ANY child in dictionary is stereo or looping
+	bIsStereo = false;
+	bIsLooping = false;
+
+	for (const auto& Pair : SoundDictionary)
+	{
+		if (Pair.Value)
+		{
+			if (Pair.Value->bIsStereo) bIsStereo = true;
+			if (Pair.Value->bIsLooping) bIsLooping = true;
+
+			// Early exit if both are true
+			if (bIsStereo && bIsLooping) break;
+		}
+	}
 }

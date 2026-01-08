@@ -33,9 +33,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
 	float PlaybackProbabilityPercent;
 
+	/** Cached property: true if this container or any child requires stereo audio channels.
+	 * Computed once during ParseJson() to avoid repeated recursive traversals. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GISB|Cached Properties")
+	bool bIsStereo = false;
+
+	/** Cached property: true if this container or any child contains looping audio.
+	 * Computed once during ParseJson() to avoid repeated recursive traversals. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GISB|Cached Properties")
+	bool bIsLooping = false;
+
 	static UGisbImportContainerBase* CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path);
 
 	virtual void ParseJson(const TSharedPtr<FJsonObject>& JsonObject, UObject* Outer, const FString& path) /*PURE_VIRTUAL(USoundContainerBase::ParseJson, )*/;
 	virtual UGisbContainerBase* ToRuntimeContainer(UObject* Outer) PURE_VIRTUAL(UGisbImportContainerBase::ToRuntimeContainer, return nullptr;);
 	void AssignBaseVariables(UGisbContainerBase* Container) const;
+
+	/** Computes and caches bIsStereo and bIsLooping properties based on this container's
+	 * type and children. Must be called AFTER all children are fully parsed. */
+	virtual void ComputeCachedProperties();
 };

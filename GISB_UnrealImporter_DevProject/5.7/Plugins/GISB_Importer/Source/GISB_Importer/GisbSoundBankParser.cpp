@@ -13,7 +13,7 @@ void ParseSoundBank(const FString& JsonString)
 	if (FJsonSerializer::Deserialize(Reader, JsonObject))
 	{
 		const TSharedPtr<FJsonObject>* Events;
-		if (JsonObject->TryGetObjectField("soundBankEvents", Events))
+		if (JsonObject->TryGetObjectField(TEXT("soundBankEvents"), Events))
 		{
 			for (const auto& Event : (*Events)->Values)
 			{
@@ -21,7 +21,7 @@ void ParseSoundBank(const FString& JsonString)
 
 				TSharedPtr<FJsonObject> EventObj = Event.Value->AsObject();
 				const TSharedPtr<FJsonObject>* RootContainerJson;
-				if (EventObj->TryGetObjectField("rootSoundContainer", RootContainerJson))
+				if (EventObj->TryGetObjectField(TEXT("rootSoundContainer"), RootContainerJson))
 				{
 
 				}

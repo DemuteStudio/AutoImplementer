@@ -90,10 +90,9 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::CreateMetasoundFromGISB(UGisbImp
 
 	UGISB_MetasoundNodeLibrary::SetupNodes();
 
-	// Detect stereo and looping requirements
-	bool shouldLoop = false;
-	bool shouldStereo = false;
-	DetectLoopAndMono(gisb, shouldLoop, shouldStereo);
+	// Get cached stereo and looping properties
+	bool shouldLoop = gisb->bIsLooping;
+	bool shouldStereo = gisb->bIsStereo;
 
 	// Dispatch to appropriate Build method based on container type
 	UMetaSoundSource* source;
@@ -230,7 +229,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSimpleSource(
 
 	// Register graph I/O nodes with layout
 	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	if (OnFinishedNode.IsSet())
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	}
 
 	// Register audio output(s)
 	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
@@ -312,7 +314,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildRandomSource(
 	EMetaSoundBuilderResult result;
 
 	// Determine stereo format by checking children
-	bool bisStereo = isStereo(randomContainer);
+	bool bisStereo = randomContainer->bIsStereo;
 	EMetaSoundOutputAudioFormat format = bisStereo ?
 		EMetaSoundOutputAudioFormat::Stereo : EMetaSoundOutputAudioFormat::Mono;
 
@@ -345,7 +347,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildRandomSource(
 
 	// Register graph I/O nodes with layout
 	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	if (OnFinishedNode.IsSet())
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	}
 
 	// Register audio output(s)
 	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
@@ -443,7 +448,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildBlendSource(
 	EMetaSoundBuilderResult result;
 
 	// Determine stereo format
-	bool bisStereo = isStereo(blendContainer);
+	bool bisStereo = blendContainer->bIsStereo;
 	EMetaSoundOutputAudioFormat format = bisStereo ?
 		EMetaSoundOutputAudioFormat::Stereo : EMetaSoundOutputAudioFormat::Mono;
 
@@ -476,7 +481,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildBlendSource(
 
 	// Register graph I/O nodes with layout
 	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	if (OnFinishedNode.IsSet())
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	}
 
 	// Register audio output(s)
 	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
@@ -549,7 +557,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 	EMetaSoundBuilderResult result;
 
 	// Determine stereo format
-	bool bisStereo = isStereo(switchContainer);
+	bool bisStereo = switchContainer->bIsStereo;
 	EMetaSoundOutputAudioFormat format = bisStereo ?
 		EMetaSoundOutputAudioFormat::Stereo : EMetaSoundOutputAudioFormat::Mono;
 
@@ -582,7 +590,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 
 	// Register graph I/O nodes with layout
 	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	if (OnFinishedNode.IsSet())
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	}
 
 	// Register audio output(s)
 	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);
@@ -677,7 +688,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildTriggerSource(
 	EMetaSoundBuilderResult result;
 
 	// Determine output format (mono or stereo)
-	bool bisStereo = isStereo(triggerContainer->TriggeredSoundImport);
+	bool bisStereo = triggerContainer->TriggeredSoundImport->bIsStereo;
 
 	EMetaSoundOutputAudioFormat format = bisStereo ?
 		EMetaSoundOutputAudioFormat::Stereo : EMetaSoundOutputAudioFormat::Mono;
@@ -711,7 +722,10 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildTriggerSource(
 
 	// Register graph I/O nodes with layout
 	Layout.RegisterGraphInputNode(onPlayNodeHandle, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	if (OnFinishedNode.IsSet())
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNodeHandle, FName("On Finished"));
+	}
 
 	// Register audio output(s)
 	FMetaSoundNodeHandle audioLeftNodeHandle(outAudioHandles[0].NodeID);

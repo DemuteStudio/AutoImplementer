@@ -37,10 +37,10 @@ struct FGisbPinInfo
 struct FChildPatchResult
 {
 	TScriptInterface<IMetaSoundDocumentInterface> Patch;
-	bool bIsStereo;
+	UGisbImportContainerBase* Container;  // Source container (access cached properties via Container->bIsStereo)
 	TArray<FGisbPinInfo> RequiredInputs;  // Parameters this child needs (e.g., switch parameter)
 
-	FChildPatchResult() : Patch(nullptr), bIsStereo(false) {}
+	FChildPatchResult() : Patch(nullptr), Container(nullptr) {}
 };
 
 UCLASS()

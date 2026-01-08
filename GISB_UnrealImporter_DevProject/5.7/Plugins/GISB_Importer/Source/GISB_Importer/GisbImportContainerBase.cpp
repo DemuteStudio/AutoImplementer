@@ -287,3 +287,10 @@ void UGisbImportContainerBase::AssignBaseVariables(UGisbContainerBase* Container
 	Container->Lowpass = Lowpass;
 	Container->PlaybackProbabilityPercent = PlaybackProbabilityPercent;
 }
+
+void UGisbImportContainerBase::ComputeCachedProperties()
+{
+	// Base implementation: default to false
+	bIsStereo = false;
+	bIsLooping = false;
+}

@@ -71,8 +71,8 @@ FChildPatchResult UGISB_MetasoundPatchBuilder::BuildChildNode(
 		return Result;
 	}
 
-	//Recursively check children to know if stereo
-	Result.bIsStereo = isStereo(container);
+	// Store container reference to access cached properties (bIsStereo, bIsLooping)
+	Result.Container = container;
 
 	// Dispatch based on container type
 	if (UGisbImportContainerSimpleSound* SimpleSound = Cast<UGisbImportContainerSimpleSound>(container))
@@ -161,10 +161,15 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
-	// Create graph output for OnFinished trigger
-	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
-		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
-	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+	// Create graph output for OnFinished trigger (only if not looping)
+	FMetaSoundBuilderNodeInputHandle OnFinished;
+	FMetaSoundNodeHandle onFinishedNode;
+	if (!simpleSound->bIsLooping)
+	{
+		OnFinished = builder->AddGraphOutputNode(
+			FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		onFinishedNode = FMetaSoundNodeHandle(OnFinished.NodeID);
+	}
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
@@ -186,7 +191,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	if (!simpleSound->bIsLooping)
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	}
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)
 	{
@@ -235,7 +243,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	EMetaSoundBuilderResult result;
-	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(randomContainer);
+	bool isStereo = randomContainer->bIsStereo;
 
 	// Create patch builder
 	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(FName(Name), result);
@@ -250,10 +258,15 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
-	// Create graph output for OnFinished trigger
-	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
-		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
-	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+	// Create graph output for OnFinished trigger (only if not looping)
+	FMetaSoundBuilderNodeInputHandle OnFinished;
+	FMetaSoundNodeHandle onFinishedNode;
+	if (!randomContainer->bIsLooping)
+	{
+		OnFinished = builder->AddGraphOutputNode(
+			FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		onFinishedNode = FMetaSoundNodeHandle(OnFinished.NodeID);
+	}
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
@@ -275,7 +288,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	if (!randomContainer->bIsLooping)
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	}
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)
 	{
@@ -325,7 +341,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	EMetaSoundBuilderResult result;
 
 	// Determine stereo format by checking children recursively
-	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(blendContainer);
+	bool isStereo = blendContainer->bIsStereo;
 
 	// Create patch builder with graph inputs/outputs
 	FMetaSoundBuilderNodeOutputHandle PlayTrigger;
@@ -347,10 +363,14 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
-	// Create graph output for OnFinished trigger
-	OnFinished = builder->AddGraphOutputNode(
-		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
-	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+	// Create graph output for OnFinished trigger (only if not looping)
+	FMetaSoundNodeHandle onFinishedNode;
+	if (!blendContainer->bIsLooping)
+	{
+		OnFinished = builder->AddGraphOutputNode(
+			FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		onFinishedNode = FMetaSoundNodeHandle(OnFinished.NodeID);
+	}
 
 	// Create graph output for audio left/mono
 	AudioLeft = builder->AddGraphOutputNode(
@@ -371,7 +391,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	if (!blendContainer->bIsLooping)
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	}
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)
 	{
@@ -421,7 +444,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	EMetaSoundBuilderResult result;
 
 	// Determine stereo format by checking children recursively
-	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(switchContainer);
+	bool isStereo = switchContainer->bIsStereo;
 
 	// Create patch builder
 	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(
@@ -438,10 +461,15 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
-	// Create graph output for OnFinished trigger
-	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
-		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
-	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+	// Create graph output for OnFinished trigger (only if not looping)
+	FMetaSoundBuilderNodeInputHandle OnFinished;
+	FMetaSoundNodeHandle onFinishedNode;
+	if (!switchContainer->bIsLooping)
+	{
+		OnFinished = builder->AddGraphOutputNode(
+			FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		onFinishedNode = FMetaSoundNodeHandle(OnFinished.NodeID);
+	}
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
@@ -477,7 +505,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
 	Layout.RegisterGraphInputNode(parameterInputNode, SwitchParameterName);
-	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	if (!switchContainer->bIsLooping)
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	}
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)
 	{
@@ -527,7 +558,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	EMetaSoundBuilderResult result;
 
 	// Determine if stereo
-	bool isStereo = UGISB_MetasoundBuilderCore::isStereo(triggerContainer->TriggeredSoundImport);
+	bool isStereo = triggerContainer->TriggeredSoundImport->bIsStereo;
 
 	// Create patch builder
 	UMetaSoundPatchBuilder* builder = BuilderGlobal->CreatePatchBuilder(
@@ -544,10 +575,15 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName("Play"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle triggerInputNode(PlayTrigger.NodeID);
 
-	// Create graph output for OnFinished trigger
-	FMetaSoundBuilderNodeInputHandle OnFinished = builder->AddGraphOutputNode(
-		FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
-	FMetaSoundNodeHandle onFinishedNode(OnFinished.NodeID);
+	// Create graph output for OnFinished trigger (only if not looping)
+	FMetaSoundBuilderNodeInputHandle OnFinished;
+	FMetaSoundNodeHandle onFinishedNode;
+	if (!triggerContainer->bIsLooping)
+	{
+		OnFinished = builder->AddGraphOutputNode(
+			FName("On Finished"), FName("Trigger"), FMetasoundFrontendLiteral(), result);
+		onFinishedNode = FMetaSoundNodeHandle(OnFinished.NodeID);
+	}
 
 	// Create graph output for audio left/mono
 	FMetaSoundBuilderNodeInputHandle AudioLeft = builder->AddGraphOutputNode(
@@ -569,7 +605,10 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 	// Register graph I/O nodes with layout manager
 	Layout.RegisterGraphInputNode(triggerInputNode, FName("Play"));
-	Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	if (!triggerContainer->bIsLooping)
+	{
+		Layout.RegisterGraphOutputNode(onFinishedNode, FName("On Finished"));
+	}
 	Layout.RegisterGraphOutputNode(audioLeftNode, FName(isStereo ? "Audio Left" : "Audio Mono"));
 	if (isStereo)
 	{

@@ -25,6 +25,9 @@ void UGisbImportContainerTrigger::ParseJson(const TSharedPtr<FJsonObject>& JsonO
 		// Use polymorphic factory to create correct import container type
 		TriggeredSoundImport = UGisbImportContainerBase::CreateFromJson(*TriggeredSoundJson, Outer, path);
 	}
+
+	// Compute cached properties after child is created
+	ComputeCachedProperties();
 }
 
 UGisbContainerBase* UGisbImportContainerTrigger::ToRuntimeContainer(UObject* Outer)
@@ -48,4 +51,26 @@ UGisbContainerBase* UGisbImportContainerTrigger::ToRuntimeContainer(UObject* Out
 	}
 
 	return RuntimeContainer;
+}
+
+void UGisbImportContainerTrigger::ComputeCachedProperties()
+{
+	// Single child container: inherit properties from triggered child
+	if (TriggeredSoundImport)
+	{
+		bIsStereo = TriggeredSoundImport->bIsStereo;
+		bIsLooping = TriggeredSoundImport->bIsLooping;
+	}
+	else
+	{
+		bIsStereo = false;
+		bIsLooping = false;
+	}
+	
+	//Checking looping capabilities of trigger container
+	bIsLooping = 
+		bIsLooping || 
+		TransitionMode == EGisbTriggerTransitionMode::Crossfade ||
+		(TransitionMode == EGisbTriggerTransitionMode::TriggerRate && TriggerAmount == -1);
+	
 }

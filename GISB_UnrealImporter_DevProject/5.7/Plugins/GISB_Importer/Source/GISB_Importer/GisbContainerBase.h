@@ -30,7 +30,7 @@ public:
 	FGisbLowPass Lowpass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GISB")
-	float PlaybackProbabilityPercent;
+	float PlaybackProbabilityPercent = 100;
 
 	// Called to trigger playback
 	virtual void Play(class UObject* WorldContext, const TMap<FName, FString>& Parameters) PURE_VIRTUAL(USoundContainerRuntime::Play, );

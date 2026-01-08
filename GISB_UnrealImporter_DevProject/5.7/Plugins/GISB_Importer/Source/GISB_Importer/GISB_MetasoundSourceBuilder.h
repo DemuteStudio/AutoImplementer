@@ -69,6 +69,10 @@ private:
 		bool canLoop
 	);
 
-	// Keep existing helper
+	/**
+	 * Detects loop and stereo properties recursively.
+	 * @deprecated Use container->bIsLooping and container->bIsStereo cached properties instead.
+	 */
+	UE_DEPRECATED(5.7, "Use container->bIsLooping and container->bIsStereo cached properties instead")
 	static void DetectLoopAndMono(UGisbImportContainerBase* gisb, bool& shouldLoop, bool& shouldStereo);
 };
