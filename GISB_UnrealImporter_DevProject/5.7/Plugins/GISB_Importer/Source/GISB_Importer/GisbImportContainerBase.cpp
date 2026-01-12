@@ -57,7 +57,7 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 
 	//Save attenuation asset
 	FString AssetName = JsonAttenuationValue->GetStringField(TEXT("name"));
-	FString AssetPath = FPaths::Combine("/Game/SoundBanks/", AssetName);
+	FString AssetPath = FPaths::Combine("/Game/ISX_SoundBanks/", AssetName);
 	if (FPackageName::IsValidLongPackageName(AssetPath))
 	{
 		UPackage* Package = CreatePackage(*AssetPath);

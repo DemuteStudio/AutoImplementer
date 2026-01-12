@@ -363,34 +363,9 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildRandomSource(
 		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
 	}
 
-	// Build child patches (reuse PatchBuilder's BuildChildNode!)
-	TArray<FChildPatchResult> childResults;
-	for (int32 i = 0; i < randomContainer->SoundArray.Num(); i++)
-	{
-		FChildPatchResult childResult = UGISB_MetasoundPatchBuilder::BuildChildNode(
-			randomContainer->SoundArray[i],
-			Name,
-			i
-		);
-
-		if (!childResult.Patch)
-		{
-			UE_LOG(LogTemp, Error, TEXT("BuildRandomSource: Failed to build child %d"), i);
-			continue;
-		}
-
-		childResults.Add(childResult);
-	}
-
-	if (childResults.Num() < 1)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BuildRandomSource: No valid children"));
-		return nullptr;
-	}
-
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class)
-	// BuildCore connects directly to graph outputs (Pattern A)
+	// BuildCore builds children and connects to graph outputs
 	// ========================================================================
 
 	BuildRandomCore(

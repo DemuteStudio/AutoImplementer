@@ -476,7 +476,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		FName(isStereo ? "Audio Left" : "Audio Mono"), FName("Audio"), FMetasoundFrontendLiteral(), result);
 	FMetaSoundNodeHandle audioLeftNode(AudioLeft.NodeID);
 
-	// Create graph output for audio right (if stereo)
+	// Create graphre output for audio right (if stereo)
 	FMetaSoundBuilderNodeInputHandle AudioRight;
 	FMetaSoundNodeHandle audioRightNode;
 	if (isStereo)

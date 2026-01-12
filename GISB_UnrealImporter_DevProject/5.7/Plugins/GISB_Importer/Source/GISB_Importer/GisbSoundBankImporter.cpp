@@ -90,8 +90,8 @@ void UGisbSoundBankImporter::ImportSoundBankFromJson()
 void UGisbSoundBankImporter::ImportEventFromJson(FString EventName, FString FullPath,const TSharedPtr<FJsonObject>* RootAudioObject)
 {
     FString AssetName = EventName + "_SoundBank";
-    FString PackagePath = "/Game/SoundBanks/" + AssetName;
-	FString MSPackagePath = "/Game/SoundBanks/MetaSounds/";
+    FString PackagePath = "/Game/ISX_SoundBanks/" + AssetName;
+	FString MSPackagePath = "/Game/ISX_SoundBanks/MetaSounds/";
     UPackage* Package = CreatePackage(*PackagePath);
 
     // Create a new sound asset and set its properties
