@@ -607,7 +607,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 	// PHASE 2: Build Core Logic (from base class)
 	// ========================================================================
 
-	BuildSwitchCore(
+	TArray<FGisbPinInfo> PropagatedInputs = BuildSwitchCore(
 		builder,
 		switchContainer,
 		Name,
@@ -618,6 +618,9 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSwitchSource(
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,
 		&Layout
 	);
+
+	// Note: PropagatedInputs are already created as graph inputs by BuildSwitchCore
+	// Sources are top-level, so we don't need to propagate upwards
 
 	// ========================================================================
 	// PHASE 3: Apply Layout and Build to Asset
@@ -717,12 +720,15 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildTriggerSource(
 	// Call core build method
 	// ========================================================================
 
-	BuildTriggerCore(
+	TArray<FGisbPinInfo> RequiredInputs = BuildTriggerCore(
 		builder, triggerContainer, Name,
 		OnPlayNode, OnFinishedNode,
 		outAudioHandles[0], (bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,
 		&Layout
 	);
+
+	// Note: RequiredInputs are already created as graph inputs by BuildTriggerCore
+	// Sources are top-level, so we don't need to propagate upwards
 
 	// ========================================================================
 	// Apply layout and build source asset

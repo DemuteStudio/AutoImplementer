@@ -71,25 +71,29 @@ private:
 	// Build random container node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildRandomNode(
 		UGisbImportContainerRandom* randomContainer,
-		const FString& Name
+		const FString& Name,
+		TArray<FGisbPinInfo>* outRequiredInputs = nullptr
 	);
 
 	// Build switch container node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildSwitchNode(
 		UGisbImportContainerSwitch* switchContainer,
-		const FString& Name
+		const FString& Name,
+		TArray<FGisbPinInfo>* outRequiredInputs = nullptr
 	);
 
 	// Build blend container node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildBlendNode(
 		UGisbImportContainerBlend* blendContainer,
-		const FString& Name
+		const FString& Name,
+		TArray<FGisbPinInfo>* outRequiredInputs = nullptr
 	);
 
 	// Build trigger container node patch
 	static TScriptInterface<IMetaSoundDocumentInterface> BuildTriggerNode(
 		UGisbImportContainerTrigger* triggerContainer,
-		const FString& Name
+		const FString& Name,
+		TArray<FGisbPinInfo>* outRequiredInputs = nullptr
 	);
 
 	// Note: Helper methods (setupProbability, setupAttributes, ConnectProbabilityNode,

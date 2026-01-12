@@ -41,7 +41,11 @@ const FVector2D Icon20x20(20.0f, 20.0f);
 TSharedRef< FSlateStyleSet > FGISB_ImporterStyle::Create()
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("GISB_ImporterStyle"));
-	Style->SetContentRoot(IPluginManager::Get().FindPlugin("GISB_Importer")->GetBaseDir() / TEXT("Resources"));
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("GISB_Importer");
+	if (Plugin.IsValid())
+	{
+		Style->SetContentRoot(Plugin->GetBaseDir() / TEXT("Resources"));
+	}
 
 	Style->Set("GISB_Importer.PluginAction", new IMAGE_BRUSH_SVG(TEXT("PlaceholderButtonIcon"), Icon20x20));
 	return Style;
@@ -57,5 +61,5 @@ void FGISB_ImporterStyle::ReloadTextures()
 
 const ISlateStyle& FGISB_ImporterStyle::Get()
 {
-	return *StyleInstance;
+	return *StyleInstance.Get();
 }

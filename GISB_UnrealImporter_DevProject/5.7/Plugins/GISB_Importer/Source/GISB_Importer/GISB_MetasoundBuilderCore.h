@@ -165,7 +165,10 @@ protected:
 	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
 	 * @param Layout Optional layout manager
 	 */
-	static void BuildRandomCore(
+	/**
+	 * @return Array of propagated child inputs
+	 */
+	static TArray<FGisbPinInfo> BuildRandomCore(
 		UMetaSoundBuilderBase* builder,
 		UGisbImportContainerRandom* randomContainer,
 		const FString& Name,
@@ -192,7 +195,10 @@ protected:
 	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
 	 * @param Layout Optional layout manager
 	 */
-	static void BuildSwitchCore(
+	/**
+	 * @return Array of propagated child inputs (does NOT include Switch Parameter - that's created by Build SwitchNode)
+	 */
+	static TArray<FGisbPinInfo> BuildSwitchCore(
 		UMetaSoundBuilderBase* builder,
 		UGisbImportContainerSwitch* switchContainer,
 		const FString& Name,
@@ -218,8 +224,9 @@ protected:
 	 * @param audioLeftOutput Graph audio left/mono output node (connected automatically)
 	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
 	 * @param Layout Optional layout manager
+	 * @return Array of propagated child inputs
 	 */
-	static void BuildBlendCore(
+	static TArray<FGisbPinInfo> BuildBlendCore(
 		UMetaSoundBuilderBase* builder,
 		UGisbImportContainerBlend* blendContainer,
 		const FString& Name,
@@ -244,8 +251,9 @@ protected:
 	 * @param audioLeftOutput Graph audio left/mono output node (connected automatically)
 	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
 	 * @param Layout Optional layout manager
+	 * @return Array of all inputs created (Break + any propagated from children)
 	 */
-	static void BuildTriggerCore(
+	static TArray<FGisbPinInfo> BuildTriggerCore(
 		UMetaSoundBuilderBase* builder,
 		UGisbImportContainerTrigger* triggerContainer,
 		const FString& Name,

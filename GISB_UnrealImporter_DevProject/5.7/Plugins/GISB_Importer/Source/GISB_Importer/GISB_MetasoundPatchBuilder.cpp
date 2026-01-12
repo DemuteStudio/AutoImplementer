@@ -89,33 +89,28 @@ FChildPatchResult UGISB_MetasoundPatchBuilder::BuildChildNode(
 		FString ChildName = FString::Printf(TEXT("%s_Random%d"), *ParentName, ChildIndex);
 
 		// Build Random patch (will recursively build children)
-		Result.Patch = BuildRandomNode(Random, ChildName);
+		Result.Patch = BuildRandomNode(Random, ChildName, &Result.RequiredInputs);
 	}
 	else if (UGisbImportContainerSwitch* Switch = Cast<UGisbImportContainerSwitch>(container))
 	{
 		// Generate name with container type
 		FString ChildName = FString::Printf(TEXT("%s_Switch%d"), *ParentName, ChildIndex);
 
-		Result.Patch = BuildSwitchNode(Switch, ChildName);
-
-		// Track the switch parameter this child needs
-		FName SwitchParameterName = Switch->ParameterID.IsNone() ?
-			FName("Switch Parameter") : Switch->ParameterID;
-		Result.RequiredInputs.Add(FGisbPinInfo(SwitchParameterName, FName("String")));
+		Result.Patch = BuildSwitchNode(Switch, ChildName, &Result.RequiredInputs);
 	}
 	else if (UGisbImportContainerBlend* Blend = Cast<UGisbImportContainerBlend>(container))
 	{
 		// Generate name with container type
 		FString ChildName = FString::Printf(TEXT("%s_Blend%d"), *ParentName, ChildIndex);
 
-		Result.Patch = BuildBlendNode(Blend, ChildName);
+		Result.Patch = BuildBlendNode(Blend, ChildName, &Result.RequiredInputs);
 	}
 	else if (UGisbImportContainerTrigger* Trigger = Cast<UGisbImportContainerTrigger>(container))
 	{
 		// Generate name with container type
 		FString ChildName = FString::Printf(TEXT("%s_Trigger%d"), *ParentName, ChildIndex);
 
-		Result.Patch = BuildTriggerNode(Trigger, ChildName);
+		Result.Patch = BuildTriggerNode(Trigger, ChildName, &Result.RequiredInputs);
 	}
 	else
 	{
@@ -233,7 +228,8 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::BuildRandomNode(
 	UGisbImportContainerRandom* randomContainer,
-	const FString& Name
+	const FString& Name,
+	TArray<FGisbPinInfo>* outRequiredInputs
 )
 {
 	if (!randomContainer)
@@ -299,12 +295,18 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	// Call core method (does all the work!)
-	BuildRandomCore(
+	TArray<FGisbPinInfo> PropagatedChildInputs = BuildRandomCore(
 		builder, randomContainer, Name,
 		PlayTrigger, OnFinished,
 		AudioLeft, isStereo ? &AudioRight : nullptr,
 		&Layout
 	);
+
+	// Store propagated child inputs if output parameter provided
+	if (outRequiredInputs)
+	{
+		*outRequiredInputs = PropagatedChildInputs;
+	}
 
 	// Apply layout and build
 	Layout.ComputeLayout();
@@ -329,7 +331,8 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::BuildBlendNode(
 	UGisbImportContainerBlend* blendContainer,
-	const FString& Name
+	const FString& Name,
+	TArray<FGisbPinInfo>* outRequiredInputs
 )
 {
 	if (!blendContainer)
@@ -402,12 +405,18 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	// Call core method (does all the work!)
-	BuildBlendCore(
+	TArray<FGisbPinInfo> PropagatedChildInputs = BuildBlendCore(
 		builder, blendContainer, Name,
 		PlayTrigger, OnFinished,
 		AudioLeft, isStereo ? &AudioRight : nullptr,
 		&Layout
 	);
+
+	// Store propagated child inputs if output parameter provided
+	if (outRequiredInputs)
+	{
+		*outRequiredInputs = PropagatedChildInputs;
+	}
 
 	// Apply layout and build
 	Layout.ComputeLayout();
@@ -432,7 +441,8 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::BuildSwitchNode(
 	UGisbImportContainerSwitch* switchContainer,
-	const FString& Name
+	const FString& Name,
+	TArray<FGisbPinInfo>* outRequiredInputs
 )
 {
 	if (!switchContainer)
@@ -516,12 +526,21 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	// Call core method (does all the work!)
-	BuildSwitchCore(
+	TArray<FGisbPinInfo> PropagatedChildInputs = BuildSwitchCore(
 		builder, switchContainer, Name,
 		ParameterInput, PlayTrigger, OnFinished,
 		AudioLeft, isStereo ? &AudioRight : nullptr,
 		&Layout
 	);
+
+	// Combine Switch Parameter with propagated child inputs
+	if (outRequiredInputs)
+	{
+		// Add Switch Parameter
+		outRequiredInputs->Add(FGisbPinInfo(SwitchParameterName, FName("String")));
+		// Add all propagated child inputs
+		outRequiredInputs->Append(PropagatedChildInputs);
+	}
 
 	// Apply layout and build
 	Layout.ComputeLayout();
@@ -546,7 +565,8 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::BuildTriggerNode(
 	UGisbImportContainerTrigger* triggerContainer,
-	const FString& Name
+	const FString& Name,
+	TArray<FGisbPinInfo>* outRequiredInputs
 )
 {
 	if (!triggerContainer)
@@ -616,12 +636,18 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	}
 
 	// Call core method (does all the work!)
-	BuildTriggerCore(
+	TArray<FGisbPinInfo> RequiredInputs = BuildTriggerCore(
 		builder, triggerContainer, Name,
 		PlayTrigger, OnFinished,
 		AudioLeft, isStereo ? &AudioRight : nullptr,
 		&Layout
 	);
+
+	// Store required inputs in output parameter if provided
+	if (outRequiredInputs)
+	{
+		*outRequiredInputs = RequiredInputs;
+	}
 
 	// Apply layout and build
 	Layout.ComputeLayout();

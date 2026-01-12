@@ -951,7 +951,7 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 	}
 }
 
-void UGISB_MetasoundBuilderCore::BuildRandomCore(
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::BuildRandomCore(
 	UMetaSoundBuilderBase* builder,
 	UGisbImportContainerRandom* randomContainer,
 	const FString& Name,
@@ -994,13 +994,13 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (childResults.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: No valid children built"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (childResults.Num() > 8)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: >8 children not yet supported"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Add Random Selector node
@@ -1008,7 +1008,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !randomHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to add Random node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1021,14 +1021,14 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find Exec input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	builder->ConnectNodes(triggerInput, execHandle, result);
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect trigger to random"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1041,7 +1041,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find No Repeats input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FAudioParameter noRepeatParam = FAudioParameter(TEXT("No Repeats"), avoidLastPlayed);
@@ -1050,7 +1050,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to set No Repeats"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Configure Possibilities parameter
@@ -1064,7 +1064,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find Possibilities input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FAudioParameter possibilitiesParam = FAudioParameter(TEXT("Possibilities"), possibilities);
@@ -1073,7 +1073,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to set Possibilities"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Add Mixer node (array indexed by numChildren-2)
@@ -1086,7 +1086,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !mixerHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to add Mixer node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1105,7 +1105,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to add TriggerAny node"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1116,6 +1116,10 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 
 	// Track instantiated nodes for parameter propagation
 	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
+	// Track created parent graph inputs to avoid duplicates
+	TMap<FName, FGisbPinInfo> CreatedInputs;  // Name -> PinInfo (for returning)
+	TMap<FName, FMetaSoundBuilderNodeOutputHandle> CreatedInputHandles;  // Name -> Handle (for connecting)
 
 	// Instantiate child patches and connect
 	for (int32 i = 0; i < childResults.Num(); i++)
@@ -1264,58 +1268,105 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 				}
 			}
 		}
-	}
 
-	// ============================================================================
-	// Parameter Propagation: Merge required inputs from children and propagate to parent
-	// ============================================================================
+		// ============================================================================
+		// Step C: Process child's RequiredInputs (parameter propagation)
+		// ============================================================================
 
-	// Collect all unique required inputs from children
-	TMap<FName, FName> UniqueInputs;  // Name -> Type
-	for (const FChildPatchResult& ChildResult : childResults)
-	{
-		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		for (const FGisbPinInfo& RequiredInput : childResults[i].RequiredInputs)
 		{
-			if (UniqueInputs.Contains(RequiredInput.PinName))
+			FMetaSoundBuilderNodeOutputHandle parentInputOutput;
+
+			// 1. Check if we already created this input (from previous sibling)
+			if (CreatedInputHandles.Contains(RequiredInput.PinName))
 			{
-				// Check for type mismatch
-				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
-				{
-					UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: Parameter '%s' has conflicting types: %s vs %s"),
-						*RequiredInput.PinName.ToString(),
-						*UniqueInputs[RequiredInput.PinName].ToString(),
-						*RequiredInput.PinType.ToString());
-				}
+				// Reuse existing graph input
+				parentInputOutput = CreatedInputHandles[RequiredInput.PinName];
+
+				UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Reusing existing input '%s' for child %d"),
+					*RequiredInput.PinName.ToString(), i);
 			}
 			else
 			{
-				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
-				UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Child needs parameter '%s' (type: %s)"),
-					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+				// 2. Create new parent graph input
+				parentInputOutput = builder->AddGraphInputNode(
+					RequiredInput.PinName,      // e.g., "Switch Parameter", "Break"
+					RequiredInput.PinType,      // e.g., "String", "Trigger"
+					FMetasoundFrontendLiteral(),
+					result
+				);
+
+				if (result != EMetaSoundBuilderResult::Succeeded || !parentInputOutput.IsSet())
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: Failed to create graph input '%s' (type: %s) for child %d"),
+						*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+					continue;  // Skip this input
+				}
+
+				// Track for next children
+				CreatedInputHandles.Add(RequiredInput.PinName, parentInputOutput);
+				CreatedInputs.Add(RequiredInput.PinName, RequiredInput);
+
+				UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Created graph input '%s' (type: %s) for child %d"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+
+				// Register with layout manager
+				if (Layout)
+				{
+					FMetaSoundNodeHandle inputNode(parentInputOutput.NodeID);
+					Layout->RegisterGraphInputNode(inputNode, RequiredInput.PinName);
+				}
 			}
+
+			// 3. Find the corresponding input on the child node
+			FMetaSoundBuilderNodeInputHandle childInput = builder->FindNodeInputByName(
+				childPatchNode,
+				*RequiredInput.PinName.ToString(),
+				result
+			);
+
+			if (result != EMetaSoundBuilderResult::Succeeded || !childInput.IsSet())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildRandomCore: Child %d doesn't have expected input '%s' - skipping connection"),
+					i, *RequiredInput.PinName.ToString());
+				continue;
+			}
+
+			// 4. Connect parent graph input -> child node input
+			builder->ConnectNodes(parentInputOutput, childInput, result);
+
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: Failed to connect input '%s' to child %d"),
+					*RequiredInput.PinName.ToString(), i);
+				continue;
+			}
+
+			// Register connection with layout manager
+			if (Layout)
+			{
+				Layout->RegisterConnection(
+					FMetaSoundNodeHandle(parentInputOutput.NodeID),
+					childPatchNode
+				);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Connected input '%s' to child %d"),
+				*RequiredInput.PinName.ToString(), i);
 		}
 	}
 
-	// Convert to array
+	// ============================================================================
+	// Convert created inputs map to array for return
+	// ============================================================================
+
 	TArray<FGisbPinInfo> InputsToPropagate;
-	for (const auto& Pair : UniqueInputs)
+	for (const auto& Pair : CreatedInputs)
 	{
-		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
+		InputsToPropagate.Add(Pair.Value);
 	}
 
-	// Create parent graph inputs and connect to children
-	if (InputsToPropagate.Num() > 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Propagating %d input parameters to parent"),
-			InputsToPropagate.Num());
-
-		CreateAndConnectPropagatedInputs(
-			InputsToPropagate,
-			instantiatedNodes,
-			builder,
-			Layout
-		);
-	}
+	UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Returning %d propagated inputs"), InputsToPropagate.Num());
 
 	// Get mixer and TriggerAny outputs
 	FMetaSoundBuilderNodeOutputHandle audioLeftHandle = builder->FindNodeOutputByName(
@@ -1326,7 +1377,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find mixer left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
@@ -1336,7 +1387,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find mixer right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 	}
 
@@ -1350,14 +1401,14 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to find TriggerAny output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		builder->ConnectNodes(finishedHandle, onFinishedInput, result);
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect finished to output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1371,7 +1422,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect audio left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1388,7 +1439,7 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildRandomCore: FAILED to connect audio right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1399,9 +1450,13 @@ void UGISB_MetasoundBuilderCore::BuildRandomCore(
 			);
 		}
 	}
+
+	// Return propagated child inputs
+	UE_LOG(LogTemp, Log, TEXT("BuildRandomCore: Returning %d propagated child inputs"), InputsToPropagate.Num());
+	return InputsToPropagate;
 }
 
-void UGISB_MetasoundBuilderCore::BuildSwitchCore(
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	UMetaSoundBuilderBase* builder,
 	UGisbImportContainerSwitch* switchContainer,
 	const FString& Name,
@@ -1416,7 +1471,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (!switchContainer)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Container is null"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	EMetaSoundBuilderResult result;
@@ -1463,13 +1518,13 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (childResults.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: No valid children built for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (childResults.Num() > 8)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: >8 children not yet supported for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 	
 	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: %s - %d cases, default case '%s' at index %d"),
@@ -1482,7 +1537,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !switchHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add Switch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1507,7 +1562,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (!config)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to get configuration pointer for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Set configuration data
@@ -1520,7 +1575,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (!bConfigSet)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to set node configuration for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// CRITICAL: Update node interface to reflect configuration
@@ -1530,7 +1585,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (!bInterfaceUpdated)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to update node interface for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Successfully configured switch node '%s' with %d cases"),
@@ -1591,7 +1646,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find 'String Switch' input on switch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	builder->ConnectNodes(parameterInput, stringParamHandle, result);
@@ -1599,7 +1654,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect parameter to switch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1617,7 +1672,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find 'In' (trigger) input on switch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	builder->ConnectNodes(triggerInput, execHandle, result);
@@ -1625,7 +1680,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect trigger to switch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1643,7 +1698,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !mixerHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add Mixer node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1662,7 +1717,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		if (result != EMetaSoundBuilderResult::Succeeded || !anyHandle.IsSet())
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to add TriggerAny node"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1679,7 +1734,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || allSwitchOutputs.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to get switch outputs - no outputs found after configuration"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Found %d outputs on switch node (expected %d + default out)"),
@@ -1691,11 +1746,15 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Not enough outputs - expected at least %d, got %d"),
 		       childResults.Num(), allSwitchOutputs.Num());
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Track instantiated nodes for parameter propagation
 	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
+	// Track created parent graph inputs to avoid duplicates
+	TMap<FName, FGisbPinInfo> CreatedInputs;  // Name -> PinInfo (for returning)
+	TMap<FName, FMetaSoundBuilderNodeOutputHandle> CreatedInputHandles;  // Name -> Handle (for connecting)
 
 	// Instantiate child patches and connect (same pattern as Random)
 	for (int32 i = 0; i < childResults.Num(); i++)
@@ -1836,58 +1895,105 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 				}
 			}
 		}
-	}
 
-	// ============================================================================
-	// Parameter Propagation: Merge required inputs from children and propagate to parent
-	// ============================================================================
+		// ============================================================================
+		// Step C: Process child's RequiredInputs (parameter propagation)
+		// ============================================================================
 
-	// Collect all unique required inputs from children
-	TMap<FName, FName> UniqueInputs;  // Name -> Type
-	for (const FChildPatchResult& ChildResult : childResults)
-	{
-		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		for (const FGisbPinInfo& RequiredInput : childResults[i].RequiredInputs)
 		{
-			if (UniqueInputs.Contains(RequiredInput.PinName))
+			FMetaSoundBuilderNodeOutputHandle parentInputOutput;
+
+			// 1. Check if we already created this input (from previous sibling)
+			if (CreatedInputHandles.Contains(RequiredInput.PinName))
 			{
-				// Check for type mismatch
-				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
-				{
-					UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Parameter '%s' has conflicting types: %s vs %s"),
-						*RequiredInput.PinName.ToString(),
-						*UniqueInputs[RequiredInput.PinName].ToString(),
-						*RequiredInput.PinType.ToString());
-				}
+				// Reuse existing graph input
+				parentInputOutput = CreatedInputHandles[RequiredInput.PinName];
+
+				UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Reusing existing input '%s' for child %d"),
+					*RequiredInput.PinName.ToString(), i);
 			}
 			else
 			{
-				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
-				UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Child needs parameter '%s' (type: %s)"),
-					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+				// 2. Create new parent graph input
+				parentInputOutput = builder->AddGraphInputNode(
+					RequiredInput.PinName,      // e.g., "Switch Parameter", "Break"
+					RequiredInput.PinType,      // e.g., "String", "Trigger"
+					FMetasoundFrontendLiteral(),
+					result
+				);
+
+				if (result != EMetaSoundBuilderResult::Succeeded || !parentInputOutput.IsSet())
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Failed to create graph input '%s' (type: %s) for child %d"),
+						*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+					continue;  // Skip this input
+				}
+
+				// Track for next children
+				CreatedInputHandles.Add(RequiredInput.PinName, parentInputOutput);
+				CreatedInputs.Add(RequiredInput.PinName, RequiredInput);
+
+				UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Created graph input '%s' (type: %s) for child %d"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+
+				// Register with layout manager
+				if (Layout)
+				{
+					FMetaSoundNodeHandle inputNode(parentInputOutput.NodeID);
+					Layout->RegisterGraphInputNode(inputNode, RequiredInput.PinName);
+				}
 			}
+
+			// 3. Find the corresponding input on the child node
+			FMetaSoundBuilderNodeInputHandle childInput = builder->FindNodeInputByName(
+				childPatchNode,
+				*RequiredInput.PinName.ToString(),
+				result
+			);
+
+			if (result != EMetaSoundBuilderResult::Succeeded || !childInput.IsSet())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildSwitchCore: Child %d doesn't have expected input '%s' - skipping connection"),
+					i, *RequiredInput.PinName.ToString());
+				continue;
+			}
+
+			// 4. Connect parent graph input -> child node input
+			builder->ConnectNodes(parentInputOutput, childInput, result);
+
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: Failed to connect input '%s' to child %d"),
+					*RequiredInput.PinName.ToString(), i);
+				continue;
+			}
+
+			// Register connection with layout manager
+			if (Layout)
+			{
+				Layout->RegisterConnection(
+					FMetaSoundNodeHandle(parentInputOutput.NodeID),
+					childPatchNode
+				);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Connected input '%s' to child %d"),
+				*RequiredInput.PinName.ToString(), i);
 		}
 	}
 
-	// Convert to array
+	// ============================================================================
+	// Convert created inputs map to array for return
+	// ============================================================================
+
 	TArray<FGisbPinInfo> InputsToPropagate;
-	for (const auto& Pair : UniqueInputs)
+	for (const auto& Pair : CreatedInputs)
 	{
-		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
+		InputsToPropagate.Add(Pair.Value);
 	}
 
-	// Create parent graph inputs and connect to children
-	if (InputsToPropagate.Num() > 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Propagating %d input parameters to parent"),
-			InputsToPropagate.Num());
-
-		CreateAndConnectPropagatedInputs(
-			InputsToPropagate,
-			instantiatedNodes,
-			builder,
-			Layout
-		);
-	}
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Returning %d propagated inputs"), InputsToPropagate.Num());
 
 	// Get outputs (same as Random)
 	FMetaSoundBuilderNodeOutputHandle audioLeftHandle = builder->FindNodeOutputByName(
@@ -1898,7 +2004,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find mixer left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
@@ -1908,7 +2014,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find mixer right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 	}
 
@@ -1919,7 +2025,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to find TriggerAny output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		// Connect finished to output
@@ -1927,7 +2033,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect finished to output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1944,7 +2050,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect audio left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -1961,7 +2067,7 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildSwitchCore: FAILED to connect audio right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -1972,9 +2078,13 @@ void UGISB_MetasoundBuilderCore::BuildSwitchCore(
 			);
 		}
 	}
+
+	// Return propagated child inputs (does NOT include Switch Parameter - that's created by caller)
+	UE_LOG(LogTemp, Log, TEXT("BuildSwitchCore: Returning %d propagated child inputs"), InputsToPropagate.Num());
+	return InputsToPropagate;
 }
 
-void UGISB_MetasoundBuilderCore::BuildBlendCore(
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::BuildBlendCore(
 	UMetaSoundBuilderBase* builder,
 	UGisbImportContainerBlend* blendContainer,
 	const FString& Name,
@@ -1988,7 +2098,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 	if (!blendContainer)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: Container is null"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	EMetaSoundBuilderResult result;
@@ -2023,13 +2133,13 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 	if (childResults.Num() == 0)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: No valid children built for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (childResults.Num() > 8)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: >8 children not yet supported for %s"), *Name);
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Add Mixer node (array indexed by numChildren-2)
@@ -2042,7 +2152,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !mixerHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to add Mixer node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2061,7 +2171,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		if (result != EMetaSoundBuilderResult::Succeeded || !accumulateHandle.IsSet())
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to add TriggerAccumulate node"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2072,6 +2182,10 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 
 	// Track instantiated nodes for parameter propagation
 	TArray<FMetaSoundNodeHandle> instantiatedNodes;
+
+	// Track created parent graph inputs to avoid duplicates
+	TMap<FName, FGisbPinInfo> CreatedInputs;  // Name -> PinInfo (for returning)
+	TMap<FName, FMetaSoundBuilderNodeOutputHandle> CreatedInputHandles;  // Name -> Handle (for connecting)
 
 	// Instantiate child patches and connect
 	for (int32 i = 0; i < childResults.Num(); i++)
@@ -2209,57 +2323,92 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 				}
 			}
 		}
-	}
 
-	// ============================================================================
-	// Parameter Propagation: Merge required inputs from children and propagate to parent
-	// ============================================================================
+		// ============================================================================
+		// Step C: Process child's RequiredInputs (parameter propagation)
+		// ============================================================================
 
-	// Collect all unique required inputs from children
-	TMap<FName, FName> UniqueInputs;  // Name -> Type
-	for (const FChildPatchResult& ChildResult : childResults)
-	{
-		for (const FGisbPinInfo& RequiredInput : ChildResult.RequiredInputs)
+		for (const FGisbPinInfo& RequiredInput : childResults[i].RequiredInputs)
 		{
-			if (UniqueInputs.Contains(RequiredInput.PinName))
+			FMetaSoundBuilderNodeOutputHandle parentInputOutput;
+
+			// 1. Check if we already created this input (from previous sibling)
+			if (CreatedInputHandles.Contains(RequiredInput.PinName))
 			{
-				// Check for type mismatch
-				if (UniqueInputs[RequiredInput.PinName] != RequiredInput.PinType)
-				{
-					UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: Parameter '%s' has conflicting types: %s vs %s"),
-						*RequiredInput.PinName.ToString(),
-						*UniqueInputs[RequiredInput.PinName].ToString(),
-						*RequiredInput.PinType.ToString());
-				}
+				// Reuse existing graph input
+				parentInputOutput = CreatedInputHandles[RequiredInput.PinName];
+
+				UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Reusing existing input '%s' for child %d"),
+					*RequiredInput.PinName.ToString(), i);
 			}
 			else
 			{
-				UniqueInputs.Add(RequiredInput.PinName, RequiredInput.PinType);
-				UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Child needs parameter '%s' (type: %s)"),
-					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+				// 2. Create new parent graph input
+				parentInputOutput = builder->AddGraphInputNode(
+					RequiredInput.PinName,      // e.g., "Switch Parameter", "Break"
+					RequiredInput.PinType,      // e.g., "String", "Trigger"
+					FMetasoundFrontendLiteral(),
+					result
+				);
+
+				if (result != EMetaSoundBuilderResult::Succeeded || !parentInputOutput.IsSet())
+				{
+					UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: Failed to create graph input '%s' (type: %s) for child %d"),
+						*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+					continue;  // Skip this input
+				}
+
+				// Track for next children
+				CreatedInputHandles.Add(RequiredInput.PinName, parentInputOutput);
+				CreatedInputs.Add(RequiredInput.PinName, RequiredInput);
+
+				UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Created graph input '%s' (type: %s) for child %d"),
+					*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString(), i);
+
+				// Register with layout manager
+				if (Layout)
+				{
+					FMetaSoundNodeHandle inputNode(parentInputOutput.NodeID);
+					Layout->RegisterGraphInputNode(inputNode, RequiredInput.PinName);
+				}
 			}
+
+			// 3. Find the corresponding input on the child node
+			FMetaSoundBuilderNodeInputHandle childInput = builder->FindNodeInputByName(
+				childPatchNode,
+				*RequiredInput.PinName.ToString(),
+				result
+			);
+
+			if (result != EMetaSoundBuilderResult::Succeeded || !childInput.IsSet())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("BuildBlendCore: Child %d doesn't have expected input '%s' - skipping connection"),
+					i, *RequiredInput.PinName.ToString());
+				continue;
+			}
+
+			// 4. Connect parent graph input -> child node input
+			builder->ConnectNodes(parentInputOutput, childInput, result);
+
+			if (result != EMetaSoundBuilderResult::Succeeded)
+			{
+				UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: Failed to connect input '%s' to child %d"),
+					*RequiredInput.PinName.ToString(), i);
+				continue;
+			}
+
+			// Register connection with layout manager
+			if (Layout)
+			{
+				Layout->RegisterConnection(
+					FMetaSoundNodeHandle(parentInputOutput.NodeID),
+					childPatchNode
+				);
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Connected input '%s' to child %d"),
+				*RequiredInput.PinName.ToString(), i);
 		}
-	}
-
-	// Convert to array
-	TArray<FGisbPinInfo> InputsToPropagate;
-	for (const auto& Pair : UniqueInputs)
-	{
-		InputsToPropagate.Add(FGisbPinInfo(Pair.Key, Pair.Value));
-	}
-
-	// Create parent graph inputs and connect to children
-	if (InputsToPropagate.Num() > 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Propagating %d input parameters to parent"),
-			InputsToPropagate.Num());
-
-		CreateAndConnectPropagatedInputs(
-			InputsToPropagate,
-			instantiatedNodes,
-			builder,
-			Layout
-		);
 	}
 
 	// Get mixer and TriggerAccumulate outputs
@@ -2271,7 +2420,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find mixer left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FMetaSoundBuilderNodeOutputHandle audioRightHandle;
@@ -2281,7 +2430,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find mixer right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 	}
 
@@ -2292,7 +2441,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to find TriggerAccumulate output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		// Connect finished to output
@@ -2300,7 +2449,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect finished to output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2317,7 +2466,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect audio left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2334,7 +2483,7 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildBlendCore: FAILED to connect audio right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2345,6 +2494,19 @@ void UGISB_MetasoundBuilderCore::BuildBlendCore(
 			);
 		}
 	}
+
+	// ============================================================================
+	// Convert created inputs map to array for return
+	// ============================================================================
+
+	TArray<FGisbPinInfo> InputsToPropagate;
+	for (const auto& Pair : CreatedInputs)
+	{
+		InputsToPropagate.Add(Pair.Value);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BuildBlendCore: Returning %d propagated inputs"), InputsToPropagate.Num());
+	return InputsToPropagate;
 }
 
 // ============================================================================
@@ -2575,7 +2737,7 @@ TMap<FName, FMetaSoundBuilderNodeOutputHandle> UGISB_MetasoundBuilderCore::Creat
 // BuildTriggerCore - Barebones implementation using TriggerRepeat
 // ============================================================================
 
-void UGISB_MetasoundBuilderCore::BuildTriggerCore(
+TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	UMetaSoundBuilderBase* builder,
 	UGisbImportContainerTrigger* triggerContainer,
 	const FString& Name,
@@ -2602,7 +2764,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !triggerRepeatHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add TriggerRepeat node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2615,7 +2777,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Start input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Set trigger rate period (seconds between triggers)
@@ -2623,7 +2785,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Period input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 	
 	FAudioParameter periodParam = FAudioParameter(TEXT("Period"), triggerContainer->TriggerRate);
@@ -2632,7 +2794,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerRepeat Period"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 	
 	// Set trigger amount (seconds between triggers)
@@ -2640,7 +2802,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Num Repeats input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 	
 	FAudioParameter amountParam = FAudioParameter(TEXT("Num Repeats"), triggerContainer->TriggerAmount == -1 ? 0 : triggerContainer->TriggerAmount);
@@ -2649,7 +2811,50 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerRepeat Amount"));
-		return;
+		return TArray<FGisbPinInfo>();
+	}
+
+	// ========================================================================
+	// Create Break trigger input and connect to TriggerRepeat Stop
+	// ========================================================================
+	FMetaSoundBuilderNodeOutputHandle breakTriggerInput = builder->AddGraphInputNode(
+		FName("Break"),
+		FName("Trigger"),
+		FMetasoundFrontendLiteral(),
+		result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to create Break trigger input"));
+		return TArray<FGisbPinInfo>();
+	}
+
+	FMetaSoundNodeHandle breakInputNode(breakTriggerInput.NodeID);
+	if (Layout)
+	{
+		Layout->RegisterGraphInputNode(breakInputNode, FName("Break"));
+	}
+
+	// Find TriggerRepeat Stop input
+	FMetaSoundBuilderNodeInputHandle triggerRepeatStopHandle = builder->FindNodeInputByName(triggerRepeatHandle, TEXT("Stop"), result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat Stop input"));
+		return TArray<FGisbPinInfo>();
+	}
+
+	// Connect Break input to TriggerRepeat Stop
+	builder->ConnectNodes(breakTriggerInput, triggerRepeatStopHandle, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect Break to TriggerRepeat Stop"));
+		return TArray<FGisbPinInfo>();
+	}
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(breakInputNode, triggerRepeatHandle);
 	}
 
 	// Connect input trigger to TriggerRepeat Start (begins repeat cycle)
@@ -2657,7 +2862,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect trigger to TriggerRepeat Start"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2670,7 +2875,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerRepeat RepeatOut output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// ========================================================================
@@ -2685,7 +2890,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded || !triggerStopperHandle.IsSet())
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add TriggerStopper node"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2702,7 +2907,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Trigger Amount input"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		FAudioParameter triggerAmountParam = FAudioParameter(TEXT("Trigger Amount"), triggerContainer->TriggerAmount);
@@ -2711,7 +2916,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to set TriggerStopper Trigger Amount"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		// Connect TriggerRepeat RepeatOut to TriggerStopper Trigger In
@@ -2723,14 +2928,14 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Trigger In input"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		builder->ConnectNodes(triggerRepeatOnTriggerHandle, triggerStopperTriggerInHandle, result);
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerRepeat to TriggerStopper"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2755,7 +2960,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (!childResult.Patch)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to build triggered child patch"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	// Use parent container's cached stereo property (already computed from child during import)
@@ -2767,7 +2972,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded || !childPatchHandle.IsSet())
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to add triggered child patch node"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2780,7 +2985,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child Play input"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FMetaSoundBuilderNodeOutputHandle childAudioLeftHandle = builder->FindNodeOutputByName(
@@ -2791,7 +2996,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child audio left/mono output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	FMetaSoundBuilderNodeOutputHandle childAudioRightHandle;
@@ -2801,7 +3006,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find child audio right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 	}
 
@@ -2810,12 +3015,30 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerRepeat to child Play"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
 	{
 		Layout->RegisterConnection(triggerRepeatHandle, childPatchHandle);
+	}
+
+	// ========================================================================
+	// Parameter Propagation: Propagate child's required inputs
+	// ========================================================================
+	TArray<FMetaSoundNodeHandle> childNodes = { childPatchHandle };
+
+	if (childResult.RequiredInputs.Num() > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Propagating %d input parameters from child"),
+			childResult.RequiredInputs.Num());
+
+		CreateAndConnectPropagatedInputs(
+			childResult.RequiredInputs,
+			childNodes,
+			builder,
+			Layout
+		);
 	}
 
 	// ========================================================================
@@ -2849,14 +3072,14 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 				if (result != EMetaSoundBuilderResult::Succeeded)
 				{
 					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Child On Finished input"));
-					return;
+					return TArray<FGisbPinInfo>();
 				}
 
 				builder->ConnectNodes(childOnFinishedHandle, triggerStopperChildOnFinishedHandle, result);
 				if (result != EMetaSoundBuilderResult::Succeeded)
 				{
 					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to TriggerStopper"));
-					return;
+					return TArray<FGisbPinInfo>();
 				}
 
 				if (Layout)
@@ -2873,7 +3096,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 				if (result != EMetaSoundBuilderResult::Succeeded)
 				{
 					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to find TriggerStopper Filtered On Finished output"));
-					return;
+					return TArray<FGisbPinInfo>();
 				}
 
 				// Connect TriggerStopper Filtered On Finished to parent On Finished
@@ -2881,7 +3104,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 				if (result != EMetaSoundBuilderResult::Succeeded)
 				{
 					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect TriggerStopper to parent On Finished"));
-					return;
+					return TArray<FGisbPinInfo>();
 				}
 
 				if (Layout)
@@ -2898,7 +3121,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 				if (result != EMetaSoundBuilderResult::Succeeded)
 				{
 					UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect child On Finished to parent"));
-					return;
+					return TArray<FGisbPinInfo>();
 				}
 
 				if (Layout)
@@ -2916,7 +3139,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 	if (result != EMetaSoundBuilderResult::Succeeded)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect audio left output"));
-		return;
+		return TArray<FGisbPinInfo>();
 	}
 
 	if (Layout)
@@ -2933,7 +3156,7 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		if (result != EMetaSoundBuilderResult::Succeeded)
 		{
 			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: FAILED to connect audio right output"));
-			return;
+			return TArray<FGisbPinInfo>();
 		}
 
 		if (Layout)
@@ -2945,5 +3168,87 @@ void UGISB_MetasoundBuilderCore::BuildTriggerCore(
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Successfully built trigger container"));
+	// ========================================================================
+	// Process child's RequiredInputs (parameter propagation)
+	// ========================================================================
+
+	for (const FGisbPinInfo& RequiredInput : childResult.RequiredInputs)
+	{
+		// Create parent graph input
+		FMetaSoundBuilderNodeOutputHandle parentInputOutput = builder->AddGraphInputNode(
+			RequiredInput.PinName,
+			RequiredInput.PinType,
+			FMetasoundFrontendLiteral(),
+			result
+		);
+
+		if (result != EMetaSoundBuilderResult::Succeeded || !parentInputOutput.IsSet())
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: Failed to create graph input '%s' (type: %s)"),
+				*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+			continue;  // Skip this input
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Created graph input '%s' (type: %s)"),
+			*RequiredInput.PinName.ToString(), *RequiredInput.PinType.ToString());
+
+		// Register with layout manager
+		if (Layout)
+		{
+			FMetaSoundNodeHandle inputNode(parentInputOutput.NodeID);
+			Layout->RegisterGraphInputNode(inputNode, RequiredInput.PinName);
+		}
+
+		// Find the corresponding input on the child node
+		FMetaSoundBuilderNodeInputHandle childInput = builder->FindNodeInputByName(
+			childPatchHandle,
+			*RequiredInput.PinName.ToString(),
+			result
+		);
+
+		if (result != EMetaSoundBuilderResult::Succeeded || !childInput.IsSet())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BuildTriggerCore: Child doesn't have expected input '%s' - skipping connection"),
+				*RequiredInput.PinName.ToString());
+			continue;
+		}
+
+		// Connect parent graph input -> child node input
+		builder->ConnectNodes(parentInputOutput, childInput, result);
+
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildTriggerCore: Failed to connect input '%s' to child"),
+				*RequiredInput.PinName.ToString());
+			continue;
+		}
+
+		// Register connection with layout manager
+		if (Layout)
+		{
+			Layout->RegisterConnection(
+				FMetaSoundNodeHandle(parentInputOutput.NodeID),
+				childPatchHandle
+			);
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Connected input '%s' to child"),
+			*RequiredInput.PinName.ToString());
+	}
+
+	// ========================================================================
+	// Collect all inputs created: Break + propagated child inputs
+	// ========================================================================
+	TArray<FGisbPinInfo> AllRequiredInputs;
+
+	// Add Break trigger input
+	AllRequiredInputs.Add(FGisbPinInfo(FName("Break"), FName("Trigger")));
+
+	// Add all propagated child inputs
+	AllRequiredInputs.Append(childResult.RequiredInputs);
+
+	UE_LOG(LogTemp, Log, TEXT("BuildTriggerCore: Successfully built trigger container with %d total required inputs"),
+		AllRequiredInputs.Num());
+
+	return AllRequiredInputs;
 }

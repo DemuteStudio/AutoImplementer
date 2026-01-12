@@ -7,16 +7,18 @@ public class GISB_Importer : ModuleRules
 	public GISB_Importer(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
+
 		PublicIncludePaths.AddRange(
 			new string[] {
+				ModuleDirectory,
 				// ... add public include paths required here ...
 			}
 			);
-				
-		
+
+
 		PrivateIncludePaths.AddRange(
 			new string[] {
+				ModuleDirectory,
 				// ... add other private include paths required here ...
 			}
 			);
