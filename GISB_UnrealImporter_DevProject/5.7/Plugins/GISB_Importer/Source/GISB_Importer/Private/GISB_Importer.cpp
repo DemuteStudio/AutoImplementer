@@ -184,7 +184,7 @@ void FGISB_ImporterModule::PluginButtonClicked()
 		FText::FromString(AssetName),
 		FText::FromString(MSPackagePath)
 	);
-	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+	FMessageDialog::Open(EAppMsgCategory::Info, EAppMsgType::Ok, DialogText);
 }
 
 void FGISB_ImporterModule::ImportEventDirectToMetaSound(
