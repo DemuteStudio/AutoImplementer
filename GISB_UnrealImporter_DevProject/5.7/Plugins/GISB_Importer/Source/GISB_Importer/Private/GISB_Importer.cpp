@@ -182,7 +182,7 @@ void FGISB_ImporterModule::PluginButtonClicked()
 	FText DialogText = FText::Format(
 		LOCTEXT("ImportSuccessText", "Successfully imported ISX bank/event: {0}\nMetaSounds created at: {1}"),
 		FText::FromString(AssetName),
-		FText::FromString(MSPackagePath)
+		FText::FromString(MSPackagePath.Replace(TEXT("Game"), TEXT("Content")))
 	);
 	FMessageDialog::Open(EAppMsgCategory::Info, EAppMsgType::Ok, DialogText);
 }

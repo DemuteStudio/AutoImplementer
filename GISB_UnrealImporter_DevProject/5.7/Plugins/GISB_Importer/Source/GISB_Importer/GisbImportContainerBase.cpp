@@ -7,6 +7,7 @@
 #include "GisbImportContainerSwitch.h"
 #include "GisbImportContainerTrigger.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "ISXProjectSettings.h"
 
 UGisbImportContainerBase* UGisbImportContainerBase::CreateFromJson(const TSharedPtr<FJsonObject>& JsonObject,
                                                                    UObject* Outer, const FString& path)
@@ -55,9 +56,17 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 	TSharedPtr<FJsonObject> JsonAttenuationValue = JsonAttenuation->GetObjectField(TEXT("value"));
 	TSharedPtr<FJsonObject> JsonAttenuationCurve = JsonAttenuationValue->GetObjectField(TEXT("attenuationCurve"));
 
+	// Get distance scaling from settings
+	const UISXProjectSettings* Settings = GetDefault<UISXProjectSettings>();
+	const float DistanceScale = Settings ? Settings->DistanceScale : 1000.0f;
+
+	// Read and scale distance values
+	const float MinDistance = (float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")) * DistanceScale;
+	const float MaxDistance = (float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance")) * DistanceScale;
+
 	//Save attenuation asset
 	FString AssetName = JsonAttenuationValue->GetStringField(TEXT("name"));
-	FString AssetPath = FPaths::Combine("/Game/ISX_SoundBanks/", AssetName);
+	FString AssetPath = FPaths::Combine("/Game/ISX_SoundBanks/Attenuation/", AssetName);
 	if (FPackageName::IsValidLongPackageName(AssetPath))
 	{
 		UPackage* Package = CreatePackage(*AssetPath);
@@ -69,16 +78,11 @@ void UGisbImportContainerBase::ParseJson(const TSharedPtr<FJsonObject>& JsonObje
 			SoundAttenuation->Attenuation.bAttenuate = JsonAttenuationValue->GetBoolField(TEXT("active"));
 			SoundAttenuation->Attenuation.bSpatialize = JsonAttenuationValue->GetBoolField(TEXT("active"));
 			SoundAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
-			SoundAttenuation->Attenuation.FalloffDistance = (float)JsonAttenuationValue->GetNumberField(
-				TEXT("maxDistance"));
-			SoundAttenuation->Attenuation.AttenuationShapeExtents = FVector(
-				(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
-				(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance")),
-				(float)JsonAttenuationValue->GetNumberField(TEXT("minDistance"))
-			);
+			SoundAttenuation->Attenuation.FalloffDistance = MaxDistance;
+			SoundAttenuation->Attenuation.AttenuationShapeExtents = FVector(MinDistance, MinDistance, MinDistance);
 			SoundAttenuation->Attenuation.bAttenuateWithLPF = true;
-			SoundAttenuation->Attenuation.LPFRadiusMin = (float)JsonAttenuationValue->GetNumberField(TEXT("minDistance"));
-			SoundAttenuation->Attenuation.LPFRadiusMax = (float)JsonAttenuationValue->GetNumberField(TEXT("maxDistance"));
+			SoundAttenuation->Attenuation.LPFRadiusMin = MinDistance;
+			SoundAttenuation->Attenuation.LPFRadiusMax = MaxDistance;
 			SoundAttenuation->Attenuation.LPFFrequencyAtMin = 20000.0f - (200.0f * (float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMinDistance")));
 			SoundAttenuation->Attenuation.LPFFrequencyAtMax = 20000.0f - (200.0f * (float)JsonAttenuationValue->GetNumberField(TEXT("lowPassAtMaxDistance")));
 

@@ -43,6 +43,7 @@ public class GISB_Importer : ModuleRules
 				"SignalProcessing",
 				"MetasoundGenerator",
 				"MetasoundGraphCore",
+				"DeveloperSettings",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
