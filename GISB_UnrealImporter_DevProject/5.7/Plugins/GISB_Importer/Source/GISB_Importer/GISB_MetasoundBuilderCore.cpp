@@ -730,6 +730,7 @@ void UGISB_MetasoundBuilderCore::ConnectLowpass(
 	}
 }
 
+// Deprecated, Use container->bIsStereo cached property instead.
 bool UGISB_MetasoundBuilderCore::isStereo(UGisbImportContainerBase* container)
 {
 	if (UGisbImportContainerSimpleSound* SimpleSound = Cast<UGisbImportContainerSimpleSound>(container))
@@ -976,7 +977,7 @@ TArray<FGisbPinInfo> UGISB_MetasoundBuilderCore::BuildRandomCore(
 	TArray<FChildPatchResult> childResults;
 	for (int32 i = 0; i < randomContainer->SoundArray.Num(); i++)
 	{
-		FChildPatchResult childResult = UGISB_MetasoundPatchBuilder::BuildChildNode(
+FChildPatchResult childResult = UGISB_MetasoundPatchBuilder::BuildChildNode(
 			randomContainer->SoundArray[i],
 			Name,
 			i
