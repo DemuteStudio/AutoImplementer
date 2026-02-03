@@ -115,12 +115,13 @@ Containers use the `$type` field for polymorphic deserialization. This field con
 | Random | `GISB.Runtime.GISB_RandomSound, Demute.GISB` |
 | Switch | `GISB.Runtime.GISB_SwitchSound, Demute.GISB` |
 | Blend | `GISB.Runtime.GISB_BlendSound, Demute.GISB` |
+| Trigger | `GISB.Runtime.GISB_TriggerSound, Demute.GISB` |
 
 ### Container Hierarchy (Composite Pattern)
 
 Containers follow the composite pattern:
 - **Leaf containers** (Simple) play audio directly
-- **Composite containers** (Random, Switch, Blend) contain child containers
+- **Composite containers** (Random, Switch, Blend, Trigger) contain child containers
 
 Children can be any container type, allowing arbitrary nesting depth.
 
@@ -167,20 +168,12 @@ Selects one child container to play based on random selection.
 |-------|------|----------|-------------|
 | `RandomPlaylist` | array | Yes | Child containers to select from |
 | `avoidLastPlayed` | int | No | Number of recent selections to exclude |
-| `loop` | boolean | No | Continuously select and play children |
-| `transitionMode` | string | No | `"TriggerRate"` or `"Crossfade"` |
-| `triggerRate` | float | No | Selections per second (`"TriggerRate"` mode) |
-| `crossfadeDuration` | float | No | Crossfade time in seconds (`"Crossfade"` mode) |
 
 **Selection algorithm:**
 1. Build candidate list from `RandomPlaylist`
 2. Remove the last `avoidLastPlayed` selections from candidates
 3. Select randomly from remaining candidates
 4. Record selection in history
-
-**Transition modes (when looping):**
-- `TriggerRate`: Trigger new selection at specified rate
-- `Crossfade`: Crossfade between selections over specified duration
 
 ---
 
@@ -224,6 +217,38 @@ Plays all child containers simultaneously (layered audio).
 
 ---
 
+### Trigger (TriggerSound)
+
+Repeatedly triggers a child container based on timing modes.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `triggerAmount` | int | Yes | Number of times to trigger child (-1 for infinite) |
+| `transitionMode` | string | Yes | `"TriggerRate"` or `"Crossfade"` |
+| `triggerRate` | float | Conditional | Time in seconds between triggers (only used in `"TriggerRate"` mode) |
+| `crossfadeDuration` | float | Conditional | Time remaining in current playback when crossfade begins (only used in `"Crossfade"` mode) |
+| `TriggeredSound` | object | Yes | Child container to repeatedly trigger |
+
+**Transition modes:**
+
+**TriggerRate mode:**
+- Triggers child container at regular intervals specified by `triggerRate`
+- Only `triggerAmount` and `triggerRate` fields are used in this mode
+- Example: `triggerRate: 0.5` triggers the child every 0.5 seconds
+
+**Crossfade mode:**
+- Waits for child playback to near completion, then crossfades to next instance
+- The `crossfadeDuration` specifies how much time is left in the current file when crossfading begins
+- Example: `crossfadeDuration: 2.0` means start crossfading 2 seconds before current playback ends
+- Only `triggerAmount` and `crossfadeDuration` fields are used in this mode
+- Creates seamless transitions between triggered instances
+
+**Trigger count:**
+- `triggerAmount: -1` - Infinite triggering (loops forever)
+- `triggerAmount: N` - Triggers exactly N times then stops
+
+---
+
 ## 5. Randomizable Parameters
 
 Volume, Pitch, and Lowpass use a randomizable structure:
@@ -248,18 +273,21 @@ else:
 - **Unit:** Decibels (dB)
 - **Application:** Multiply audio amplitude by `10^(dB/20)`
 - **Typical range:** -60 (near silent) to 0 (full volume)
+- **Randomization:** When `randomize: true`, the final value is calculated as `baseValue + random(minModifier, maxModifier)` (all values in dB)
 
 #### Pitch (`pitchCents`)
 
 - **Unit:** Cents (100 cents = 1 semitone)
 - **Application:** Multiply playback rate by `2^(cents/1200)`
 - **Example:** +1200 cents = double speed (one octave up)
+- **Randomization:** When `randomize: true`, the final value is calculated as `baseValue + random(minModifier, maxModifier)` (all values in cents)
 
 #### Lowpass (`lowpass`)
 
 - **Unit:** Percentage (0-100)
-- **Application:** 0 = no filtering, 100 = maximum filtering
-- **Implementation:** Map to lowpass filter cutoff frequency
+- **Range:** 0 (no filtering, full frequency range) to 100 (maximum filtering)
+- **Randomization:** When `randomize: true`, the final value is calculated as `baseValue + random(minModifier, maxModifier)`
+- **Implementation:** Interpreters map percentage to lowpass filter cutoff frequency
 
 ---
 
@@ -274,7 +302,7 @@ else:
 | `maxDistance` | float | Distance where sound is inaudible |
 | `preset` | int | Falloff curve preset (`"Linear"`, `"Logarithmic"`, `"Inverse"` or `"Custom"`) |
 | `curve` | object | Custom curve (when preset=3 `"Custom"`) |
-| `volumeAtMaxDistance` | float | Volume reduction at max distance (dB) |
+| `volumeAtMaxDistance` | float | Volume multiplier at max distance (linear, 0.0 = silent, 1.0 = full volume) |
 | `spreadAtMinDistance` | float | Stereo spread at min distance (0 = mono/point source, 1 = full stereo) |
 | `spreadAtMaxDistance` | float | Stereo spread at max distance (0 = mono/point source, 1 = full stereo) |
 | `lowPassAtMinDistance` | float | Lowpass amount at min distance (0-1) to stimulate air absorption |
@@ -367,7 +395,7 @@ Modulators bind to float parameters in the 0-1 range for control over audio at r
 | `Curve` | object | Animation curve mapping input to output |
 
 **Currently supported targets:**
-- `"Volume"` - Multiplies output volume
+- `"Volume"` - Multiplies output volume (Note: Currently uses dB values, but will be changed to linear multipliers in future version)
 
 ### Curve Evaluation
 
@@ -409,6 +437,14 @@ Traversal is recursive and depends on container type:
 **Blend:**
 - Instantiate all children
 - Traverse all children concurrently
+
+**Trigger:**
+- Instantiate child container
+- Play child according to transition mode
+- Monitor timing for re-triggering:
+  - **TriggerRate mode**: Schedule next trigger at `triggerRate` intervals
+  - **Crossfade mode**: Monitor child playback duration, begin crossfade when `crossfadeDuration` time remains
+- Continue until `triggerAmount` reached (or indefinitely if -1)
 
 ### Voice Management
 
@@ -473,10 +509,6 @@ Parameters accumulate through the hierarchy:
 |-------|------|---------|
 | `RandomPlaylist` | array | - (required) |
 | `avoidLastPlayed` | int | 0 |
-| `loop` | boolean | false |
-| `transitionMode` | string | null |
-| `triggerRate` | float | 1.0 |
-| `crossfadeDuration` | float | 0.0 |
 
 ### Switch-Specific Fields
 
@@ -491,6 +523,16 @@ Parameters accumulate through the hierarchy:
 | Field | Type | Default |
 |-------|------|---------|
 | `BlendPlaylist` | array | - (required) |
+
+### Trigger-Specific Fields
+
+| Field | Type | Default | Used In Mode |
+|-------|------|---------|--------------|
+| `triggerAmount` | int | - (required) | Both |
+| `transitionMode` | string | - (required) | Both |
+| `triggerRate` | float | 1.0 | TriggerRate only |
+| `crossfadeDuration` | float | 1.0 | Crossfade only |
+| `TriggeredSound` | object | - (required) | Both |
 
 ### Randomizable Parameter Fields
 
@@ -511,7 +553,7 @@ Parameters accumulate through the hierarchy:
 | `value.maxDistance` | float | 10.0 |
 | `value.preset` | int | 0 |
 | `value.curve` | object | null |
-| `value.volumeAtMaxDistance` | float | 0.0 |
+| `value.volumeAtMaxDistance` | float | 0.0 (linear multiplier, not dB) |
 | `value.spreadAtMinDistance` | float | 0.0 |
 | `value.spreadAtMaxDistance` | float | 0.0 |
 | `value.lowPassAtMinDistance` | float | 0.0 |
@@ -528,6 +570,23 @@ Parameters accumulate through the hierarchy:
 ---
 
 ## Appendix A: Examples
+
+### Examples Disclaimer
+
+The examples below have been simplified for clarity by removing fields set to their default values. In actual JSON files exported by ISX authoring tools, all fields are present even when set to defaults. For instance, a container with default volume would include:
+
+```json
+"volumeDB": {
+  "randomize": false,
+  "minModifier": 0.0,
+  "maxModifier": 0.0,
+  "baseValue": 0.0
+}
+```
+
+These default entries have been omitted from the examples below to focus on the meaningful configuration.
+
+---
 
 ### Minimal Event
 
@@ -649,3 +708,61 @@ Parameters accumulate through the hierarchy:
   }
 }
 ```
+
+### Trigger with TriggerRate Mode
+
+```json
+{
+  "name": "Heartbeat_Loop",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_TriggerSound, Demute.GISB",
+    "triggerAmount": -1,
+    "transitionMode": "TriggerRate",
+    "triggerRate": 0.8,
+    "TriggeredSound": {
+      "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+      "avoidLastPlayed": 2,
+      "RandomPlaylist": [
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "heartbeat_01.ogg", "loop": false},
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "heartbeat_02.ogg", "loop": false},
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "heartbeat_03.ogg", "loop": false}
+      ],
+      "pitchCents": {
+        "randomize": true,
+        "baseValue": 0.0,
+        "minModifier": -50.0,
+        "maxModifier": 50.0
+      }
+    }
+  }
+}
+```
+
+**Explanation**: Triggers a random heartbeat sound every 0.8 seconds indefinitely. Each trigger randomly selects one of 3 variations (avoiding the last 2 played) with slight pitch variation.
+
+### Trigger with Crossfade Mode
+
+```json
+{
+  "name": "Ambient_Music_Loop",
+  "hideFlags": 0,
+  "rootAudioObject": {
+    "$type": "GISB.Runtime.GISB_TriggerSound, Demute.GISB",
+    "triggerAmount": -1,
+    "transitionMode": "Crossfade",
+    "crossfadeDuration": 2.0,
+    "TriggeredSound": {
+      "$type": "GISB.Runtime.GISB_RandomSound, Demute.GISB",
+      "avoidLastPlayed": 1,
+      "RandomPlaylist": [
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "ambient_layer_A.ogg", "loop": false},
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "ambient_layer_B.ogg", "loop": false},
+        {"$type": "GISB.Runtime.GISB_SingleSound, Demute.GISB", "soundClip": "ambient_layer_C.ogg", "loop": false}
+      ]
+    }
+  }
+}
+```
+
+**Explanation**: Plays random ambient music layers continuously. When the current layer has 2 seconds remaining, begins crossfading to the next randomly-selected layer. Creates seamless, ever-varying ambient soundscape.
