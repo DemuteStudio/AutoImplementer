@@ -117,6 +117,24 @@ protected:
 	);
 
 	/**
+	 * Connect time remaining calculation node to graph.
+	 * Takes playback time (Time type) from wave player and calculates remaining time.
+	 *
+	 * @param builder The MetaSound builder
+	 * @param soundWave The sound wave asset reference
+	 * @param playbackTimeOutput Wave player's Playback Time output (Time type)
+	 * @param timeRemainingOutput Optional graph output for Time Remaining (Time type, nullable)
+	 * @param Layout Optional layout manager for node positioning
+	 */
+	static void ConnectTimeRemaining(
+		UMetaSoundBuilderBase* builder,
+		USoundWave* soundWave,
+		FMetaSoundBuilderNodeOutputHandle& playbackTimeOutput,
+		FMetaSoundBuilderNodeInputHandle* timeRemainingOutput,
+		GisbMetasoundLayoutManager* Layout = nullptr
+	);
+
+	/**
 	 * Recursively check if container or any of its children contain stereo audio.
 	 * @deprecated Use container->bIsStereo cached property instead.
 	 */
@@ -138,6 +156,7 @@ protected:
 	 * @param onFinishedInput Output trigger handle (to graph output or next node)
 	 * @param audioLeftOutput Graph audio left/mono output node (connected automatically)
 	 * @param audioRightOutput Graph audio right output node (connected automatically if stereo, nullable)
+	 * @param timeRemainingOutput Optional time remaining output (connected if provided, nullable)
 	 * @param Layout Optional layout manager for node positioning
 	 */
 	static void BuildSimpleSoundCore(
@@ -147,6 +166,7 @@ protected:
 		FMetaSoundBuilderNodeInputHandle& onFinishedInput,
 		FMetaSoundBuilderNodeInputHandle& audioLeftOutput,
 		FMetaSoundBuilderNodeInputHandle* audioRightOutput,
+		FMetaSoundBuilderNodeInputHandle* timeRemainingOutput = nullptr,
 		GisbMetasoundLayoutManager* Layout = nullptr
 	);
 

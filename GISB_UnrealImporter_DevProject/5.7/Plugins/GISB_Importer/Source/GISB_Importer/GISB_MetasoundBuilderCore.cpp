@@ -730,6 +730,136 @@ void UGISB_MetasoundBuilderCore::ConnectLowpass(
 	}
 }
 
+void UGISB_MetasoundBuilderCore::ConnectTimeRemaining(
+	UMetaSoundBuilderBase* builder,
+	USoundWave* soundWave,
+	FMetaSoundBuilderNodeOutputHandle& playbackTimeOutput,
+	FMetaSoundBuilderNodeInputHandle* timeRemainingOutput,
+	GisbMetasoundLayoutManager* Layout
+)
+{
+	UE_LOG(LogTemp, Warning, TEXT("=== ConnectTimeRemaining: ENTERED ==="));
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: soundWave = %s"), soundWave ? *soundWave->GetName() : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: playbackTimeOutput.IsSet = %d"), playbackTimeOutput.IsSet());
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: timeRemainingOutput = %s"), timeRemainingOutput ? TEXT("NOT NULL") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: timeRemainingOutput->IsSet = %d"), (timeRemainingOutput && timeRemainingOutput->IsSet()) ? 1 : 0);
+
+	EMetaSoundBuilderResult result;
+
+	// Add GisbTimeRemaining patch node
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Adding GisbTimeRemaining node..."));
+	FMetaSoundNodeHandle timeRemainingHandle = builder->AddNode(
+		UGISB_MetasoundNodeLibrary::GisbTimeRemaining, result
+	);
+
+	if (result != EMetaSoundBuilderResult::Succeeded || !timeRemainingHandle.IsSet())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to add GisbTimeRemaining node - result=%d"), (int)result);
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Successfully added GisbTimeRemaining node"));
+
+	if (Layout)
+	{
+		Layout->RegisterNode(timeRemainingHandle, EGisbNodeCategory::ParameterProcessor, TEXT("TimeRemaining"));
+	}
+
+	// Find input pins
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Finding Wave File input..."));
+	FMetaSoundBuilderNodeInputHandle waveFileHandle = builder->FindNodeInputByName(
+		timeRemainingHandle, TEXT("Wave File"), result
+	);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to find Wave File input - result=%d"), (int)result);
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Found Wave File input"));
+
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Finding Playback Time input..."));
+	FMetaSoundBuilderNodeInputHandle playbackTimeHandle = builder->FindNodeInputByName(
+		timeRemainingHandle, TEXT("Playback Time"), result
+	);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to find Playback Time input - result=%d"), (int)result);
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Found Playback Time input"));
+
+	// Set Wave File as default value
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Setting Wave File default value..."));
+	FAudioParameter waveParam = FAudioParameter(TEXT("Wave File"), soundWave);
+	FMetasoundFrontendLiteral waveValue = FMetasoundFrontendLiteral(waveParam);
+	builder->SetNodeInputDefault(waveFileHandle, waveValue, result);
+
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to set Wave File - result=%d"), (int)result);
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Set Wave File successfully"));
+
+	// Connect Playback Time from wave player
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Connecting Playback Time..."));
+	builder->ConnectNodes(playbackTimeOutput, playbackTimeHandle, result);
+	if (result != EMetaSoundBuilderResult::Succeeded)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to connect Playback Time - result=%d"), (int)result);
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Connected Playback Time successfully"));
+
+	if (Layout)
+	{
+		Layout->RegisterConnection(
+			FMetaSoundNodeHandle(playbackTimeOutput.NodeID),
+			timeRemainingHandle
+		);
+	}
+
+	// Connect output if provided
+	UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Checking if output should be connected..."));
+	if (timeRemainingOutput && timeRemainingOutput->IsSet())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Finding Time Remaining output..."));
+		FMetaSoundBuilderNodeOutputHandle timeRemainingOutHandle = builder->FindNodeOutputByName(
+			timeRemainingHandle, TEXT("Time Remaining"), result
+		);
+
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to find Time Remaining output - result=%d"), (int)result);
+			return;
+		}
+		UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Found Time Remaining output"));
+
+		UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Connecting Time Remaining output to graph..."));
+		builder->ConnectNodes(timeRemainingOutHandle, *timeRemainingOutput, result);
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ConnectTimeRemaining: FAILED to connect Time Remaining output - result=%d"), (int)result);
+			return;
+		}
+		UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: Connected Time Remaining output successfully"));
+
+		if (Layout)
+		{
+			Layout->RegisterConnection(
+				FMetaSoundNodeHandle(timeRemainingOutHandle.NodeID),
+				FMetaSoundNodeHandle(timeRemainingOutput->NodeID)
+			);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ConnectTimeRemaining: No output to connect (timeRemainingOutput is null or not set)"));
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("=== ConnectTimeRemaining: COMPLETED SUCCESSFULLY ==="));
+}
+
 // Deprecated, Use container->bIsStereo cached property instead.
 bool UGISB_MetasoundBuilderCore::isStereo(UGisbImportContainerBase* container)
 {
@@ -786,6 +916,7 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 	FMetaSoundBuilderNodeInputHandle& onFinishedInput,
 	FMetaSoundBuilderNodeInputHandle& audioLeftOutput,
 	FMetaSoundBuilderNodeInputHandle* audioRightOutput,
+	FMetaSoundBuilderNodeInputHandle* timeRemainingOutput,
 	GisbMetasoundLayoutManager* Layout
 )
 {
@@ -915,6 +1046,36 @@ void UGISB_MetasoundBuilderCore::BuildSimpleSoundCore(
 		{
 			Layout->RegisterConnection(FMetaSoundNodeHandle(onFinishedHandle.NodeID), FMetaSoundNodeHandle(onFinishedInput.NodeID));
 		}
+	}
+
+	// Get Playback Time output for time remaining calculation (if requested)
+	UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: Checking for time remaining output..."));
+	UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: timeRemainingOutput = %s"), timeRemainingOutput ? TEXT("NOT NULL") : TEXT("NULL"));
+	UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: timeRemainingOutput->IsSet = %d"), (timeRemainingOutput && timeRemainingOutput->IsSet()) ? 1 : 0);
+
+	if (timeRemainingOutput && timeRemainingOutput->IsSet())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: Time remaining output requested, finding Playback Time output..."));
+		FMetaSoundBuilderNodeOutputHandle playbackTimeHandle = builder->FindNodeOutputByName(
+			wavePlayerHandle,
+			TEXT("Playback Time"),
+			result
+		);
+
+		if (result != EMetaSoundBuilderResult::Succeeded)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BuildSimpleSoundCore: FAILED to find Playback Time output - result=%d"), (int)result);
+			return;
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: Found Playback Time output, calling ConnectTimeRemaining..."));
+		// Connect time remaining calculation
+		ConnectTimeRemaining(builder, simpleSound->SoundWave, playbackTimeHandle, timeRemainingOutput, Layout);
+		UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: Returned from ConnectTimeRemaining"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BuildSimpleSoundCore: No time remaining output requested (passing nullptr or not set)"));
 	}
 
 	// Connect final audio outputs to graph outputs (automatic connection)

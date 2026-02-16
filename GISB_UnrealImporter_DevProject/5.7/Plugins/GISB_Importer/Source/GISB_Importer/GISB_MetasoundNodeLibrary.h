@@ -49,6 +49,7 @@ public:
 	
 	//Custom GISB Nodes
 	static TScriptInterface<IMetaSoundDocumentInterface> GisbTriggerStopper;
+	static TScriptInterface<IMetaSoundDocumentInterface> GisbTimeRemaining;
 	
 	//Custom Configurable Nodes
 	static FMetasoundFrontendClassName* GisbSwitchNode;

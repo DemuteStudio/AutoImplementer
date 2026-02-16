@@ -27,6 +27,7 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundNodeLibrary::GisbTi
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundNodeLibrary::GisbTimedCrossfadeStereo = nullptr;
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundNodeLibrary::GisbCrossfadeTimer = nullptr;
 TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundNodeLibrary::GisbTriggerStopper = nullptr;
+TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundNodeLibrary::GisbTimeRemaining = nullptr;
 
 FMetasoundFrontendClassName* UGISB_MetasoundNodeLibrary::GisbSwitchNode = nullptr;
 FMetasoundFrontendClassName* UGISB_MetasoundNodeLibrary::GisbAttenuationNode = nullptr;
@@ -66,6 +67,9 @@ void UGISB_MetasoundNodeLibrary::SetupNodes()
 	
 	UMetaSoundPatch* TrigStopPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_TriggerStopper.GISB_TriggerStopper")));
 	GisbTriggerStopper = TScriptInterface<IMetaSoundDocumentInterface>(TrigStopPatch);
+	
+	UMetaSoundPatch* TimeRemainingPatch = Cast<UMetaSoundPatch>(StaticLoadObject(UMetaSoundPatch::StaticClass(), nullptr, TEXT("/GISB_Importer/GISB_TimeRemaining.GISB_TimeRemaining")));
+	GisbTimeRemaining = TScriptInterface<IMetaSoundDocumentInterface>(TimeRemainingPatch);
 	
 	TriggerRepeatNode = new FMetasoundFrontendClassName(ue, TEXT("TriggerRepeat"));
 	TriggerCounterNode = new FMetasoundFrontendClassName(ue, TEXT("Trigger Counter"));

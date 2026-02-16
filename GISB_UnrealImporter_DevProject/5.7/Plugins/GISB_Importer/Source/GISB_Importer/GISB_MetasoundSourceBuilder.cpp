@@ -245,6 +245,12 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSimpleSource(
 		Layout.RegisterGraphOutputNode(audioRightNodeHandle, FName("Audio Right"));
 	}
 
+	// Create graph output for time remaining
+	FMetaSoundBuilderNodeInputHandle TimeRemaining = builder->AddGraphOutputNode(
+		FName("Time Remaining"), FName("Time"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle timeRemainingNodeHandle(TimeRemaining.NodeID);
+	Layout.RegisterGraphOutputNode(timeRemainingNodeHandle, FName("Time Remaining"));
+
 	// ========================================================================
 	// PHASE 2: Build Core Logic (from base class - builder-agnostic!)
 	// BuildCore connects directly to graph outputs (Pattern A)
@@ -263,6 +269,7 @@ UMetaSoundSource* UGISB_MetasoundSourceBuilder::BuildSimpleSource(
 		OnFinishedNode,       // On finished input (auto-created)
 		outAudioHandles[0],   // Graph output left/mono (BuildCore connects automatically)
 		(bisStereo && outAudioHandles.Num() > 1) ? &outAudioHandles[1] : nullptr,  // Graph output right (nullable)
+		&TimeRemaining,       // Pass time remaining output
 		&Layout               // Pass layout manager instead of nullptr
 	);
 

@@ -181,6 +181,11 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 		audioRightNode = FMetaSoundNodeHandle(AudioRight.NodeID);
 	}
 
+	// Create graph output for time remaining
+	FMetaSoundBuilderNodeInputHandle TimeRemaining = builder->AddGraphOutputNode(
+		FName("Time Remaining"), FName("Time"), FMetasoundFrontendLiteral(), result);
+	FMetaSoundNodeHandle timeRemainingNode(TimeRemaining.NodeID);
+
 	// Create layout manager
 	GisbMetasoundLayoutManager Layout(builder, FGisbLayoutConfig::Spacious());
 
@@ -195,12 +200,14 @@ TScriptInterface<IMetaSoundDocumentInterface> UGISB_MetasoundPatchBuilder::Build
 	{
 		Layout.RegisterGraphOutputNode(audioRightNode, FName("Audio Right"));
 	}
+	Layout.RegisterGraphOutputNode(timeRemainingNode, FName("Time Remaining"));
 
 	// Call core method (does all the work!)
 	BuildSimpleSoundCore(
-		builder, simpleSound, 
+		builder, simpleSound,
 		PlayTrigger, OnFinished,
 		AudioLeft, isStereo ? &AudioRight : nullptr,
+		&TimeRemaining,  // Pass time remaining output
 		&Layout
 	);
 
